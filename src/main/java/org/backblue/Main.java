@@ -2,6 +2,7 @@ package org.backblue;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.json.JSONObject;
@@ -20,6 +21,7 @@ public class Main {
 
             JDA bot = JDABuilder.createLight(key.getString("token"), EnumSet.allOf(GatewayIntent.class))
                     .setActivity(Activity.customStatus("Facilitating requests"))
+                    .setStatus(OnlineStatus.DO_NOT_DISTURB)
                     .build();
         } catch (Exception e) {
             System.out.println("Error reading config files");
