@@ -1,18 +1,32 @@
 {
   "version": "0.1.0",
   "owner": [387336581775884288, 852609613253443584],
+  "guilds": [846837318132301904, 523349543505362945],
   "modules": [
     {
-      "dmSpy": true,
-      "desc": "Tracks private messages sent through this bot."
+      "name": "dmSpy",
+      "desc": "Messages recieved from DMs will be sent to a specified channel.",
+      "enabled": true
     },
     {
-      "autoModNotify": false,
-      "desc": "Pings all moderators when discord AutoMod takes action."
+      "name": "autoModNotify",
+      "desc": "Pings all moderators when AutoMod takes action.",
+      "enabled": false
     },
     {
-      "autoModTakeActionExtremeCases": false,
-      "desc": "Bot will automatically ban users who are flagged by AutoMod for extreme infractions."
+      "name": "autoModTakeExtremeAction",
+      "desc": "Bot will automatically ban users who are flagged by AutoMod for extreme infractions",
+      "enabled": false
+    },
+    {
+      "name": "enforceOPGuides",
+      "desc": "Automatically delete messages in guide channels that are not from the OP.",
+      "enabled": false
+    },
+    {
+      "name": "scanProfilePictures",
+      "desc": "(beta) Leverges the capabilites of latest GPT models to scan profile pictures for inappropriate content. Only works on join.",
+      "enabled": false
     }
   ]
 }
