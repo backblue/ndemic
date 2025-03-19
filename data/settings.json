@@ -1,0 +1,18 @@
+{
+  "version": "0.1.0",
+  "owner": [387336581775884288, 852609613253443584],
+  "modules": [
+    {
+      "dmSpy": true,
+      "desc": "Tracks private messages sent through this bot."
+    },
+    {
+      "autoModNotify": false,
+      "desc": "Pings all moderators when discord AutoMod takes action."
+    },
+    {
+      "autoModTakeActionExtremeCases": false,
+      "desc": "Bot will automatically ban users who are flagged by AutoMod for extreme infractions."
+    }
+  ]
+}

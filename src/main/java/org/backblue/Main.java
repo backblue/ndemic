@@ -5,6 +5,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import org.backblue.events.DirectMessageSpy;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -19,9 +20,13 @@ public class Main {
             String rawKey = Files.readString(Path.of("data/key.json"));
             JSONObject key = new JSONObject(new JSONTokener(rawKey));
 
+            String rawSettings = Files.readString(Path.of("data/settings.json"));
+            JSONObject settings = new JSONObject(new JSONTokener(rawSettings));
+
             JDA bot = JDABuilder.createLight(key.getString("token"), EnumSet.allOf(GatewayIntent.class))
                     .setActivity(Activity.customStatus("Facilitating requests"))
                     .setStatus(OnlineStatus.DO_NOT_DISTURB)
+                    .addEventListeners(new DirectMessageSpy())
                     .build();
         } catch (Exception e) {
             System.out.println("Error reading config files");
