@@ -1,11 +1,12 @@
 {
-  "version": "0.1.0",
-  "owner": [387336581775884288, 852609613253443584],
-  "guilds": [846837318132301904, 523349543505362945],
+  "version": "0.1.1",
+  "owner": 387336581775884288,
+  "ndemicGuild": "523349543505362945",
+  "testingGuild": "846837318132301904",
   "modules": [
     {
       "name": "dmSpy",
-      "desc": "Messages recieved from DMs will be sent to a specified channel.",
+      "desc": "Messages received from DMs will be sent to a specified channel.",
       "enabled": true
     },
     {
@@ -24,8 +25,13 @@
       "enabled": false
     },
     {
+      "name": "enforceRoles",
+      "desc": "Force users to have any 'Fan' role before they can send messages.",
+      "enabled": false
+    },
+    {
       "name": "scanProfilePictures",
-      "desc": "(beta) Leverges the capabilites of latest GPT models to scan profile pictures for inappropriate content. Only works on join.",
+      "desc": "(beta) Leverages the capabilities of latest GPT models to scan profile pictures for inappropriate content. Only works on join.",
       "enabled": false
     }
   ]
