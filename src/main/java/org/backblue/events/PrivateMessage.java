@@ -11,9 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.*;
 
 public class PrivateMessage extends ListenerAdapter {
-
-    private static final String DM_CHANNEL_ID = "848994984023687238";
-
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
 
@@ -36,7 +33,7 @@ public class PrivateMessage extends ListenerAdapter {
                     .addField("Author", event.getAuthor().getName(), false)
                     .build();
 
-            TextChannel channel = event.getJDA().getTextChannelById(DM_CHANNEL_ID);
+            TextChannel channel = event.getJDA().getTextChannelById(Core.SETTINGS.getString("dmSpyChannel"));
 
             channel.sendMessageEmbeds(message).queue();
         }

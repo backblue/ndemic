@@ -1,38 +1,40 @@
 {
-  "version": "0.1.1",
-  "owner": 387336581775884288,
+  "version": "0.2.0",
+  "owner": "387336581775884288",
   "ndemicGuild": "523349543505362945",
   "testingGuild": "846837318132301904",
+  "dmSpyChannel": "848994984023687238",
+  "moduleChannel": "1352491920374501457",
   "modules": [
     {
       "name": "dmSpy",
-      "desc": "Messages received from DMs will be sent to a specified channel.",
-      "enabled": true
+      "enabled": true,
+      "desc": "Messages received from DMs will be sent to a specified channel."
     },
     {
       "name": "autoModNotify",
-      "desc": "Pings all moderators when AutoMod takes action.",
-      "enabled": false
+      "enabled": false,
+      "desc": "Pings all moderators when AutoMod takes action."
     },
     {
       "name": "autoModTakeExtremeAction",
-      "desc": "Bot will automatically ban users who are flagged by AutoMod for extreme infractions",
-      "enabled": false
+      "enabled": false,
+      "desc": "Automatically take action to AutoMod flag for extreme cases."
     },
     {
       "name": "enforceOPGuides",
-      "desc": "Automatically delete messages in guide channels that are not from the OP.",
-      "enabled": false
+      "enabled": false,
+      "desc": "Automatically delete messages in guide channels that are not from the OP."
     },
     {
       "name": "enforceRoles",
-      "desc": "Force users to have any 'Fan' role before they can send messages.",
-      "enabled": false
+      "enabled": false,
+      "desc": "Force users to have any 'Fan' role before they can send messages."
     },
     {
       "name": "scanProfilePictures",
-      "desc": "(beta) Leverages the capabilities of latest GPT models to scan profile pictures for inappropriate content. Only works on join.",
-      "enabled": false
+      "enabled": false,
+      "desc": "Leverages the capabilities of AI models to scan profile pictures."
     }
   ]
 }

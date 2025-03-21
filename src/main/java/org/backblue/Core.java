@@ -18,14 +18,14 @@ import org.json.JSONTokener;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class Core {
 
     private static String LOGIN_TOKEN;
     public static JSONObject SETTINGS;
-    public static HashMap<String, Boolean> MODULES = new HashMap<>();
-    public static HashMap<String, String> MODULES_DESC = new HashMap<>();
+    public static LinkedHashMap<String, Boolean> MODULES = new LinkedHashMap<>();
+    public static LinkedHashMap<String, String> MODULES_DESC = new LinkedHashMap<>();
 
     private static void loadKey() {
         try {
@@ -48,6 +48,7 @@ public class Core {
     }
 
     public static void loadModules() {
+        loadSettings();
         try {
             JSONArray modulesArray = Core.SETTINGS.getJSONArray("modules");
             for (int i = 0; i < modulesArray.length(); i++) {
@@ -63,7 +64,6 @@ public class Core {
 
     public static void main(String[] args) {
         loadKey();
-        loadSettings();
         loadModules();
 
         JDA bot = JDABuilder.create(Core.LOGIN_TOKEN, EnumSet.allOf(GatewayIntent.class))
