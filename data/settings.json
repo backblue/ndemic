@@ -2,9 +2,14 @@
   "version": "0.2.0",
   "owner": "387336581775884288",
   "ndemicGuild": "523349543505362945",
+  "ndemicModerators": "846872265304047656",
+  "ndemicBotChannel": "1352776705474822277",
+  "ndemicLogging": "1352776705474822277",
   "testingGuild": "846837318132301904",
   "dmSpyChannel": "848994984023687238",
   "moduleChannel": "1352491920374501457",
+  "autoModChannel_kickID": "1352776627679137832",
+  "autoModChannel_banID": "1352776837750587475",
   "modules": [
     {
       "name": "dmSpy",
@@ -13,13 +18,13 @@
     },
     {
       "name": "autoModNotify",
-      "enabled": false,
+      "enabled": true,
       "desc": "Pings all moderators when AutoMod takes action."
     },
     {
       "name": "autoModTakeExtremeAction",
-      "enabled": false,
-      "desc": "Automatically take action to AutoMod flag for extreme cases."
+      "enabled": true,
+      "desc": "Automatically Kick/Ban users. Does not notify Mods."
     },
     {
       "name": "enforceOPGuides",
