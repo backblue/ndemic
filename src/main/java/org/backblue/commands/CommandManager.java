@@ -20,12 +20,13 @@ public class CommandManager extends ListenerAdapter {
         List<CommandData> commands = new ArrayList<>();
 
         commands.add(Commands.slash("ping", "Ping, pong!"));
+        commands.add(Commands.slash("uptime", "View bot process performance"));
 
         OptionData moduleSelection = new OptionData(OptionType.STRING, "module", "The selected module", true)
-                .addChoice("INFO - Displays status of each module. More details with 'true'", "info");
+                .addChoice("INFO: Displays status of each module. More details with 'true'", "info");
 
         for (String module : Core.MODULES_DESC.keySet()) {
-            moduleSelection.addChoice(module + " - " + Core.MODULES_DESC.get(module), module);
+            moduleSelection.addChoice(module + ": " + Core.MODULES_DESC.get(module), module);
         }
         OptionData booleanSelection = new OptionData(OptionType.BOOLEAN, "enabled", "Option of enabled or disabled", true);
         commands.add(Commands.slash("module", "Enable or disable features of this bot")

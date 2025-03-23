@@ -9,9 +9,12 @@ import net.dv8tion.jda.api.events.automod.AutoModExecutionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
 import org.jetbrains.annotations.NotNull;
+import org.xml.sax.ErrorHandler;
 
 import java.awt.*;
 import java.time.Instant;
+
+import static net.dv8tion.jda.api.requests.ErrorResponse.CANNOT_SEND_TO_USER;
 
 public class AutoModAlert extends ListenerAdapter {
     private static long UNIX_TIMESTAMP_MOD = Instant.now().getEpochSecond();
@@ -28,7 +31,7 @@ public class AutoModAlert extends ListenerAdapter {
             if (event.getRuleId().equals(Core.SETTINGS.getString("autoModChannel_kickID"))) {
                 if (event.getAlertMessageId() != null) {
                     User user = event.getJDA().getUserById(event.getUserId());
-                    TextChannel logChannel = event.getJDA().getTextChannelById(Core.SETTINGS.getString("ndemicLogging"));
+                    TextChannel logChannel = event.getJDA().getTextChannelById(Core.SETTINGS.getString("ndemicWarnChannel"));
 
                     MessageEmbed message = new EmbedBuilder()
                             .setColor(Color.ORANGE)
@@ -39,11 +42,13 @@ public class AutoModAlert extends ListenerAdapter {
                             .setFooter("Contact Discord Mods/Ndemic Community Manager for any questions")
                             .build();
 
+                    logChannel.sendMessage(user.getAsMention() + " - Kick - Extreme Rule AutoMod Infraction" + "\n" + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.SETTINGS.getString("ndemicBotChannel") + "/" + event.getAlertMessageId()).queue();
                     user.openPrivateChannel()
                             .flatMap(channel -> channel.sendMessageEmbeds(message))
+                            .onErrorFlatMap(CANNOT_SEND_TO_USER::test,
+                                    (error) -> logChannel.sendMessage("Attempted to send message to " + user.getAsMention() + ", but their DMs were closed."))
                             .queue();
                     event.getGuild().kick(user).reason("Automated action from AutoMod Rule trigger.").queue();
-                    logChannel.sendMessage(user.getAsMention() + " - Kick - Extreme Rule AutoMod Infraction" + "\n" + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.SETTINGS.getString("autoModChannel") + "/" + event.getAlertMessageId()).queue();
                 }
                 return;
             } else if (event.getRuleId().equals(Core.SETTINGS.getString("autoModChannel_banID"))) {
@@ -52,7 +57,7 @@ public class AutoModAlert extends ListenerAdapter {
             }
         }
 
-        TextChannel channel = event.getJDA().getTextChannelById(Core.SETTINGS.getString("autoModChannel"));
+        TextChannel channel = event.getJDA().getTextChannelById(Core.SETTINGS.getString("ndemicBotChannel"));
         Role pingRole = event.getJDA().getRoleById(Core.SETTINGS.getString("ndemicModerators"));
         if (UNIX_TIMESTAMP_MOD + COOLDOWN < Instant.now().getEpochSecond()) {
             channel.sendMessage(pingRole.getAsMention()).queue();

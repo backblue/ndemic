@@ -10,7 +10,10 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.backblue.commands.CommandManager;
 import org.backblue.commands.Module;
 import org.backblue.commands.Ping;
+import org.backblue.commands.Uptime;
 import org.backblue.events.AutoModAlert;
+import org.backblue.events.EnforceFanRole;
+import org.backblue.events.EnforceOneOP;
 import org.backblue.events.PrivateMessage;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -88,9 +91,9 @@ public class Core {
                 .build();
 
         // Register Events and Modules
-        bot.addEventListener(new PrivateMessage(), new AutoModAlert());
+        bot.addEventListener(new PrivateMessage(), new AutoModAlert(), new EnforceOneOP(), new EnforceFanRole());
 
         // Register Commands
-        bot.addEventListener(new CommandManager(), new Ping(), new Module());
+        bot.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime());
     }
 }
