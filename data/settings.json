@@ -34,12 +34,6 @@
       "name": "enforceFanRole",
       "enabled": false,
       "desc": "Force users to have any 'Fan' role before they can send messages."
-    },
-    {
-      "name": "ai-profileAnalysis",
-      "enabled": false,
-      "desc": "Leverages the capabilities of AI models to monitor profile icons."
     }
-  ],
-  "chatGPT-integration": []
+  ]
 }

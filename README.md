@@ -1,4 +1,11 @@
 # Ndemic Bot
+
+## Features
+### Moderation
+- :white_check_mark: Get notified when AutoMod is executed
+- :white_check_mark: Enforce user-created guide threads
+- :white_check_mark: Enforce roles before users can post, epically those who joined before Onboarding
+
 ## Setup
 You'll need to compile and set up the bot yourself.
 

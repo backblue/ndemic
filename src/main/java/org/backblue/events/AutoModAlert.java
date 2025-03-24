@@ -1,18 +1,16 @@
 package org.backblue.events;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.automod.AutoModExecutionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
 import org.jetbrains.annotations.NotNull;
-import org.xml.sax.ErrorHandler;
 
 import java.awt.*;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 import static net.dv8tion.jda.api.requests.ErrorResponse.CANNOT_SEND_TO_USER;
 
@@ -42,7 +40,7 @@ public class AutoModAlert extends ListenerAdapter {
                             .setFooter("Contact Discord Mods/Ndemic Community Manager for any questions")
                             .build();
 
-                    logChannel.sendMessage(user.getAsMention() + " - Kick - Extreme Rule AutoMod Infraction" + "\n" + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.SETTINGS.getString("ndemicBotChannel") + "/" + event.getAlertMessageId()).queue();
+                    logChannel.sendMessage(user.getAsMention() + " - Kick - AutoMod Infraction" + "\n" + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.SETTINGS.getString("ndemicBotChannel") + "/" + event.getAlertMessageId()).queue();
                     user.openPrivateChannel()
                             .flatMap(channel -> channel.sendMessageEmbeds(message))
                             .onErrorFlatMap(CANNOT_SEND_TO_USER::test,
@@ -52,7 +50,27 @@ public class AutoModAlert extends ListenerAdapter {
                 }
                 return;
             } else if (event.getRuleId().equals(Core.SETTINGS.getString("autoModChannel_banID"))) {
+                User user = event.getJDA().getUserById(event.getUserId());
+                Member member = event.getJDA().getGuildById(Core.SETTINGS.getString("ndemicGuild")).getMember(user);
+                TextChannel logChannel = event.getJDA().getTextChannelById(Core.SETTINGS.getString("ndemicWarnChannel"));
 
+                MessageEmbed message = new EmbedBuilder()
+                        .setColor(Color.ORANGE)
+                        .setTitle("Banned from " + event.getGuild().getName())
+                        .setDescription("You can not re-join this server.")
+                        .addField("Offending Message:", event.getContent(), false)
+                        .addField("This is the rules for your reference:", Core.SERVER_RULES, false)
+                        .setFooter("This ban is permanent")
+                        .build();
+
+                logChannel.sendMessage(user.getAsMention() + " - Kick - AutoMod Infraction" + "\n" + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.SETTINGS.getString("ndemicBotChannel") + "/" + event.getAlertMessageId()).queue();
+                user.openPrivateChannel()
+                        .flatMap(channel -> channel.sendMessageEmbeds(message))
+                        .onErrorFlatMap(CANNOT_SEND_TO_USER::test,
+                                (error) -> logChannel.sendMessage("Attempted to send message to " + user.getAsMention() + ", but their DMs were closed."))
+                        .queue();
+
+                event.getGuild().ban(UserSnowflake.fromId(event.getUserId()), 0, TimeUnit.DAYS).queue();
                 return;
             }
         }
