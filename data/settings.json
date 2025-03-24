@@ -27,7 +27,7 @@
     },
     {
       "name": "enforceOPGuides",
-      "enabled": true,
+      "enabled": false,
       "desc": "Automatically delete messages in guide channels that are not from the OP."
     },
     {
