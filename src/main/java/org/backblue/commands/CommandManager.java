@@ -20,7 +20,7 @@ public class CommandManager extends ListenerAdapter {
         List<CommandData> commands = new ArrayList<>();
 
         commands.add(Commands.slash("ping", "Ping, pong!"));
-        commands.add(Commands.slash("uptime", "View bot process performance"));
+        commands.add(Commands.slash("uptime", "About this bot & view bot performance"));
 
         OptionData moduleSelection = new OptionData(OptionType.STRING, "module", "The selected module", true)
                 .addChoice("INFO: Displays status of each module. More details with 'true'", "info");
