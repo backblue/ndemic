@@ -33,7 +33,7 @@ public class CommandManager extends ListenerAdapter {
                 .addOptions(moduleSelection, booleanSelection)
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
 
-        if (event.getGuild().getId().equals(Core.SETTINGS.getString("ndemicGuild")) || event.getGuild().getId().equals(Core.SETTINGS.getString("testingGuild"))) {
+        if (event.getGuild().getId().equals(Core.DEPLOYMENT.get("guild"))) {
             event.getGuild().updateCommands().addCommands(commands).queue();
         }
     }

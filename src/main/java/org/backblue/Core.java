@@ -33,15 +33,8 @@ public class Core {
     public static JSONObject SETTINGS;
     public static LinkedHashMap<String, Boolean> MODULES = new LinkedHashMap<>();
     public static LinkedHashMap<String, String> MODULES_DESC = new LinkedHashMap<>();
-
-    private static void loadRules() {
-        try {
-            Core.SERVER_RULES = Files.readString(Path.of("data/rules.txt"));
-        } catch (Exception e) {
-            System.out.println("Error loading rules file. Bot stopped.");
-            System.exit(1);
-        }
-    }
+    public static LinkedHashMap<String, String> DEPLOYMENT = new LinkedHashMap<>();
+    public static LinkedHashMap<String, String> ANALYTICS = new LinkedHashMap<>();
 
     private static void loadKey() {
         try {
@@ -50,6 +43,12 @@ public class Core {
             Core.LOGIN_TOKEN = key.getString("token");
         } catch (Exception e) {
             System.out.println("Error loading key file. Bot stopped.");
+            System.exit(1);
+        }
+        try {
+            Core.SERVER_RULES = Files.readString(Path.of("data/rules.txt"));
+        } catch (Exception e) {
+            System.out.println("Error loading rules file. Bot stopped.");
             System.exit(1);
         }
     }
@@ -78,10 +77,50 @@ public class Core {
         }
     }
 
+    public static void loadAnalytics() {
+        try {
+            JSONObject analytics = Core.SETTINGS.getJSONObject("analytics");
+            for (String key : analytics.keySet()) {
+                Core.ANALYTICS.put(key, analytics.getString(key));
+            }
+        } catch (Exception e) {
+            System.out.println("Error loading analytics. Bot stopped.");
+            System.exit(1);
+        }
+    }
+
+    public static void loadDeployment() {
+        try {
+            JSONObject deployment = Core.SETTINGS.getJSONObject("deployment");
+
+            Core.DEPLOYMENT.put("guild", deployment.getString("guild"));
+            Core.DEPLOYMENT.put("role.senior", deployment.getJSONObject("roles").getString("senior"));
+            Core.DEPLOYMENT.put("role.mod", deployment.getJSONObject("roles").getString("mod"));
+            Core.DEPLOYMENT.put("channel.cmd", deployment.getJSONObject("channels").getString("cmd"));
+            Core.DEPLOYMENT.put("channel.log", deployment.getJSONObject("channels").getString("log"));
+            Core.DEPLOYMENT.put("channel.warn", deployment.getJSONObject("channels").getString("warn"));
+
+            Core.DEPLOYMENT.put("kick.length", String.valueOf(deployment.getJSONArray("autoModKick").length()));
+            for (int i = 0; i < deployment.getJSONArray("autoModKick").length(); i++) {
+                Core.DEPLOYMENT.put("kick." + i, deployment.getJSONArray("autoModKick").getString(i));
+            }
+            Core.DEPLOYMENT.put("ban.length", String.valueOf(deployment.getJSONArray("autoModBan").length()));
+            for (int i = 0; i < deployment.getJSONArray("autoModBan").length(); i++) {
+                Core.DEPLOYMENT.put("ban." + i, deployment.getJSONArray("autoModBan").getString(i));
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error loading deployments. Bot stopped.");
+            System.exit(1);
+        }
+    }
+
+
     public static void main(String[] args) {
         loadKey();
         loadModules();
-        loadRules();
+        loadDeployment();
+        loadAnalytics();
 
         JDA bot = JDABuilder.create(Core.LOGIN_TOKEN, EnumSet.allOf(GatewayIntent.class))
                 .setActivity(Activity.customStatus("Facilitating requests"))
@@ -91,7 +130,7 @@ public class Core {
                 .build();
 
         // Register Events and Modules
-        bot.addEventListener(new PrivateMessage(), new AutoModAlert(), new EnforceOneOP(), new EnforceFanRole());
+        bot.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert());
 
         // Register Commands
         bot.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime());

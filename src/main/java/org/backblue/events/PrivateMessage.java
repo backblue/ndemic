@@ -14,41 +14,30 @@ public class PrivateMessage extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
 
-        if (!Core.MODULES.get("dmSpy")) {
-            return;
+        if (Core.MODULES.get("analytics")) {
+            try {
+                event.getGuild().getName();
+            } catch (IllegalStateException e) {
+
+                if (event.isFromGuild()) {
+                    return;
+                }
+                if (event.getMessage().getContentRaw().isEmpty()) {
+                    return;
+                }
+
+                MessageEmbed message = new EmbedBuilder()
+                        .setColor(Color.CYAN)
+                        .setTitle("DM Received")
+                        .addField("Message", event.getMessage().getContentRaw(), false)
+                        .addField("Author", event.getAuthor().getName(), false)
+                        .build();
+
+                TextChannel channel = event.getJDA().getTextChannelById(Core.ANALYTICS.get("DM"));
+
+                channel.sendMessageEmbeds(message).queue();
+            }
         }
 
-
-        try {
-            event.getGuild().getName();
-        } catch (IllegalStateException e) {
-
-            if (event.isFromGuild()) {
-                return;
-            }
-
-            if (event.getMessage().getContentRaw().isEmpty()) {
-                return;
-            }
-
-            if (event.getMember() == null) {
-                return;
-            }
-
-            if (event.getMember().getUser().isBot()) {
-                return;
-            }
-
-            MessageEmbed message = new EmbedBuilder()
-                    .setColor(Color.CYAN)
-                    .setTitle("DM Received")
-                    .addField("Message", event.getMessage().getContentRaw(), false)
-                    .addField("Author", event.getAuthor().getName(), false)
-                    .build();
-
-            TextChannel channel = event.getJDA().getTextChannelById(Core.SETTINGS.getString("loggingChannel"));
-
-            channel.sendMessageEmbeds(message).queue();
-        }
     }
 }
