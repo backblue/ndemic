@@ -82,8 +82,10 @@ public class AutoModAlert extends ListenerAdapter {
                                 .queue();
 
                         event.getGuild().ban(user, 0, TimeUnit.DAYS).reason("Automated action from AutoMod Rule trigger.").queue();
-                        TextChannel analysis = event.getJDA().getTextChannelById(Core.ANALYTICS.get("autoMod"));
-                        analysis.sendMessage("AutoMod Ban alert: " + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.DEPLOYMENT.get("channel.cmd") + "/" + event.getAlertMessageId()).queue();
+                        if (Core.MODULES.get("analytics")) {
+                            TextChannel analysis = event.getJDA().getTextChannelById(Core.ANALYTICS.get("autoMod"));
+                            analysis.sendMessage("AutoMod Ban alert: " + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.DEPLOYMENT.get("channel.cmd") + "/" + event.getAlertMessageId()).queue();
+                        }
                         break;
                     }
                 }

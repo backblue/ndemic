@@ -40,8 +40,10 @@ public class EnforceFanRole extends ListenerAdapter {
                                 ).queue(),
                                 error -> {
                                 });
-                TextChannel channel = event.getJDA().getTextChannelById(Core.ANALYTICS.get("enforcement"));
-                channel.sendMessage("Prevented user " + event.getMember().getAsMention() + " from chatting in <#" + event.getChannel().getId() + "> due to having no 'Fan' roles.").queue();
+                if (Core.MODULES.get("analytics")) {
+                    TextChannel channel = event.getJDA().getTextChannelById(Core.ANALYTICS.get("enforcement"));
+                    channel.sendMessage("Prevented user " + event.getMember().getAsMention() + " from chatting in <#" + event.getChannel().getId() + "> due to having no 'Fan' roles.").queue();
+                }
             }
         }
     }

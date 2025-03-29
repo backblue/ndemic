@@ -24,8 +24,10 @@ public class EnforceOneOP extends ListenerAdapter {
                                                 "Hello,\n\nYou can not send messages in guides that aren't yours.\n\nFeel free to discuss the guide in the respective game channel (eg. `#rebel-inc` for Rebel Inc.)"
                                         ).queue(),
                                         error -> {});
-                        TextChannel channel = event.getJDA().getTextChannelById(Core.ANALYTICS.get("enforcement"));
-                        channel.sendMessage("Prevented user " + event.getMember().getAsMention() + " from chatting in <#" + thread.getId() + "> due to not being OP.").queue();
+                        if (Core.MODULES.get("analytics")) {
+                            TextChannel channel = event.getJDA().getTextChannelById(Core.ANALYTICS.get("enforcement"));
+                            channel.sendMessage("Prevented user " + event.getMember().getAsMention() + " from chatting in <#" + thread.getId() + "> due to not being OP.").queue();
+                        }
                     }
                 }
             }

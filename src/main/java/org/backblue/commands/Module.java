@@ -1,5 +1,6 @@
 package org.backblue.commands;
 
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
@@ -50,6 +51,10 @@ public class Module extends ListenerAdapter {
             Core.MODULES.put(module, enabled);
             event.reply(":white_check_mark: Module **" + module + "** is " + (enabled ? "**enabled**." : "**disabled**.")).queue();
             Core.loadModules();
+            if (Core.MODULES.get("analytics")) {
+                TextChannel analysis = event.getJDA().getTextChannelById(Core.ANALYTICS.get("autoMod"));
+                analysis.sendMessage(event.getUser().getName() + " changed setting " + module + " to " + enabled).queue();
+            }
         }
     }
 }

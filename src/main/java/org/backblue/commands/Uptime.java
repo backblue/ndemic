@@ -3,7 +3,7 @@ package org.backblue.commands;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
-import org.backblue.FormatTime;
+import org.backblue.libraries.FormatTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
