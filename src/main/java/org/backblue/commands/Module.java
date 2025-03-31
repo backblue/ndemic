@@ -19,7 +19,7 @@ public class Module extends ListenerAdapter {
 
             if (module.equals("info")) {
                 if (enabled) {
-                    event.reply(Core.SETTINGS.toString()).setEphemeral(true).queue();
+                    event.reply(Core.SETTINGS.toString() + "\n" + Core.SAFETY.toString()).setEphemeral(true).queue();
                     return;
                 } else {
                     event.reply(Core.MODULES.toString()).setEphemeral(true).queue();

@@ -39,4 +39,4 @@ build/
 
 ### Key ###
 data/users/*
-data/key.json
+*.properties

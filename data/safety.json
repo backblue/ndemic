@@ -1,0 +1,6 @@
+{
+  "scanTypes": {
+    "profile": true
+  },
+  "minAccuracy": 0.7
+}

@@ -14,8 +14,8 @@ public class Uptime extends ListenerAdapter {
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("uptime")) {
             long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-            event.reply("Version: **" + Core.SETTINGS.getString("version") + "**\nUptime: `" + FormatTime.formatTimeShort(Instant.now().getEpochSecond() - Core.BOOT) + "`\n" +
-                    "Memory: `" + used / 1000000 + " MB` / `" + Runtime.getRuntime().totalMemory() / 1000000 + " MB`").queue();
+            event.reply("> Version: **" + Core.SETTINGS.getString("version") + " (" + Core.SETTINGS.getString("status") + ")**\nUptime: `" + FormatTime.formatTimeShort(Instant.now().getEpochSecond() - Core.BOOT) + "`\n" +
+                    "Memory: `" + used / 1000000 + " MB / " + Runtime.getRuntime().totalMemory() / 1000000 + " MB`").queue();
         }
     }
 

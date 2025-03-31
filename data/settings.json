@@ -50,7 +50,7 @@
     },
     {
       "name": "safetyFeatures",
-      "enabled": false,
+      "enabled": true,
       "desc": "(beta) Use AI to detect potentially harmful content."
     }
   ]

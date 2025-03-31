@@ -1,5 +1,8 @@
 package org.backblue;
 
+import com.azure.ai.contentsafety.ContentSafetyClient;
+import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -10,6 +13,7 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.backblue.commands.CommandManager;
 import org.backblue.commands.Module;
 import org.backblue.commands.Ping;
+import org.backblue.commands.Safety;
 import org.backblue.commands.Uptime;
 import org.backblue.events.AutoModAlert;
 import org.backblue.events.EnforceFanRole;
@@ -24,23 +28,26 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.Properties;
 
 public class Core {
 
+    public static JDA BOT;
     public static long BOOT = Instant.now().getEpochSecond();
     public static String SERVER_RULES;
-    private static String LOGIN_TOKEN;
+    private static Properties SECURE_KEYS = new Properties();
     public static JSONObject SETTINGS;
+    public static JSONObject SAFETY;
     public static LinkedHashMap<String, Boolean> MODULES = new LinkedHashMap<>();
     public static LinkedHashMap<String, String> MODULES_DESC = new LinkedHashMap<>();
     public static LinkedHashMap<String, String> DEPLOYMENT = new LinkedHashMap<>();
     public static LinkedHashMap<String, String> ANALYTICS = new LinkedHashMap<>();
+    public static ContentSafetyClient CONTENT_SAFETY_CLIENT;
 
-    private static void loadKey() {
+    private static void loadKeys() {
         try {
-            String rawKey = Files.readString(Path.of("data/key.json"));
-            JSONObject key = new JSONObject(new JSONTokener(rawKey));
-            Core.LOGIN_TOKEN = key.getString("token");
+            String rawKey = Files.readString(Path.of("data/keys.properties"));
+            SECURE_KEYS.load(new java.io.StringReader(rawKey));
         } catch (Exception e) {
             System.out.println("Error loading key file. Bot stopped.");
             System.exit(1);
@@ -58,6 +65,16 @@ public class Core {
             Core.SETTINGS = new JSONObject(new JSONTokener(rawSettings));
         } catch (Exception e) {
             System.out.println("Error loading settings file. Bot stopped.");
+            System.exit(1);
+        }
+    }
+
+    private static void loadSafety() {
+        try {
+            String rawSafety = Files.readString(Path.of("data/safety.json"));
+            Core.SAFETY = new JSONObject(new JSONTokener(rawSafety));
+        } catch (Exception e) {
+            System.out.println("Error loading safety file. Bot stopped.");
             System.exit(1);
         }
     }
@@ -117,12 +134,13 @@ public class Core {
 
 
     public static void main(String[] args) {
-        loadKey();
+        loadKeys();
         loadModules();
         loadDeployment();
         loadAnalytics();
+        loadSafety();
 
-        JDA bot = JDABuilder.create(Core.LOGIN_TOKEN, EnumSet.allOf(GatewayIntent.class))
+        BOT = JDABuilder.create(Core.SECURE_KEYS.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class))
                 .setActivity(Activity.customStatus("Facilitating requests"))
                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
                 .setMemberCachePolicy(MemberCachePolicy.ALL)
@@ -130,9 +148,15 @@ public class Core {
                 .build();
 
         // Register Events and Modules
-        bot.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert());
+        BOT.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert(), new Safety());
 
         // Register Commands
-        bot.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime());
+        BOT.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime());
+
+        // Azure Content Safety
+        CONTENT_SAFETY_CLIENT = new ContentSafetyClientBuilder()
+                .endpoint(Core.SECURE_KEYS.getProperty("AZURE_SAFETY_ENDPOINT"))
+                .credential(new AzureKeyCredential(Core.SECURE_KEYS.getProperty("AZURE_SAFETY_KEY")))
+                .buildClient();
     }
 }
