@@ -1,10 +1,13 @@
 package org.backblue.libraries;
 
+import com.azure.ai.contentsafety.models.AnalyzeImageOptions;
+import com.azure.ai.contentsafety.models.AnalyzeImageResult;
+import com.azure.ai.contentsafety.models.ContentSafetyImageData;
+import com.azure.ai.contentsafety.models.ImageCategoriesAnalysis;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.backblue.Core;
 
-import java.awt.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -46,7 +49,6 @@ public class Job {
             } else if (job.processImage()) {
                 TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
                 Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-                job.output += "Confidence level: 0";
                 channel.sendMessage("Attention " + pingRole.getAsMention() + "\nAI thinks this picture is inappropriate: <@" + job.name + ">\n" + job.desc + job.output).queue();
             }
         } else {
@@ -62,7 +64,12 @@ public class Job {
 
     private Boolean processImage() {
 
-        System.out.println("Processing failed");
-        return null;
+        ContentSafetyImageData image = new ContentSafetyImageData();
+        //image.setContent();
+        AnalyzeImageResult response = Core.CONTENT_SAFETY_CLIENT.analyzeImage(new AnalyzeImageOptions(image));
+        for (ImageCategoriesAnalysis result : response.getCategoriesAnalysis()) {
+            System.out.println(result.getCategory() + " severity: " + result.getSeverity());
+        }
+        return true;
     }
 }
