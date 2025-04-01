@@ -4,12 +4,18 @@ import com.azure.ai.contentsafety.models.AnalyzeImageOptions;
 import com.azure.ai.contentsafety.models.AnalyzeImageResult;
 import com.azure.ai.contentsafety.models.ContentSafetyImageData;
 import com.azure.ai.contentsafety.models.ImageCategoriesAnalysis;
+import com.azure.core.util.BinaryData;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.backblue.Core;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -49,7 +55,7 @@ public class Job {
             } else if (job.processImage()) {
                 TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
                 Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-                channel.sendMessage("Attention " + pingRole.getAsMention() + "\nAI thinks this picture is inappropriate: <@" + job.name + ">\n" + job.desc + job.output).queue();
+                channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " thinks this profile is inappropriate: <@" + job.name + ">\n" + job.desc + "\n-# Trace: " + job.output).queue();
             }
         } else {
             job.markInvalid();
@@ -62,14 +68,53 @@ public class Job {
         }
     }
 
+    private byte[] downloadUrl(URL toDownload) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            byte[] chunk = new byte[4096];
+            int bytesRead;
+            InputStream stream = toDownload.openStream();
+
+            while ((bytesRead = stream.read(chunk)) > 0) {
+                outputStream.write(chunk, 0, bytesRead);
+            }
+            outputStream.close();
+            stream.close();
+
+        } catch (Exception e) {
+            System.out.println("Error converting URL->BYTE");
+            return null;
+        }
+        return outputStream.toByteArray();
+    }
+
     private Boolean processImage() {
 
         ContentSafetyImageData image = new ContentSafetyImageData();
-        //image.setContent();
-        AnalyzeImageResult response = Core.CONTENT_SAFETY_CLIENT.analyzeImage(new AnalyzeImageOptions(image));
-        for (ImageCategoriesAnalysis result : response.getCategoriesAnalysis()) {
-            System.out.println(result.getCategory() + " severity: " + result.getSeverity());
+        byte[] imageData;
+
+        try {
+            imageData = downloadUrl(new URL(this.desc));
+        } catch (MalformedURLException e) {
+            return null;
         }
-        return true;
+
+        image.setContent(BinaryData.fromBytes(imageData));
+        AnalyzeImageResult response = Core.CONTENT_SAFETY_CLIENT.analyzeImage(new AnalyzeImageOptions(image));
+        HashMap<String, Integer> categories = new HashMap<>();
+        for (ImageCategoriesAnalysis result : response.getCategoriesAnalysis()) {
+            categories.put(result.getCategory().toString(), result.getSeverity());
+        }
+        this.output = categories.toString();
+
+        if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("categories").getInt("SelfHarm")) {
+            return true;
+        } else if (categories.get("Sexual") >= Core.SAFETY.getJSONObject("categories").getInt("Sexual")) {
+            return true;
+        } else if (categories.get("Violence") >= Core.SAFETY.getJSONObject("categories").getInt("Violence")) {
+            return true;
+        } else if (categories.get("Hate") >= Core.SAFETY.getJSONObject("categories").getInt("Hate")) {
+            return true;
+        } else {return false;}
     }
 }

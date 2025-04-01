@@ -158,5 +158,7 @@ public class Core {
                 .endpoint(Core.SECURE_KEYS.getProperty("AZURE_SAFETY_ENDPOINT"))
                 .credential(new AzureKeyCredential(Core.SECURE_KEYS.getProperty("AZURE_SAFETY_KEY")))
                 .buildClient();
+
+
     }
 }

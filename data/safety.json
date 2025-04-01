@@ -1,6 +1,13 @@
 {
+  "enabled": false,
+  "milliseconds": 1000,
   "scanTypes": {
     "profile": true
   },
-  "minAccuracy": 0.7
+  "categories": {
+    "Hate": 2,
+    "SelfHarm": 2,
+    "Sexual": 2,
+    "Violence": 2
+  }
 }

@@ -12,7 +12,7 @@ public class EnforceFanRole extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if (!Core.MODULES.get("enforceFanRole")) {
+        if (Core.MODULES.get("enforceFanRole")) {
             if (event.getMember() == null) {
                 return;
             }
