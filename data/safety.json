@@ -1,5 +1,4 @@
 {
-  "enabled": false,
   "milliseconds": 1000,
   "scanTypes": {
     "profile": true

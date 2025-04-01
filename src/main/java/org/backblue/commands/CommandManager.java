@@ -22,7 +22,7 @@ public class CommandManager extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
-            Job job = new Job(event.getUser().getId(), event.getUser().getAvatarUrl(), "profileScan");
+            new Job(event.getUser().getId(), event.getUser().getAvatarUrl(), "profileScan");
         }
     }
     @Override

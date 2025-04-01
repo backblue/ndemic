@@ -159,6 +159,7 @@ public class Core {
                 .credential(new AzureKeyCredential(Core.SECURE_KEYS.getProperty("AZURE_SAFETY_KEY")))
                 .buildClient();
 
-
+        Processing thread = new Processing();
+        thread.start();
     }
 }

@@ -6,8 +6,10 @@ import com.azure.ai.contentsafety.models.ContentSafetyImageData;
 import com.azure.ai.contentsafety.models.ImageCategoriesAnalysis;
 import com.azure.core.util.BinaryData;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.backblue.Core;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -107,14 +109,20 @@ public class Job {
         }
         this.output = categories.toString();
 
+        TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
+
         if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("categories").getInt("SelfHarm")) {
+            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
             return true;
         } else if (categories.get("Sexual") >= Core.SAFETY.getJSONObject("categories").getInt("Sexual")) {
+            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
             return true;
         } else if (categories.get("Violence") >= Core.SAFETY.getJSONObject("categories").getInt("Violence")) {
+            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
             return true;
         } else if (categories.get("Hate") >= Core.SAFETY.getJSONObject("categories").getInt("Hate")) {
+            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
             return true;
-        } else {return false;}
+        } else {channel.sendMessage(":x: **FAIL**: Processed Profile of: <@" + this.name + "> with problems."); return false;}
     }
 }
