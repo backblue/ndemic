@@ -9,10 +9,13 @@ public class Processing extends Thread {
     @Override
     public void run() {
         try {
-            while (true) {
-                Job.process();
-                Thread.sleep(TimeUnit.MILLISECONDS.toMillis(Core.SAFETY.getLong("milliseconds")));
+            if (Core.MODULES.get("safetyFeatures")) {
+                while (true) {
+                    Job.process();
+                    Thread.sleep(TimeUnit.MILLISECONDS.toMillis(Core.SAFETY.getLong("milliseconds")));
+                }
             }
+
         } catch (InterruptedException ignored) {
         }
     }

@@ -55,7 +55,7 @@ public class Safety extends ListenerAdapter {
                                 break;
                             }
                         }
-                        raw.addField("Awaiting Jobs to Run (10 max)", content, false);
+                        raw.addField("Awaiting Jobs to Run (10 shown)", content, false);
                     }
                     if (Job.RECENT_COMPLETE_JOBS.isEmpty()) {
                         raw.addField("Recently Completed (5 max)", "None", false);

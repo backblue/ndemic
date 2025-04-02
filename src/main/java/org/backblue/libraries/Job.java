@@ -38,6 +38,15 @@ public class Job {
         this.name = name;
         this.desc = desc;
         this.type = type;
+        if (type.equals("profileScan")) {
+            JSONObject data = UserData.readUserJSON(name);
+            if (data.has("lastProfileScan")) {
+                long lastScan = Long.parseLong(data.getString("lastProfileScan"));
+                if (lastScan + 600 < Instant.now().getEpochSecond()) {
+                    return;
+                }
+            }
+        }
         QUEUE.add(this);
     }
 
@@ -108,6 +117,9 @@ public class Job {
             categories.put(result.getCategory().toString(), result.getSeverity());
         }
         this.output = categories.toString();
+
+        JSONObject data = UserData.writeJsonString(UserData.readUserJSON(this.name), "lastProfileScan", String.valueOf(Instant.now().getEpochSecond()));
+        UserData.writeUserJSON(this.name, data);
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
 
