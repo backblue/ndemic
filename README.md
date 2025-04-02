@@ -13,11 +13,12 @@ You'll need to compile and set up the bot yourself.
 1. [Use IntellJ to compile an executable jar](https://youtu.be/jKlyHG-zbjk?si=BrzPquCuFSH263Lb)
 2. Move your executable jar to the directory of your choice (an empty is preferred).
 3. Create a new folder with name `data`, and copy-paste all the files into that directory
-4. Create your bot, and get it's token from here in [discord's developer portal](https://discord.com/developers/applications/)
-5. Create a new file: `data/keys.properties` and paste the following into it:
+4. Create a new folder with name `data/users`.
+5. Create your bot, and get it's token from here in [discord's developer portal](https://discord.com/developers/applications/)
+6. Create a new file: `data/keys.properties` and paste the following into it:
 ```
 TOKEN=
 AZURE_SAFETY_ENDPOINT=
 AZURE_SAFETY_KEY=
 ``` 
-6. In a command-line, navigate to the same directory as your executable and run `java -jar [name].jar`
+7. In a command-line, navigate to the same directory as your executable and run `java -jar [name].jar`

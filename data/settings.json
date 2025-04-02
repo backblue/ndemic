@@ -1,7 +1,7 @@
 {
-  "version": "0.4.0",
+  "version": "0.4",
   "owner": "387336581775884288",
-  "status": "dev",
+  "status": "live",
   "analytics": {
     "guild": "846837318132301904",
     "DM": "1354224979755008191",
@@ -9,43 +9,43 @@
     "enforcement": "1354229171076731111"
   },
   "deployment": {
-    "guild": "846837318132301904",
+    "guild": "523349543505362945",
     "roles": {
-      "senior": "846872265304047656",
-      "mod": "1355656666422706508"
+      "senior": "608420428192677899",
+      "mod": "523351538937233426"
     },
     "channels": {
-      "cmd": "1281683524688281704",
-      "warn": "1281683524688281704",
-      "log": "1281683524688281704"
+      "cmd": "624056396639502336",
+      "warn": "750352217495699528",
+      "log": "558690605698514994"
     },
-    "autoModKick": [],
+    "autoModKick": ["1352776627679137832"],
     "autoModBan": []
   },
   "modules": [
     {
       "name": "analytics",
-      "enabled": false,
-      "desc": "Collects bot usage data."
+      "enabled": true,
+      "desc": "Collects basic usage data to help improve bot."
     },
     {
       "name": "autoModNotify",
-      "enabled": false,
+      "enabled": true,
       "desc": "Pings all moderators when AutoMod takes action."
     },
     {
       "name": "autoModTakeExtremeAction",
-      "enabled": false,
+      "enabled": true,
       "desc": "Automatically Kick/Ban users. Does not notify Mods."
     },
     {
       "name": "enforceOPGuides",
-      "enabled": false,
+      "enabled": true,
       "desc": "Automatically delete messages in guide channels that are not from the OP."
     },
     {
       "name": "enforceFanRole",
-      "enabled": false,
+      "enabled": true,
       "desc": "Force users to have any 'Fan' role before they can send messages."
     },
     {
