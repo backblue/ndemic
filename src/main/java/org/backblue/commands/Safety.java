@@ -16,6 +16,9 @@ public class Safety extends ListenerAdapter {
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
         if (Core.MODULES.get("safetyFeatures")) {
+            if (event.getUser().getAvatarUrl() == null) {
+                return;
+            }
             new Job(event.getUser().getId(), event.getUser().getAvatarUrl(), "profileScan");
         }
     }
@@ -39,6 +42,17 @@ public class Safety extends ListenerAdapter {
                     event.reply(":white_check_mark: Forced run of a job.").setEphemeral(true).queue();
                     Job.process();
                 }
+                if (event.getSubcommandName().equals("debug")) {
+                    String part = "**Every Job in Queue (Object)**:\n";
+                    for (Job job : Job.QUEUE) {
+                        part += job.toStringFull() + "\n";
+                    }
+                    String whole = "**Every Completed Job (Object)**:\n";
+                    for (Job job : Job.RECENT_COMPLETE_JOBS) {
+                        whole += job.toStringFull() + "\n";
+                    }
+                    event.reply(part + whole).setEphemeral(true).queue();
+                }
                 if (event.getSubcommandName().equals("queue")) {
                     EmbedBuilder raw = new EmbedBuilder()
                             .setColor(Color.YELLOW)
@@ -51,7 +65,7 @@ public class Safety extends ListenerAdapter {
                         for (Job job : Job.QUEUE) {
                             content = content + i + ". " + job + "\n";
                             i++;
-                            if (i > 10) {
+                            if (i >= 10) {
                                 break;
                             }
                         }

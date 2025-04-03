@@ -22,6 +22,9 @@ public class CommandManager extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
+            if (event.getUser().getAvatarUrl() == null) {
+                return;
+            }
             new Job(event.getUser().getId(), event.getUser().getAvatarUrl(), "profileScan");
         }
     }
@@ -50,7 +53,8 @@ public class CommandManager extends ListenerAdapter {
                         .addOptions(new OptionData(OptionType.STRING, "name", "Name of job.", true))
                         .addOptions(new OptionData(OptionType.STRING, "desc", "Data of job (usually metadata).", true))
                         .addOptions(new OptionData(OptionType.STRING, "type", "Type of job.", true)))
-                .addSubcommands(new SubcommandData("dequeue", "Administrator: Force-run the next job in queue. Dequeue is performed automatically")));
+                .addSubcommands(new SubcommandData("dequeue", "Administrator: Force-run the next job in queue. Dequeue is performed automatically"))
+                .addSubcommands(new SubcommandData("debug", "Administrator: Prints out the queue, and recent jobs")));
 
 
         if (event.getGuild().getId().equals(Core.DEPLOYMENT.get("guild"))) {

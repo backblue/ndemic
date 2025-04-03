@@ -6,7 +6,6 @@ import com.azure.ai.contentsafety.models.ContentSafetyImageData;
 import com.azure.ai.contentsafety.models.ImageCategoriesAnalysis;
 import com.azure.core.util.BinaryData;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.backblue.Core;
 import org.json.JSONObject;
@@ -33,13 +32,13 @@ public class Job {
 
     @Override
     public String toString() {return name + " *(" + type + ")*";}
-
+    public String toStringFull() {return name + " / `" + desc + "` / " + type;}
     public Job(String name, String desc, String type) {
         this.name = name;
         this.desc = desc;
         this.type = type;
         if (type.equals("profileScan")) {
-            JSONObject data = UserData.readUserJSON(name);
+            JSONObject data = UserJSON.readUserJSON(name);
             if (data.has("lastProfileScan")) {
                 long lastScan = Long.parseLong(data.getString("lastProfileScan"));
                 if (lastScan + 600 < Instant.now().getEpochSecond()) {
@@ -62,6 +61,7 @@ public class Job {
         Job job = QUEUE.peek();
         if (job.type.equals("profileScan")) {
             if (job.processImage() == null) {
+                System.out.println("Failed to process job, either due to an invalid image, or rate limited by the API. Check console!");
                 return;
             } else if (job.processImage()) {
                 TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
@@ -79,6 +79,9 @@ public class Job {
         }
     }
 
+    /*
+    * Thanks to StackOverFlow for this method to download a URL (img) and convert it as a byte array.
+    */
     private byte[] downloadUrl(URL toDownload) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
@@ -107,6 +110,7 @@ public class Job {
         try {
             imageData = downloadUrl(new URL(this.desc));
         } catch (MalformedURLException e) {
+            System.out.println("Malformed URL Data! URL Attempted: " + this.desc);
             return null;
         }
 
@@ -118,23 +122,26 @@ public class Job {
         }
         this.output = categories.toString();
 
-        JSONObject data = UserData.writeJsonString(UserData.readUserJSON(this.name), "lastProfileScan", String.valueOf(Instant.now().getEpochSecond()));
-        UserData.writeUserJSON(this.name, data);
+        UserJSON.get(this.name).writeString("lastProfileScan", String.valueOf(Instant.now().getEpochSecond())).write();
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
 
-        if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("categories").getInt("SelfHarm")) {
-            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
+        System.out.println("Successfully scanned profile of: " + this.name + " with results: " + this.output);
+
+        String fail = ":x: **FAIL**: Processed Profile of: <@" + this.name + "> with problems.";
+
+        if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("trigger").getInt("SelfHarm")) {
+            channel.sendMessage(fail).queue();
             return true;
-        } else if (categories.get("Sexual") >= Core.SAFETY.getJSONObject("categories").getInt("Sexual")) {
-            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
+        } else if (categories.get("Sexual") >= Core.SAFETY.getJSONObject("trigger").getInt("Sexual")) {
+            channel.sendMessage(fail).queue();
             return true;
-        } else if (categories.get("Violence") >= Core.SAFETY.getJSONObject("categories").getInt("Violence")) {
-            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
+        } else if (categories.get("Violence") >= Core.SAFETY.getJSONObject("trigger").getInt("Violence")) {
+            channel.sendMessage(fail).queue();
             return true;
-        } else if (categories.get("Hate") >= Core.SAFETY.getJSONObject("categories").getInt("Hate")) {
-            channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">").queue();
+        } else if (categories.get("Hate") >= Core.SAFETY.getJSONObject("trigger").getInt("Hate")) {
+            channel.sendMessage(fail).queue();
             return true;
-        } else {channel.sendMessage(":x: **FAIL**: Processed Profile of: <@" + this.name + "> with problems."); return false;}
+        } else {channel.sendMessage(":white_check_mark: PASS: Processed Profile of: <@" + this.name + ">"); return false;}
     }
 }

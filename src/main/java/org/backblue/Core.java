@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.CommandManager;
 import org.backblue.commands.Module;
 import org.backblue.commands.Ping;
@@ -19,6 +20,7 @@ import org.backblue.events.AutoModAlert;
 import org.backblue.events.EnforceFanRole;
 import org.backblue.events.EnforceOneOP;
 import org.backblue.events.PrivateMessage;
+import org.backblue.libraries.Job;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -26,9 +28,7 @@ import org.json.JSONTokener;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.Properties;
+import java.util.*;
 
 public class Core {
 
@@ -159,7 +159,13 @@ public class Core {
                 .credential(new AzureKeyCredential(Core.SECURE_KEYS.getProperty("AZURE_SAFETY_KEY")))
                 .buildClient();
 
-        Processing thread = new Processing();
-        thread.start();
+        Timer task = new Timer();
+        TimerTask tasks = new TimerTask() {
+            @Override
+            public void run() {
+                Job.process();
+            }
+        };
+        task.schedule(tasks, 0, Core.SAFETY.getInt("jobFrequency")*1000L);
     }
 }

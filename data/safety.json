@@ -1,12 +1,17 @@
 {
-  "milliseconds": 1000,
-  "scanTypes": {
-    "profile": true
+  "jobFrequency": 1,
+  "scanProfile": {
+    "enabled": true,
+    "cooldown": 600,
+    "onJoin": true,
+    "onAvatarChange": false,
+    "onSlash": true,
+    "onMessage": false
   },
-  "categories": {
+  "trigger": {
     "Hate": 2,
     "SelfHarm": 2,
     "Sexual": 2,
-    "Violence": 2
+    "Violence": 4
   }
 }

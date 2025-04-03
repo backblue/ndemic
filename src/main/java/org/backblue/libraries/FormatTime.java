@@ -71,7 +71,6 @@ public class FormatTime {
         long hours = (seconds % 86400) / 3600;
         long minutes = (seconds % 3600) / 60;
         long secs = seconds % 60;
-
         if (days > 0) {
             returnString = days + "d " + hours + "h " + minutes + "m " + secs + "s";
         } else if (hours > 0) {
