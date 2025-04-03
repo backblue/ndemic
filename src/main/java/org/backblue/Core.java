@@ -163,7 +163,9 @@ public class Core {
         TimerTask tasks = new TimerTask() {
             @Override
             public void run() {
-                Job.process();
+                if (Core.MODULES.get("safetyFeatures")) {
+                    Job.process();
+                }
             }
         };
         task.schedule(tasks, 0, Core.SAFETY.getInt("jobFrequency")*1000L);

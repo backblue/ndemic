@@ -122,7 +122,9 @@ public class Job {
         }
         this.output = categories.toString();
 
-        UserJSON.get(this.name).writeString("lastProfileScan", String.valueOf(Instant.now().getEpochSecond())).write();
+        UserJSON.get(this.name).writeString("lastAvatarScan", String.valueOf(Instant.now().getEpochSecond()))
+                .writeString("lastAvatarLink", this.desc)
+                .write();
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
 
