@@ -1,17 +1,17 @@
 {
-  "jobFrequency": 1,
+  "provider": "azure",
+  "interval": 1,
   "scanProfile": {
     "enabled": true,
-    "cooldown": 600,
     "onJoin": true,
-    "onAvatarChange": false,
-    "onSlash": true,
-    "onMessage": false
+    "onUserAvatarChange": true,
+    "onGuildAvatarChange": true,
+    "onSlash": false
   },
   "trigger": {
     "Hate": 2,
-    "SelfHarm": 2,
-    "Sexual": 2,
+    "SelfHarm": 4,
+    "Sexual": 4,
     "Violence": 4
   }
 }

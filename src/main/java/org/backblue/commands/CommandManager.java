@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import org.backblue.Core;
-import org.backblue.libraries.Job;
+import org.backblue.libraries.ProfileScanJob;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -25,7 +25,9 @@ public class CommandManager extends ListenerAdapter {
             if (event.getUser().getAvatarUrl() == null) {
                 return;
             }
-            new Job(event.getUser().getId(), event.getUser().getAvatarUrl(), "profileScan");
+            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onSlash")) {
+                new ProfileScanJob(event.getUser().getId(), "slash");
+            }
         }
     }
     @Override
@@ -49,14 +51,11 @@ public class CommandManager extends ListenerAdapter {
         commands.add(Commands.slash("safety", "Administrator: View current, upcoming queue for safety scanning tasks")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
                 .addSubcommands(new SubcommandData("queue", "Administrator: View current queue for safety scanning tasks"))
-                .addSubcommands(new SubcommandData("enqueue", "Administrator: Add an element to the queue.")
-                        .addOptions(new OptionData(OptionType.STRING, "name", "Name of job.", true))
-                        .addOptions(new OptionData(OptionType.STRING, "desc", "Data of job (usually metadata).", true))
-                        .addOptions(new OptionData(OptionType.STRING, "type", "Type of job.", true)))
                 .addSubcommands(new SubcommandData("dequeue", "Administrator: Force-run the next job in queue. Dequeue is performed automatically"))
-                .addSubcommands(new SubcommandData("debug", "Administrator: Prints out the queue, and recent jobs")));
-
-
+                .addSubcommands(new SubcommandData("skip", "Administrator: Skips the next job")));
+        commands.add(Commands.slash("safetylookup", "Administrator: Lookup a job by its ID")
+                .addOption(OptionType.INTEGER, "identifier", "Enter Job ID.", true)
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         if (event.getGuild().getId().equals(Core.DEPLOYMENT.get("guild"))) {
             event.getGuild().updateCommands().addCommands(commands).queue();
         }

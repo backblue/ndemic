@@ -10,32 +10,32 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
-import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.backblue.commands.CommandManager;
+import org.backblue.commands.*;
 import org.backblue.commands.Module;
-import org.backblue.commands.Ping;
-import org.backblue.commands.Safety;
-import org.backblue.commands.Uptime;
 import org.backblue.events.AutoModAlert;
 import org.backblue.events.EnforceFanRole;
 import org.backblue.events.EnforceOneOP;
 import org.backblue.events.PrivateMessage;
-import org.backblue.libraries.Job;
+import org.backblue.libraries.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 
 public class Core {
 
+    public static final String VERSION = "0.5.0";
     public static JDA BOT;
     public static long BOOT = Instant.now().getEpochSecond();
     public static String SERVER_RULES;
-    private static Properties SECURE_KEYS = new Properties();
+    protected static final Properties SECURE_KEYS = new Properties();
     public static JSONObject SETTINGS;
     public static JSONObject SAFETY;
     public static LinkedHashMap<String, Boolean> MODULES = new LinkedHashMap<>();
@@ -159,15 +159,28 @@ public class Core {
                 .credential(new AzureKeyCredential(Core.SECURE_KEYS.getProperty("AZURE_SAFETY_KEY")))
                 .buildClient();
 
+        if (Core.SETTINGS.get("useSQL").equals(true)) {
+            try {
+                Connection test = DriverManager.getConnection(Core.SECURE_KEYS.getProperty("JDBC"));
+                test.close();
+            } catch (SQLException e) {
+                System.out.println("Failed to connect to server. Turn off 'useSQL' in settings.json or check your JDBC URL.\n" + e);
+                System.exit(1);
+            }
+        }
+
         Timer task = new Timer();
         TimerTask tasks = new TimerTask() {
             @Override
             public void run() {
                 if (Core.MODULES.get("safetyFeatures")) {
-                    Job.process();
+                    try {
+                        Job.QUEUE.peek().process();
+                    } catch (NullPointerException ignored) {}
                 }
             }
         };
-        task.schedule(tasks, 0, Core.SAFETY.getInt("jobFrequency")*1000L);
+        task.schedule(tasks, 0, Core.SAFETY.getInt("interval") * 1000L); // Interval in seconds
     }
+
 }

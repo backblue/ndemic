@@ -3,15 +3,44 @@ package org.backblue.commands;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateAvatarEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.self.SelfUpdateAvatarEvent;
+import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
 import org.backblue.libraries.Job;
+import org.backblue.libraries.ProfileScanJob;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.time.Instant;
+import java.util.HashMap;
+
 public class Safety extends ListenerAdapter {
+    @Override
+    public void onGuildMemberUpdateAvatar(@NotNull GuildMemberUpdateAvatarEvent event) {
+        if (Core.MODULES.get("safetyFeatures")) {
+            if (event.getUser().getAvatarUrl() == null) {
+                return;
+            }
+            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onGuildAvatarChange")) {
+                new ProfileScanJob(event.getUser().getId(), "updatedAvatarGuild");
+            }
+        }
+    }
+
+    @Override
+    public void onUserUpdateAvatar(@NotNull UserUpdateAvatarEvent event) {
+        if (Core.MODULES.get("safetyFeatures")) {
+            if (event.getUser().getAvatarUrl() == null) {
+                return;
+            }
+            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onUserAvatarChange")) {
+                new ProfileScanJob(event.getUser().getId(), "updatedAvatarUser");
+            }
+        }
+    }
 
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
@@ -19,66 +48,80 @@ public class Safety extends ListenerAdapter {
             if (event.getUser().getAvatarUrl() == null) {
                 return;
             }
-            new Job(event.getUser().getId(), event.getUser().getAvatarUrl(), "profileScan");
+            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onJoin")) {
+                new ProfileScanJob(event.getUser().getId(), "join");
+            }
         }
     }
 
+
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        if (event.getName().equals("safetylookup")) {
+            if (Core.MODULES.get("safetyFeatures")) {
+                int idToLookFor = event.getOption("identifier").getAsInt();
+                if (idToLookFor < 0 || idToLookFor > Job.getCounter()) {
+                    event.reply(":x: Job ID not found! Job IDs are from `0 - " + Job.getCounter() + "`.").setEphemeral(true).queue();
+                    return;
+                }
+                Job theJob = ProfileScanJob.search(idToLookFor);
+                HashMap<String, String> jobData = theJob.lookup();
+                EmbedBuilder raw = new EmbedBuilder()
+                        .setColor(Color.YELLOW)
+                        .setTitle("Job ID: `" + idToLookFor + "`");
+                for (String key : jobData.keySet()) {
+                    raw.addField(key, jobData.get(key), true);
+                }
+                MessageEmbed msg = raw.build();
+                event.replyEmbeds(msg).setEphemeral(true).queue();
+
+            } else {
+                event.reply(":x: **safetyFeatures** module must be enabled first!").setEphemeral(true).queue();
+            }
+        }
         if (event.getName().equals("safety")) {
             if (Core.MODULES.get("safetyFeatures")) {
-                if (event.getSubcommandName().equals("enqueue")) {
-                    String name = event.getOption("name").getAsString();
-                    String desc = event.getOption("desc").getAsString();
-                    String type = event.getOption("type").getAsString();
-                    Job job = new Job(name, desc, type);
-                    event.reply(":white_check_mark: Job **" + job + "** added to queue.").setEphemeral(true).queue();
-                }
                 if (event.getSubcommandName().equals("dequeue")) {
-                    if (Job.QUEUE.isEmpty()) {
+                    if (ProfileScanJob.QUEUE.isEmpty()) {
                         event.reply(":x: No jobs in queue!").setEphemeral(true).queue();
                         return;
                     }
                     event.reply(":white_check_mark: Forced run of a job.").setEphemeral(true).queue();
-                    Job.process();
+                    ProfileScanJob.QUEUE.peek().process();
                 }
-                if (event.getSubcommandName().equals("debug")) {
-                    String part = "**Every Job in Queue (Object)**:\n";
-                    for (Job job : Job.QUEUE) {
-                        part += job.toStringFull() + "\n";
-                    }
-                    String whole = "**Every Completed Job (Object)**:\n";
-                    for (Job job : Job.RECENT_COMPLETE_JOBS) {
-                        whole += job.toStringFull() + "\n";
-                    }
-                    event.reply(part + whole).setEphemeral(true).queue();
+                if (event.getSubcommandName().equals("skip")) {
+                    ProfileScanJob.QUEUE.remove();
+                    event.reply(":white_check_mark: Skipped the next job in the queue (if it does exist).").setEphemeral(true).queue();
                 }
                 if (event.getSubcommandName().equals("queue")) {
                     EmbedBuilder raw = new EmbedBuilder()
                             .setColor(Color.YELLOW)
                             .setTitle("Jobs Queue since <t:" + (Instant.now().getEpochSecond()) + ":f>");
-                    if (Job.QUEUE.isEmpty()) {
-                        raw.addField("Awaiting Jobs to Run (10 max)", "None", false);
+                    if (ProfileScanJob.QUEUE.isEmpty()) {
+                        raw.addField("Awaiting Jobs to Run", "None", false);
                     } else {
-                        int i = 0;
                         String content = "";
-                        for (Job job : Job.QUEUE) {
-                            content = content + i + ". " + job + "\n";
-                            i++;
-                            if (i >= 10) {
-                                break;
+                        int count = 0;
+                        while (count < 10) {
+                            for (Job job : ProfileScanJob.QUEUE) {
+                                content = content + "`" + job.id + "`: " + job + "\n";
                             }
+                            count++;
                         }
-                        raw.addField("Awaiting Jobs to Run (10 shown)", content, false);
+                        raw.addField("Awaiting Jobs to Run", content, false);
                     }
-                    if (Job.RECENT_COMPLETE_JOBS.isEmpty()) {
-                        raw.addField("Recently Completed (5 max)", "None", false);
+                    if (ProfileScanJob.RECENT_COMPLETE_JOBS.isEmpty()) {
+                        raw.addField("Recently Completed", "None", false);
                     } else {
                         String content = "";
-                        for (int i = Job.RECENT_COMPLETE_JOBS.size() - 1; i >= 0; i--) {
-                            content = content + Job.RECENT_COMPLETE_JOBS.get(i) + "\n";
+                        int count = 0;
+                        while (count < 10) {
+                            for (Job job : ProfileScanJob.QUEUE) {
+                                content = content + "`" + job.id + "`: " + job + "\n";
+                            }
+                            count++;
                         }
-                        raw.addField("Recently Completed (5 max)", content, false);
+                        raw.addField("Recently Completed", content, false);
                     }
                     raw.setFooter("'!' means that the job was invalid");
                     MessageEmbed message = raw.build();
