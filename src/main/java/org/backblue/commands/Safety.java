@@ -60,20 +60,24 @@ public class Safety extends ListenerAdapter {
         if (event.getName().equals("safetylookup")) {
             if (Core.MODULES.get("safetyFeatures")) {
                 int idToLookFor = event.getOption("identifier").getAsInt();
-                if (idToLookFor < 0 || idToLookFor > Job.getCounter()) {
-                    event.reply(":x: Job ID not found! Job IDs are from `0 - " + Job.getCounter() + "`.").setEphemeral(true).queue();
+                Job theJob = Job.search(idToLookFor);
+                if (theJob == null) {
+                    event.reply(":x: Job ID not found! Job IDs are from `0 - " + Job.getCounter() + "`.\nOr, no jobs have been run yet.").setEphemeral(true).queue();
                     return;
                 }
-                Job theJob = ProfileScanJob.search(idToLookFor);
                 HashMap<String, String> jobData = theJob.lookup();
                 EmbedBuilder raw = new EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("Job ID: `" + idToLookFor + "`");
                 for (String key : jobData.keySet()) {
-                    raw.addField(key, jobData.get(key), true);
+                    if (jobData.get(key) == null) {
+                        raw.addField(key, "N/A", true);
+                    } else {
+                        raw.addField(key, jobData.get(key), true);
+                    }
                 }
                 MessageEmbed msg = raw.build();
-                event.replyEmbeds(msg).setEphemeral(true).queue();
+                event.replyEmbeds(msg).setEphemeral(false).queue();
 
             } else {
                 event.reply(":x: **safetyFeatures** module must be enabled first!").setEphemeral(true).queue();
@@ -100,28 +104,20 @@ public class Safety extends ListenerAdapter {
                     if (ProfileScanJob.QUEUE.isEmpty()) {
                         raw.addField("Awaiting Jobs to Run", "None", false);
                     } else {
-                        String content = "";
-                        int count = 0;
-                        while (count < 10) {
-                            for (Job job : ProfileScanJob.QUEUE) {
-                                content = content + "`" + job.id + "`: " + job + "\n";
-                            }
-                            count++;
+                        StringBuilder content = new StringBuilder();
+                        for (Job job : ProfileScanJob.QUEUE) {
+                            content.append(job).append("\n");
                         }
-                        raw.addField("Awaiting Jobs to Run", content, false);
+                        raw.addField("Awaiting Jobs to Run", content.toString(), false);
                     }
                     if (ProfileScanJob.RECENT_COMPLETE_JOBS.isEmpty()) {
                         raw.addField("Recently Completed", "None", false);
                     } else {
-                        String content = "";
-                        int count = 0;
-                        while (count < 10) {
-                            for (Job job : ProfileScanJob.QUEUE) {
-                                content = content + "`" + job.id + "`: " + job + "\n";
-                            }
-                            count++;
+                        StringBuilder content = new StringBuilder();
+                        for (Job job : ProfileScanJob.QUEUE) {
+                            content.append(job).append("\n");
                         }
-                        raw.addField("Recently Completed", content, false);
+                        raw.addField("Recently Completed", content.toString(), false);
                     }
                     raw.setFooter("'!' means that the job was invalid");
                     MessageEmbed message = raw.build();

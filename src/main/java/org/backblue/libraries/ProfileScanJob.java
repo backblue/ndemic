@@ -61,19 +61,19 @@ public class ProfileScanJob extends Job {
         Job job = QUEUE.remove();
         Boolean avatarAlert = ((ProfileScanJob) job).scanImage(avatarLink, "Avatar");
         Boolean bannerAlert = ((ProfileScanJob) job).scanImage(bannerLink, "Banner");
+        RECENT_COMPLETE_JOBS.add(job);
 
         if (avatarAlert != null && avatarAlert) {
+            job.markDoneWithPrejudice("Maybe inappropriate Avatar");
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this avatar of user: " + user.getAsMention() + "\n" + avatarLink + "\nOutput: " + getOutput() + ", Triggered from: " +source).queue();
+            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this avatar of user: " + user.getAsMention() + "\n" + avatarLink + "\n-#Output: " + getOutput() + ", Triggered from: " +source).queue();
         } else if (bannerAlert != null && bannerAlert) {
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this banner of user: " + user.getAsMention() + "\n" + bannerLink + "\nOutput: " + getOutput() + ", Triggered from: " +source).queue();
-        }
-
-        RECENT_COMPLETE_JOBS.add(job);
-        job.markDone();
+            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this banner of user: " + user.getAsMention() + "\n" + bannerLink + "\n-#Output: " + getOutput() + ", Triggered from: " +source).queue();
+            job.markDoneWithPrejudice("Maybe inappropriate Banner");
+        } else {job.markDone();}
     }
 
     @Override
@@ -138,7 +138,8 @@ public class ProfileScanJob extends Job {
         System.out.println("Successfully scanned profile of: " + user.getName() + " with results: " + getOutput());
         System.out.println(channel);
         if (channel != null) {
-            String fail = ":x: **FAIL**: Processed " + type + " of: " + user.getAsMention();
+            String fail = ":x: **FAIL**: Potential inappropriate content found in " + type + " of: " + user.getAsMention();
+
             if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("trigger").getInt("SelfHarm")) {
                 channel.sendMessage(fail).queue();
                 return true;
@@ -152,7 +153,7 @@ public class ProfileScanJob extends Job {
                 channel.sendMessage(fail).queue();
                 return true;
             } else {
-                channel.sendMessage(":white_check_mark: PASS: Processed\" + type + \" of: " + user.getAsMention()).queue();
+                channel.sendMessage(":white_check_mark: PASS: Processed" + type + " of: " + user.getAsMention()).queue();
                 return false;
             }
         }

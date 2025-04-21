@@ -10,22 +10,17 @@ public abstract class Job {
     private static int counter = 0;
     public final static Queue<Job> QUEUE = new LinkedList<>();
     public final static Stack<Job> RECENT_COMPLETE_JOBS = new Stack<>();
+    public final static HashMap<Integer, Job> ID_TO_JOB = new HashMap<>();
     private String output = "\n";
     private Long completed;
     public int id;
 
     public static Job search(int idToLookFor) {
-        for (Job job : QUEUE) {
-            if (job.id == idToLookFor) {
-                return job;
-            }
+        try {
+            return ID_TO_JOB.get(idToLookFor);
+        } catch (Exception e) {
+            return null;
         }
-        for (Job job : RECENT_COMPLETE_JOBS) {
-            if (job.id == idToLookFor) {
-                return job;
-            }
-        }
-        return null;
     }
 
     public final String getOutput() {
@@ -43,6 +38,7 @@ public abstract class Job {
     protected Job() {
         this.id = counter++;
         QUEUE.add(this);
+        ID_TO_JOB.put(this.id, this);
     }
 
     public final Long markInvalid() {
@@ -55,7 +51,7 @@ public abstract class Job {
     }
 
     public final Long markDone() {
-        this.output = this.output + " done: <t:" + System.currentTimeMillis() / 1000 + ":R>";
+        this.output = this.output + " OK: <t:" + System.currentTimeMillis() / 1000 + ":R>";
         return completed = System.currentTimeMillis() / 1000;
 
     }
@@ -66,7 +62,12 @@ public abstract class Job {
     }
 
     public final Long markDone(String reason) {
-        this.output = this.output + " done: <t:" + System.currentTimeMillis() / 1000 + ":R> " + reason;
+        this.output = this.output + " OK: <t:" + System.currentTimeMillis() / 1000 + ":R> " + reason;
+        return completed = System.currentTimeMillis() / 1000;
+    }
+
+    public final Long markDoneWithPrejudice(String reason) {
+        this.output = this.output + " :warning: <t:" + System.currentTimeMillis() / 1000 + ":R> " + reason;
         return completed = System.currentTimeMillis() / 1000;
     }
 
