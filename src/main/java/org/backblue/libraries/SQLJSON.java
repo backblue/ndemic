@@ -14,7 +14,6 @@ import java.util.Objects;
 
 public class SQLJSON extends Core {
 
-    private static Connection SERVER;
     private final String userId;
     private final JSONObject json;
 
@@ -134,8 +133,8 @@ public class SQLJSON extends Core {
         if (exists(userId, table)) {
             JSONObject json = new JSONObject();
             String query = "SELECT * FROM " + table + " WHERE id = ?";
-            openConnection();
-            try (PreparedStatement statement = SERVER.prepareStatement(query)) {
+            try (Connection conn = openConnection()) {
+                PreparedStatement statement = conn.prepareStatement(query);
                 statement.setString(1, userId);
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) {
@@ -149,16 +148,13 @@ public class SQLJSON extends Core {
                             // Handle NULLs explicitly
                             json.put(columnName, value != null ? value : JSONObject.NULL);
                         }
-                         closeConnection();
                         return json;
                     } else {
-                        closeConnection();
                         return new JSONObject().put("id", userId).put("lastRefresh", Instant.now().getEpochSecond()).put("cacheUsername", Objects.requireNonNull(Core.BOT.getUserById(userId)).getName());
                     }
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
-                closeConnection();
                 return null;
             }
         } else {
@@ -187,9 +183,8 @@ public class SQLJSON extends Core {
 
         String query = "UPDATE " + table + " SET " + setClause + " WHERE id = ?";
 
-        openConnection();
-
-        try (PreparedStatement stmt = SQLJSON.SERVER.prepareStatement(query)) {
+        try (Connection conn = openConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(query);
             int index = 1;
 
             for (String key : json.keySet()) {
@@ -207,7 +202,6 @@ public class SQLJSON extends Core {
             e.printStackTrace();
         }
 
-        closeConnection();
         json.put("id", id);
     }
     public void insert(String table) {
@@ -230,9 +224,9 @@ public class SQLJSON extends Core {
 
         String query = "INSERT INTO " + table + " (" + columns + ") VALUES (" + placeholders + ")";
 
-        openConnection();
 
-        try (PreparedStatement stmt = SQLJSON.SERVER.prepareStatement(query)) {
+        try (Connection conn = openConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(query);
             int index = 1;
             for (String key : json.keySet()) {
                 Object value = json.get(key);
@@ -249,17 +243,15 @@ public class SQLJSON extends Core {
             e.printStackTrace();
         }
 
-        closeConnection();
     }
 
     private static boolean exists(String userId, String table) {
-        openConnection();
         String query = "SELECT 1 FROM " + table + " WHERE id = ? LIMIT 1";
-        try (PreparedStatement statement = SERVER.prepareStatement(query)) {
+        try (Connection conn = openConnection()) {
+            PreparedStatement statement = conn.prepareStatement(query);
             statement.setString(1, userId);
             try (ResultSet rs = statement.executeQuery()) {
                 boolean exists = rs.next();
-                closeConnection();
                 return exists; // true if row exists
             }
         } catch (SQLException e) {
@@ -267,24 +259,15 @@ public class SQLJSON extends Core {
         }
     }
 
-    private static void openConnection() {
+    private static Connection openConnection() {
         if (Core.SETTINGS.get("useSQL").equals(true)) {
             try {
-                SQLJSON.SERVER = DriverManager.getConnection(Core.SECURE_KEYS.getProperty("JDBC"));
+                return DriverManager.getConnection(Core.SECURE_KEYS.getProperty("JDBC"));
             } catch (SQLException e) {
                 System.out.println("Failed to connect to server. Turn off 'useSQL' in settings.json or check your JDBC URL.\n" + e);
                 System.exit(1);
             }
         }
-    }
-
-    private static void closeConnection() {
-        try {
-            if (SERVER != null) {
-                SERVER.close();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        return null;
     }
 }

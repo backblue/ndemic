@@ -51,6 +51,7 @@ public class ProfileScanJob extends Job {
                 bannerLink = null;
             }
         } catch (Exception ignored) {}
+        QUEUE.add(this);
     }
 
     @Override
@@ -58,13 +59,17 @@ public class ProfileScanJob extends Job {
         if (!Core.SAFETY.getJSONObject("scanProfile").getBoolean("enabled")) {
             return;
         }
-        Job job = QUEUE.remove();
-        Boolean avatarAlert = ((ProfileScanJob) job).scanImage(avatarLink, "Avatar");
-        Boolean bannerAlert = ((ProfileScanJob) job).scanImage(bannerLink, "Banner");
-        RECENT_COMPLETE_JOBS.add(job);
+        QUEUE.remove();
+        Boolean avatarAlert = scanImage(avatarLink, "Avatar", id, source);
+        Boolean bannerAlert = scanImage(bannerLink, "Banner", id, source);
+        RECENT_COMPLETE_JOBS.push(this);
 
+        if (avatarAlert == null) {
+            markInvalid("Avatar scan failed");
+            return;
+        }
         if (avatarAlert != null && avatarAlert) {
-            job.markDoneWithPrejudice("Maybe inappropriate Avatar");
+            markDoneWithPrejudice("Maybe inappropriate Avatar");
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
             channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this avatar of user: " + user.getAsMention() + "\n" + avatarLink + "\n-#Output: " + getOutput() + ", Triggered from: " +source).queue();
@@ -72,8 +77,8 @@ public class ProfileScanJob extends Job {
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
             channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this banner of user: " + user.getAsMention() + "\n" + bannerLink + "\n-#Output: " + getOutput() + ", Triggered from: " +source).queue();
-            job.markDoneWithPrejudice("Maybe inappropriate Banner");
-        } else {job.markDone();}
+            markDoneWithPrejudice("Maybe inappropriate Banner");
+        } else {markDone();}
     }
 
     @Override
@@ -91,10 +96,10 @@ public class ProfileScanJob extends Job {
 
     @Override
     public String toString() {
-        return "ID: " + this.id + " " + user.getId() + " " + this.getClass() + " " + getOutput();
+        return "`" + this.id + "`: **" + user.getId() + "** " + this.getClass().getSimpleName() + " " + getOutput();
     }
 
-    private Boolean scanImage(String link, String type) {
+    private Boolean scanImage(String link, String type, int jobNo, String input) {
 
         if (link == null) {
             return false;
@@ -109,7 +114,6 @@ public class ProfileScanJob extends Job {
             System.out.println("Malformed URL Data! URL Attempted: " + link);
             return null;
         }
-
         image.setContent(BinaryData.fromBytes(imageData));
 
         AnalyzeImageResult response;
@@ -135,8 +139,6 @@ public class ProfileScanJob extends Job {
                 .write("userinfo");
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
-        System.out.println("Successfully scanned profile of: " + user.getName() + " with results: " + getOutput());
-        System.out.println(channel);
         if (channel != null) {
             String fail = ":x: **FAIL**: Potential inappropriate content found in " + type + " of: " + user.getAsMention();
 
@@ -153,7 +155,7 @@ public class ProfileScanJob extends Job {
                 channel.sendMessage(fail).queue();
                 return true;
             } else {
-                channel.sendMessage(":white_check_mark: PASS: Processed" + type + " of: " + user.getAsMention()).queue();
+                channel.sendMessage(":white_check_mark: OK: Processed " + type + " of: " + user.getAsMention() + "\n-# Source: `" + source + "` • Lookup: `/safetylookup " + jobNo + "`").queue();
                 return false;
             }
         }

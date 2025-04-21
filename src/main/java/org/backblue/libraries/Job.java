@@ -37,7 +37,6 @@ public abstract class Job {
 
     protected Job() {
         this.id = counter++;
-        QUEUE.add(this);
         ID_TO_JOB.put(this.id, this);
     }
 

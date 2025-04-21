@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Safety extends ListenerAdapter {
@@ -25,7 +26,7 @@ public class Safety extends ListenerAdapter {
                 return;
             }
             if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onGuildAvatarChange")) {
-                new ProfileScanJob(event.getUser().getId(), "updatedAvatarGuild");
+                Job apple = new ProfileScanJob(event.getUser().getId(), "updatedAvatarGuild");
             }
         }
     }
@@ -37,7 +38,7 @@ public class Safety extends ListenerAdapter {
                 return;
             }
             if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onUserAvatarChange")) {
-                new ProfileScanJob(event.getUser().getId(), "updatedAvatarUser");
+                Job apple = new ProfileScanJob(event.getUser().getId(), "updatedAvatarUser");
             }
         }
     }
@@ -49,7 +50,7 @@ public class Safety extends ListenerAdapter {
                 return;
             }
             if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onJoin")) {
-                new ProfileScanJob(event.getUser().getId(), "join");
+                Job apple = new ProfileScanJob(event.getUser().getId(), "join");
             }
         }
     }
@@ -59,10 +60,15 @@ public class Safety extends ListenerAdapter {
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("safetylookup")) {
             if (Core.MODULES.get("safetyFeatures")) {
+                if (Job.ID_TO_JOB.isEmpty()) {
+                    event.reply(":x: No jobs have been run yet.").setEphemeral(true).queue();
+                    return;
+                }
                 int idToLookFor = event.getOption("identifier").getAsInt();
                 Job theJob = Job.search(idToLookFor);
                 if (theJob == null) {
-                    event.reply(":x: Job ID not found! Job IDs are from `0 - " + Job.getCounter() + "`.\nOr, no jobs have been run yet.").setEphemeral(true).queue();
+                    int jobCounter = Job.getCounter() - 1;
+                    event.reply(":x: Job ID not found! Job IDs are from `0 - " + jobCounter + "`.").setEphemeral(true).queue();
                     return;
                 }
                 HashMap<String, String> jobData = theJob.lookup();
@@ -90,7 +96,7 @@ public class Safety extends ListenerAdapter {
                         event.reply(":x: No jobs in queue!").setEphemeral(true).queue();
                         return;
                     }
-                    event.reply(":white_check_mark: Forced run of a job.").setEphemeral(true).queue();
+                    event.reply(":white_check_mark: Forced run of a job. (on this thread)").setEphemeral(true).queue();
                     ProfileScanJob.QUEUE.peek().process();
                 }
                 if (event.getSubcommandName().equals("skip")) {
@@ -105,8 +111,13 @@ public class Safety extends ListenerAdapter {
                         raw.addField("Awaiting Jobs to Run", "None", false);
                     } else {
                         StringBuilder content = new StringBuilder();
+                        int count = 0;
                         for (Job job : ProfileScanJob.QUEUE) {
+                            if (count > 5) {
+                                break;
+                            }
                             content.append(job).append("\n");
+                            count++;
                         }
                         raw.addField("Awaiting Jobs to Run", content.toString(), false);
                     }
@@ -114,10 +125,12 @@ public class Safety extends ListenerAdapter {
                         raw.addField("Recently Completed", "None", false);
                     } else {
                         StringBuilder content = new StringBuilder();
-                        for (Job job : ProfileScanJob.QUEUE) {
-                            content.append(job).append("\n");
+                        ArrayList<Job> temp = new ArrayList<>(ProfileScanJob.RECENT_COMPLETE_JOBS);
+                        int start = Math.max(0, temp.size() - 10);
+                        for (int i = temp.size()-1; i >= start; i--) {
+                            content.append(temp.get(i)).append("\n");
                         }
-                        raw.addField("Recently Completed", content.toString(), false);
+                        raw.addField("Recently Completed - " + ProfileScanJob.RECENT_COMPLETE_JOBS.size() + " jobs", content.toString(), false);
                     }
                     raw.setFooter("'!' means that the job was invalid");
                     MessageEmbed message = raw.build();
