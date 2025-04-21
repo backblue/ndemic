@@ -1,6 +1,6 @@
 {
   "provider": "azure",
-  "interval": 2,
+  "interval": 1,
   "scanProfile": {
     "enabled": true,
     "onJoin": true,

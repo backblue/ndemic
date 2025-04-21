@@ -20,6 +20,7 @@ You'll need to compile and set up the bot yourself.
 TOKEN=
 AZURE_SAFETY_ENDPOINT=
 AZURE_SAFETY_KEY=
+JDBC=
 ``` 
 
 Note: IntellJ Artifacts will no longer be supported to build the executable jar.
