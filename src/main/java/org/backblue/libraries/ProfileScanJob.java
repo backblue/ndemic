@@ -155,7 +155,7 @@ public class ProfileScanJob extends Job {
                 channel.sendMessage(fail).queue();
                 return true;
             } else {
-                channel.sendMessage(":white_check_mark: OK: Processed " + type + " of: " + user.getAsMention() + "\n-# Source: `" + source + "` • Lookup: `/safetylookup " + jobNo + "`").queue();
+                channel.sendMessage(":white_check_mark: OK: Processed " + type + " of: " + user.getAsMention() + "\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`").queue();
                 return false;
             }
         }
