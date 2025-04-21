@@ -140,7 +140,7 @@ public class ProfileScanJob extends Job {
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
         if (channel != null) {
-            String fail = ":x: **FAIL**: Potential inappropriate content found in " + type + " of: " + user.getAsMention();
+            String fail = ":warning: **NOT OK**: Potential inappropriate content found in " + type + " of: " + user.getAsMention() + "\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`";
 
             if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("trigger").getInt("SelfHarm")) {
                 channel.sendMessage(fail).queue();
