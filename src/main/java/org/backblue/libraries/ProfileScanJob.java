@@ -11,6 +11,12 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.backblue.Core;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
@@ -21,7 +27,7 @@ public class ProfileScanJob extends Job {
     private final User user;
     private String avatarLink;
     private String bannerLink;
-    private String source;
+    private final String source;
 
     public ProfileScanJob(String id, String source) {
         super();
@@ -60,23 +66,28 @@ public class ProfileScanJob extends Job {
             return;
         }
         QUEUE.remove();
-        Boolean avatarAlert = scanImage(avatarLink, "Avatar", id, source);
-        Boolean bannerAlert = scanImage(bannerLink, "Banner", id, source);
+        Boolean avatarAlert = scanImage(avatarLink, "Avatar", id);
+        Boolean bannerAlert = scanImage(bannerLink, "Banner", id);
         RECENT_COMPLETE_JOBS.push(this);
 
         if (avatarAlert == null) {
             markInvalid("Avatar scan failed");
             return;
         }
+        if (bannerAlert == null) {
+            markInvalid("Banner scan failed");
+            return;
+        }
+
         if (avatarAlert != null && avatarAlert) {
             markDoneWithPrejudice("Maybe inappropriate Avatar");
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this avatar of user: " + user.getAsMention() + "\n" + avatarLink + "\n-#Output: " + getOutput() + ", Triggered from: " +source).queue();
+            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this avatar of user: " + user.getAsMention() + "\n" + avatarLink + "\n-# Output: " + getOutput() + ", Triggered from: " +source).queue();
         } else if (bannerAlert != null && bannerAlert) {
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this banner of user: " + user.getAsMention() + "\n" + bannerLink + "\n-#Output: " + getOutput() + ", Triggered from: " +source).queue();
+            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this banner of user: " + user.getAsMention() + "\n" + bannerLink + "\n-# Output: " + getOutput() + ", Triggered from: " +source).queue();
             markDoneWithPrejudice("Maybe inappropriate Banner");
         } else {markDone();}
     }
@@ -99,7 +110,7 @@ public class ProfileScanJob extends Job {
         return "`" + this.id + "`: **" + user.getId() + "** " + this.getClass().getSimpleName() + " " + getOutput();
     }
 
-    private Boolean scanImage(String link, String type, int jobNo, String input) {
+    private Boolean scanImage(String link, String type, int jobNo) {
 
         if (link == null) {
             return false;
@@ -114,6 +125,32 @@ public class ProfileScanJob extends Job {
             System.out.println("Malformed URL Data! URL Attempted: " + link);
             return null;
         }
+
+        try {
+            ByteArrayInputStream bais = new ByteArrayInputStream(imageData);
+            BufferedImage img = ImageIO.read(bais);
+            int width = img.getWidth();
+            int height = img.getHeight();
+
+            if (width < 50 || height < 50) {
+                width = Math.max(50, width);
+                height = Math.max(50, height);
+                BufferedImage resized = new BufferedImage(width, height, img.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : img.getType());
+                Graphics2D g2d = resized.createGraphics();
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2d.drawImage(img, 0, 0, width, height, null);
+                g2d.dispose();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(resized, "png", baos);
+                imageData = baos.toByteArray();
+                appendOutput(" Resized image to " + width + "x" + height);
+            }
+
+        } catch (IOException e) {
+            System.out.println("Can't convert to ImageIO" + link);
+            return null;
+        }
+
         image.setContent(BinaryData.fromBytes(imageData));
 
         AnalyzeImageResult response;
@@ -140,7 +177,7 @@ public class ProfileScanJob extends Job {
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
         if (channel != null) {
-            String fail = ":warning: **NOT OK**: Potential inappropriate content found in " + type + " of: " + user.getAsMention() + "\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`";
+            String fail = ":warning: Not OK: Scanned " + type + " of " + user.getAsMention() + "**with problems**.\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`";
 
             if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("trigger").getInt("SelfHarm")) {
                 channel.sendMessage(fail).queue();
@@ -155,7 +192,7 @@ public class ProfileScanJob extends Job {
                 channel.sendMessage(fail).queue();
                 return true;
             } else {
-                channel.sendMessage(":white_check_mark: OK: Processed " + type + " of: " + user.getAsMention() + "\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`").queue();
+                channel.sendMessage(":white_check_mark: OK: Scanned " + user.getAsMention() + "'s " + type + " without problems." + "\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`").queue();
                 return false;
             }
         }

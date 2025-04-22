@@ -5,7 +5,6 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateAvatarEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.self.SelfUpdateAvatarEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
@@ -126,7 +125,7 @@ public class Safety extends ListenerAdapter {
                     } else {
                         StringBuilder content = new StringBuilder();
                         ArrayList<Job> temp = new ArrayList<>(ProfileScanJob.RECENT_COMPLETE_JOBS);
-                        int start = Math.max(0, temp.size() - 10);
+                        int start = Math.max(0, temp.size() - 7);
                         for (int i = temp.size()-1; i >= start; i--) {
                             content.append(temp.get(i)).append("\n");
                         }

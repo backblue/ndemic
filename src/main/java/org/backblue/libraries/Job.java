@@ -41,7 +41,7 @@ public abstract class Job {
     }
 
     public final Long markInvalid() {
-        this.output = this.output + ":exclamation:";
+        this.output = this.output + ":x:";
         return completed = System.currentTimeMillis() / 1000;
     }
 
@@ -56,7 +56,7 @@ public abstract class Job {
     }
 
     public final Long markInvalid(String reason) {
-        this.output = this.output + ":exclamation: " + reason;
+        this.output = this.output + ":x: " + reason;
         return completed = System.currentTimeMillis() / 1000;
     }
 
