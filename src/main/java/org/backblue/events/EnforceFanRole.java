@@ -33,7 +33,7 @@ public class EnforceFanRole extends ListenerAdapter {
 
                 try {
                     event.getMessage().delete().queue();
-                } catch (Exception e) {}
+                } catch (Exception ignored) {}
                 event.getMember().getUser().openPrivateChannel()
                         .queue(channel -> channel.sendMessage(
                                         "Hello,\n\nYou must have either `@Plague Inc. Fan`, `@Rebel Inc. Fan` or `@After Inc. Fan` role to be able to chat in **Ndemic Creations**.\n\n[You may pick up a role here:](https://discord.com/channels/523349543505362945/690604818661638144/690620288622133269) <#690604818661638144>"
@@ -42,7 +42,9 @@ public class EnforceFanRole extends ListenerAdapter {
                                 });
                 if (Core.MODULES.get("analytics")) {
                     TextChannel channel = event.getJDA().getTextChannelById(Core.ANALYTICS.get("enforcement"));
-                    channel.sendMessage("Prevented user " + event.getMember().getAsMention() + " from chatting in <#" + event.getChannel().getId() + "> due to having no 'Fan' roles.").queue();
+                    if (channel != null) {
+                        channel.sendMessage("Prevented user " + event.getMember().getAsMention() + " from chatting in <#" + event.getChannel().getId() + "> due to having no 'Fan' roles.").queue();
+                    }
                 }
             }
         }

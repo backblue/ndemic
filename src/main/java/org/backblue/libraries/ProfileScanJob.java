@@ -6,6 +6,8 @@ import com.azure.ai.contentsafety.models.ContentSafetyImageData;
 import com.azure.ai.contentsafety.models.ImageCategoriesAnalysis;
 import com.azure.core.exception.HttpResponseException;
 import com.azure.core.util.BinaryData;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -66,6 +68,7 @@ public class ProfileScanJob extends Job {
             return;
         }
         QUEUE.remove();
+
         Boolean avatarAlert = scanImage(avatarLink, "Avatar", id);
         Boolean bannerAlert = scanImage(bannerLink, "Banner", id);
         RECENT_COMPLETE_JOBS.push(this);
@@ -80,7 +83,7 @@ public class ProfileScanJob extends Job {
         }
 
         if (avatarAlert != null && avatarAlert) {
-            markDoneWithPrejudice("Maybe inappropriate Avatar");
+            markDoneWithPrejudice("Potential Inappropriate Avatar");
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
             channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this avatar of user: " + user.getAsMention() + "\n" + avatarLink + "\n-# Output: " + getOutput() + ", Triggered from: " +source).queue();
@@ -88,8 +91,9 @@ public class ProfileScanJob extends Job {
             TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
             Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
             channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this banner of user: " + user.getAsMention() + "\n" + bannerLink + "\n-# Output: " + getOutput() + ", Triggered from: " +source).queue();
-            markDoneWithPrejudice("Maybe inappropriate Banner");
+            markDoneWithPrejudice("Potential Inappropriate Banner");
         } else {markDone();}
+        log();
     }
 
     @Override
@@ -177,8 +181,7 @@ public class ProfileScanJob extends Job {
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
         if (channel != null) {
-            String fail = ":warning: Not OK: Scanned " + type + " of " + user.getAsMention() + "**with problems**.\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`";
-
+            String fail = ":warning: `#" + jobNo + "`: Scanned " + type + " of " + user.getAsMention() + "**with problems**.\n-# Triggered by: `" + source + "`";
             if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("trigger").getInt("SelfHarm")) {
                 channel.sendMessage(fail).queue();
                 return true;
@@ -192,10 +195,31 @@ public class ProfileScanJob extends Job {
                 channel.sendMessage(fail).queue();
                 return true;
             } else {
-                channel.sendMessage(":white_check_mark: OK: Scanned " + user.getAsMention() + "'s " + type + " without problems." + "\n-# Source: `" + source + "`\n-# Lookup: `/safetylookup " + jobNo + "`").queue();
+                channel.sendMessage(":white_check_mark: `#" + jobNo + "`: Scanned " + user.getAsMention() + "'s " + type + " without problems." + "\n-# Triggered by: `" + source + "`").queue();
                 return false;
             }
         }
         return null;
+    }
+
+    @Override
+    public void log() {
+        HashMap<String, String> jobData = lookup();
+        EmbedBuilder raw = new EmbedBuilder()
+                .setColor(Color.YELLOW)
+                .setTitle("Job ID: `" + id + "`");
+        for (String key : jobData.keySet()) {
+            if (jobData.get(key) == null) {
+                raw.addField(key, "N/A", true);
+            } else {
+                raw.addField(key, jobData.get(key), true);
+            }
+        }
+        MessageEmbed msg = raw.build();
+        TextChannel channel = Core.BOT.getTextChannelById(Core.ANALYTICS.get("jobs"));
+        if (channel != null) {
+            channel.sendMessageEmbeds(msg).queue();
+        }
+
     }
 }

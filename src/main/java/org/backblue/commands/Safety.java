@@ -2,10 +2,7 @@ package org.backblue.commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
-import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateAvatarEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
 import org.backblue.libraries.Job;
@@ -18,43 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Safety extends ListenerAdapter {
-    @Override
-    public void onGuildMemberUpdateAvatar(@NotNull GuildMemberUpdateAvatarEvent event) {
-        if (Core.MODULES.get("safetyFeatures")) {
-            if (event.getUser().getAvatarUrl() == null) {
-                return;
-            }
-            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onGuildAvatarChange")) {
-                Job apple = new ProfileScanJob(event.getUser().getId(), "updatedAvatarGuild");
-            }
-        }
-    }
-
-    @Override
-    public void onUserUpdateAvatar(@NotNull UserUpdateAvatarEvent event) {
-        if (Core.MODULES.get("safetyFeatures")) {
-            if (event.getUser().getAvatarUrl() == null) {
-                return;
-            }
-            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onUserAvatarChange")) {
-                Job apple = new ProfileScanJob(event.getUser().getId(), "updatedAvatarUser");
-            }
-        }
-    }
-
-    @Override
-    public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
-        if (Core.MODULES.get("safetyFeatures")) {
-            if (event.getUser().getAvatarUrl() == null) {
-                return;
-            }
-            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onJoin")) {
-                Job apple = new ProfileScanJob(event.getUser().getId(), "join");
-            }
-        }
-    }
-
-
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("safetylookup")) {
@@ -71,7 +31,8 @@ public class Safety extends ListenerAdapter {
                     return;
                 }
                 HashMap<String, String> jobData = theJob.lookup();
-                EmbedBuilder raw = new EmbedBuilder()
+                EmbedBuilder raw;
+                raw = new EmbedBuilder()
                         .setColor(Color.YELLOW)
                         .setTitle("Job ID: `" + idToLookFor + "`");
                 for (String key : jobData.keySet()) {
@@ -125,7 +86,7 @@ public class Safety extends ListenerAdapter {
                     } else {
                         StringBuilder content = new StringBuilder();
                         ArrayList<Job> temp = new ArrayList<>(ProfileScanJob.RECENT_COMPLETE_JOBS);
-                        int start = Math.max(0, temp.size() - 7);
+                        int start = Math.max(0, temp.size() - 5);
                         for (int i = temp.size()-1; i >= start; i--) {
                             content.append(temp.get(i)).append("\n");
                         }
@@ -133,7 +94,7 @@ public class Safety extends ListenerAdapter {
                     }
                     raw.setFooter("'!' means that the job was invalid");
                     MessageEmbed message = raw.build();
-                    event.replyEmbeds(message).queue();
+                    event.replyEmbeds(message).setEphemeral(true).queue();
                 }
             } else {
                 event.reply(":x: **safetyFeatures** module must be enabled first!").setEphemeral(true).queue();

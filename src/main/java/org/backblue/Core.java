@@ -12,10 +12,7 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
-import org.backblue.events.AutoModAlert;
-import org.backblue.events.EnforceFanRole;
-import org.backblue.events.EnforceOneOP;
-import org.backblue.events.PrivateMessage;
+import org.backblue.events.*;
 import org.backblue.libraries.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -31,7 +28,7 @@ import java.util.*;
 
 public class Core {
 
-    public static final String VERSION = "0.5.1";
+    public static final String VERSION = "0.5.2";
     public static JDA BOT;
     public static long BOOT = Instant.now().getEpochSecond();
     public static String SERVER_RULES;
@@ -44,42 +41,38 @@ public class Core {
     public static LinkedHashMap<String, String> ANALYTICS = new LinkedHashMap<>();
     public static ContentSafetyClient CONTENT_SAFETY_CLIENT;
 
-    private static void loadKeys() {
+    private static void loadKeys() throws InvalidBotStateException {
         try {
             String rawKey = Files.readString(Path.of("data/keys.properties"));
             SECURE_KEYS.load(new java.io.StringReader(rawKey));
         } catch (Exception e) {
-            System.out.println("Error loading key file. Bot stopped.");
-            System.exit(1);
+            throw new InvalidBotStateException("Required: '/data/keys.properties' cannot be loaded.");
         }
         try {
             Core.SERVER_RULES = Files.readString(Path.of("data/rules.txt"));
         } catch (Exception e) {
-            System.out.println("Error loading rules file. Bot stopped.");
-            System.exit(1);
+            throw new InvalidBotStateException("Required: '/data/rules.txt' cannot be loaded.");
         }
     }
-    private static void loadSettings() {
+    private static void loadSettings() throws InvalidBotStateException {
         try {
             String rawSettings = Files.readString(Path.of("data/settings.json"));
             Core.SETTINGS = new JSONObject(new JSONTokener(rawSettings));
         } catch (Exception e) {
-            System.out.println("Error loading settings file. Bot stopped.");
-            System.exit(1);
+            throw new InvalidBotStateException("Required: '/data/settings.json' cannot be loaded.");
         }
     }
 
-    private static void loadSafety() {
+    private static void loadSafety() throws InvalidBotStateException {
         try {
             String rawSafety = Files.readString(Path.of("data/safety.json"));
             Core.SAFETY = new JSONObject(new JSONTokener(rawSafety));
         } catch (Exception e) {
-            System.out.println("Error loading safety file. Bot stopped.");
-            System.exit(1);
+            throw new InvalidBotStateException("Required: '/data/safety.json' cannot be loaded.");
         }
     }
 
-    public static void loadModules() {
+    public static void loadModules() throws InvalidBotStateException {
         loadSettings();
         try {
             JSONArray modulesArray = Core.SETTINGS.getJSONArray("modules");
@@ -94,19 +87,18 @@ public class Core {
         }
     }
 
-    public static void loadAnalytics() {
+    public static void loadAnalytics() throws InvalidBotStateException {
         try {
             JSONObject analytics = Core.SETTINGS.getJSONObject("analytics");
             for (String key : analytics.keySet()) {
                 Core.ANALYTICS.put(key, analytics.getString(key));
             }
         } catch (Exception e) {
-            System.out.println("Error loading analytics. Bot stopped.");
-            System.exit(1);
+            throw new InvalidBotStateException("Required: Startup properties - Analytics cannot be loaded.");
         }
     }
 
-    public static void loadDeployment() {
+    public static void loadDeployment() throws InvalidBotStateException {
         try {
             JSONObject deployment = Core.SETTINGS.getJSONObject("deployment");
 
@@ -127,13 +119,12 @@ public class Core {
             }
 
         } catch (Exception e) {
-            System.out.println("Error loading deployments. Bot stopped.");
-            System.exit(1);
+            throw new InvalidBotStateException("Required: Startup properties - Deployment cannot be loaded.");
         }
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InvalidBotStateException {
         loadKeys();
         loadModules();
         loadDeployment();
@@ -148,7 +139,7 @@ public class Core {
                 .build();
 
         // Register Events and Modules
-        BOT.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert(), new Safety());
+        BOT.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert(), new Safety(), new EnforceSafetyFeatures());
 
         // Register Commands
         BOT.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime());
@@ -174,9 +165,9 @@ public class Core {
             @Override
             public void run() {
                 if (Core.MODULES.get("safetyFeatures")) {
-                    try {
+                    if (Job.QUEUE.peek() != null) {
                         Job.QUEUE.peek().process();
-                    } catch (NullPointerException ignored) {}
+                    }
                 }
             }
         };

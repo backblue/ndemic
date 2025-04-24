@@ -1,6 +1,7 @@
 package org.backblue.libraries;
 
 import org.backblue.Core;
+import org.backblue.InvalidBotStateException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -44,9 +45,9 @@ public class SQLJSON extends Core {
         return this;
     }
 
-    public SQLJSON writeJSONObject(String key, JSONObject value) throws UnsupportedOperationException {
+    public SQLJSON writeJSONObject(String key, JSONObject value) throws InvalidBotStateException {
         if (Core.SETTINGS.get("useSQL").equals(true)) {
-            throw new UnsupportedOperationException("Cannot write Object directly to SQL");
+            throw new InvalidBotStateException("Cannot write JSONObject to SQL database.");
         } else if (json.has(key)) {
             json.remove(key);
         }
@@ -153,7 +154,7 @@ public class SQLJSON extends Core {
                         return new JSONObject().put("id", userId).put("lastRefresh", Instant.now().getEpochSecond()).put("cacheUsername", Objects.requireNonNull(Core.BOT.getUserById(userId)).getName());
                     }
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | InvalidBotStateException e) {
                 e.printStackTrace();
                 return null;
             }
@@ -198,7 +199,7 @@ public class SQLJSON extends Core {
             stmt.setObject(index, id); // Add id at the end
             stmt.executeUpdate();
 
-        } catch (SQLException e) {
+        } catch (SQLException | InvalidBotStateException e) {
             e.printStackTrace();
         }
 
@@ -241,6 +242,8 @@ public class SQLJSON extends Core {
 
         } catch (SQLException e) {
             e.printStackTrace();
+        } catch (InvalidBotStateException e) {
+            throw new RuntimeException(e);
         }
 
     }
@@ -254,18 +257,17 @@ public class SQLJSON extends Core {
                 boolean exists = rs.next();
                 return exists; // true if row exists
             }
-        } catch (SQLException e) {
+        } catch (SQLException | InvalidBotStateException e) {
             return false;
         }
     }
 
-    private static Connection openConnection() {
+    private static Connection openConnection() throws InvalidBotStateException {
         if (Core.SETTINGS.get("useSQL").equals(true)) {
             try {
                 return DriverManager.getConnection(Core.SECURE_KEYS.getProperty("JDBC"));
             } catch (SQLException e) {
-                System.out.println("Failed to connect to server. Turn off 'useSQL' in settings.json or check your JDBC URL.\n" + e);
-                System.exit(1);
+                throw new InvalidBotStateException("Failed to connect to server. Turn off 'useSQL' in settings.json or check your JDBC URL.\n" + e);
             }
         }
         return null;

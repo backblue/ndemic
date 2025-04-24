@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
+import org.backblue.InvalidBotStateException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileWriter;
@@ -50,7 +51,9 @@ public class Module extends ListenerAdapter {
 
             Core.MODULES.put(module, enabled);
             event.reply(":white_check_mark: Module **" + module + "** is " + (enabled ? "**enabled**." : "**disabled**.")).queue();
-            Core.loadModules();
+            try {
+                Core.loadModules();
+            } catch (InvalidBotStateException ignored) {}
             if (Core.MODULES.get("analytics")) {
                 TextChannel analysis = event.getJDA().getTextChannelById(Core.ANALYTICS.get("autoMod"));
                 analysis.sendMessage(event.getUser().getName() + " changed setting " + module + " to " + enabled).queue();

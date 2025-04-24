@@ -24,12 +24,11 @@ public class Uptime extends ListenerAdapter {
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Color.BLUE)
-                    .setTitle("Uptime & About Bot")
-                    .addField("Version", Core.VERSION + " (" + Core.SETTINGS.getString("status") + ")", true)
-                    .addField("CPU Load", "`" + Math.round(OS.getCpuLoad()*100) + "%`", true)
+                    .setTitle("About Bot: v" + Core.VERSION)
+                    .addField("CPU", "`" + Math.round(OS.getCpuLoad()*100) + "%`", true)
                     .addField("Memory", "`" + used / 1000000 + " MB / " + Runtime.getRuntime().totalMemory() / 1000000 + " MB`", true)
-                    .addField("Uptime", "`" + FormatTime.formatTimeShort(Instant.now().getEpochSecond() - Core.BOOT) + "`", false)
-                    .setFooter("by killergotrekt");
+                    .addField("Uptime", "`" + FormatTime.formatTimeShort(Instant.now().getEpochSecond() - Core.BOOT) + "`", true)
+                    .setFooter("Built by killergotrekt for Ndemic");
 
             event.replyEmbeds(embed.build()).queue();
         }

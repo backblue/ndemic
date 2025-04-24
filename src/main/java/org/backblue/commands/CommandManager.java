@@ -18,18 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CommandManager extends ListenerAdapter {
-
-    @Override
-    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
-            if (event.getUser().getAvatarUrl() == null) {
-                return;
-            }
-            if (Core.SAFETY.getJSONObject("scanProfile").getBoolean("onSlash")) {
-                new ProfileScanJob(event.getUser().getId(), "slash");
-            }
-        }
-    }
     @Override
     public void onGuildReady(@NotNull GuildReadyEvent event) {
         List<CommandData> commands = new ArrayList<>();

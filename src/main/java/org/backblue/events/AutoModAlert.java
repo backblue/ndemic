@@ -28,7 +28,9 @@ public class AutoModAlert extends ListenerAdapter {
                 UNIX_TIMESTAMP_MOD = Instant.now().getEpochSecond();
             }
             TextChannel analysis = event.getJDA().getTextChannelById(Core.ANALYTICS.get("autoMod"));
-            analysis.sendMessage("AutoMod @ Mods pinged for violation: " + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.DEPLOYMENT.get("channel.cmd") + "/" + event.getAlertMessageId()).queue();
+            if (analysis != null) {
+                analysis.sendMessage("AutoMod @ Mods pinged for violation: " + "https://discord.com/channels/" + event.getGuild().getId() + "/" + Core.DEPLOYMENT.get("channel.cmd") + "/" + event.getAlertMessageId()).queue();
+            }
         }
 
         if (Core.MODULES.get("autoModTakeExtremeAction")) {

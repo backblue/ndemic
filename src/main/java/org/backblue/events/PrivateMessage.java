@@ -25,6 +25,9 @@ public class PrivateMessage extends ListenerAdapter {
                 if (event.getMessage().getContentRaw().isEmpty()) {
                     return;
                 }
+                if (event.getAuthor().isBot()) {
+                    return;
+                }
 
                 MessageEmbed message = new EmbedBuilder()
                         .setColor(Color.CYAN)
@@ -35,7 +38,9 @@ public class PrivateMessage extends ListenerAdapter {
 
                 TextChannel channel = event.getJDA().getTextChannelById(Core.ANALYTICS.get("DM"));
 
-                channel.sendMessageEmbeds(message).queue();
+                if (channel != null) {
+                    channel.sendMessageEmbeds(message).queue();
+                }
             }
         }
 
