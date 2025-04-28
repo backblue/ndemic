@@ -1,8 +1,6 @@
 package org.backblue.commands;
 
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -11,7 +9,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import org.backblue.Core;
-import org.backblue.libraries.ProfileScanJob;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;

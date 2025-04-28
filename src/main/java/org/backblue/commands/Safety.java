@@ -5,8 +5,8 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
-import org.backblue.libraries.Job;
-import org.backblue.libraries.ProfileScanJob;
+import org.backblue.events.jobs.Job;
+import org.backblue.events.jobs.ProfileScanJob;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -43,7 +43,7 @@ public class Safety extends ListenerAdapter {
                     }
                 }
                 MessageEmbed msg = raw.build();
-                event.replyEmbeds(msg).setEphemeral(false).queue();
+                event.replyEmbeds(msg).setEphemeral(true).queue();
 
             } else {
                 event.reply(":x: **safetyFeatures** module must be enabled first!").setEphemeral(true).queue();
@@ -79,7 +79,7 @@ public class Safety extends ListenerAdapter {
                             content.append(job).append("\n");
                             count++;
                         }
-                        raw.addField("Awaiting Jobs to Run", content.toString(), false);
+                        raw.addField("Awaiting Jobs to Run - " + ProfileScanJob.QUEUE.size() + " jobs", content.toString(), false);
                     }
                     if (ProfileScanJob.RECENT_COMPLETE_JOBS.isEmpty()) {
                         raw.addField("Recently Completed", "None", false);

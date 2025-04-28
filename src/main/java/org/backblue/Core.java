@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
-import org.backblue.libraries.*;
+import org.backblue.events.jobs.JobRunner;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -28,11 +28,11 @@ import java.util.*;
 
 public class Core {
 
-    public static final String VERSION = "0.5.2";
+    public static final String VERSION = "0.5.3";
     public static JDA BOT;
     public static long BOOT = Instant.now().getEpochSecond();
     public static String SERVER_RULES;
-    protected static final Properties SECURE_KEYS = new Properties();
+    public static final Properties SECURE_KEYS = new Properties();
     public static JSONObject SETTINGS;
     public static JSONObject SAFETY;
     public static LinkedHashMap<String, Boolean> MODULES = new LinkedHashMap<>();
@@ -82,8 +82,7 @@ public class Core {
                 Core.MODULES_DESC.put(module.getString("name"), module.getString("desc"));
             }
         } catch (Exception e) {
-            System.out.println("Error loading modules. Bot stopped.");
-            System.exit(1);
+            throw new InvalidBotStateException("Required: Modules cannot be loaded.");
         }
     }
 
@@ -139,7 +138,7 @@ public class Core {
                 .build();
 
         // Register Events and Modules
-        BOT.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert(), new Safety(), new EnforceSafetyFeatures());
+        BOT.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert(), new Safety(), new EnforceSafetyFeatures(), new EnforceLinkChecks());
 
         // Register Commands
         BOT.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime());
@@ -160,18 +159,9 @@ public class Core {
             }
         }
 
-        Timer task = new Timer();
-        TimerTask tasks = new TimerTask() {
-            @Override
-            public void run() {
-                if (Core.MODULES.get("safetyFeatures")) {
-                    if (Job.QUEUE.peek() != null) {
-                        Job.QUEUE.peek().process();
-                    }
-                }
-            }
-        };
-        task.schedule(tasks, 0, Core.SAFETY.getInt("interval") * 1000L); // Interval in seconds
+        JobRunner jobRunner = new JobRunner();
+        Thread jobThread = new Thread(jobRunner);
+        jobThread.start();
     }
 
 }

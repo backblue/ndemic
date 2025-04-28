@@ -1,4 +1,5 @@
 package org.backblue.events;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
@@ -18,6 +19,9 @@ public class EnforceOneOP extends ListenerAdapter {
                 ThreadChannel thread = (ThreadChannel) event.getChannel();
                 if (thread.getParentChannel().getName().contains("guides")) {
                     if (!Objects.equals(thread.getOwner(), event.getMessage().getMember())) {
+                        if (event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
+                            return;
+                        }
                         try {
                             event.getMessage().delete().queue();
                         } catch (Exception ignored) {}

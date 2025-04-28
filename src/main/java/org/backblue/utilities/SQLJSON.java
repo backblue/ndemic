@@ -1,4 +1,4 @@
-package org.backblue.libraries;
+package org.backblue.utilities;
 
 import org.backblue.Core;
 import org.backblue.InvalidBotStateException;
@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.Iterator;
 import java.util.Objects;
 
-public class SQLJSON extends Core {
+public class SQLJSON {
 
     private final String userId;
     private final JSONObject json;

@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Core;
-import org.backblue.libraries.ProfileScanJob;
+import org.backblue.events.jobs.ProfileScanJob;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
