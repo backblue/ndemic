@@ -18,7 +18,7 @@ public abstract class Job {
     public final static Queue<Job> QUEUE = new LinkedList<>();
     public final static Stack<Job> RECENT_COMPLETE_JOBS = new Stack<>();
     public final static HashMap<Integer, Job> ID_TO_JOB = new HashMap<>();
-    private String output = "";
+    private String output = "\n";
     private final Long created;
     protected Long started;
     private Long completed;
@@ -106,9 +106,11 @@ public abstract class Job {
     public HashMap<String, String> lookup() {
         HashMap<String, String> map = new HashMap<>();
         map.put("id", String.valueOf(this.id));
+        map.put("output", this.output);
         map.put("created", String.valueOf(this.created));
         map.put("started", String.valueOf(this.started));
         map.put("completed", String.valueOf(this.completed));
+        map.put("type", this.getClass().getSimpleName());
         return map;
     }
 

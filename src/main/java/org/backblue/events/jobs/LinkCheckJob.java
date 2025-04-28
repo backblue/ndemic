@@ -33,19 +33,27 @@ public class LinkCheckJob extends Job {
     @Override
     public void process() {
         this.started = System.currentTimeMillis();
+
+        QUEUE.remove();
+
         boolean response = false;
         for (String link : this.links) {
             try {
                 response = sendRequest(link);
+                if (response) {
+                    TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
+                    Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
+                    channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " thinks there is a malicious link from " + message.getMember().getAsMention() + "\n\nMessage:\n> " + message.getMessage().getContentRaw()).queue();
+                    if (!response) {
+                        response = true;
+                    }
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         if (response) {
-            TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
-            Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " thinks there is a malicious link from " + message.getMember().getAsMention() + "\n\nMessage:\n> " + message.getMessage().getContentRaw()).queue();
             markDoneWithPrejudice("Malicious Links");
         } else {
             markDone();
@@ -61,6 +69,8 @@ public class LinkCheckJob extends Job {
         map.put("message", message.getMessage().getContentRaw());
         map.put("user", message.getAuthor().getAsTag());
         map.put("response", jsonResponse.toString());
+        map.put("links", links.toString());
+        map.put("output", jsonResponse + map.get("output"));
         return map;
     }
 
@@ -144,8 +154,8 @@ public class LinkCheckJob extends Job {
         }
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
-        String pass = "white_check_mark: `#" + id + "`: Scanned link `" + url + "` sent by " + message.getAuthor().getAsMention() + ".";
-        String failed = "white_check_mark: `#" + id + "`: Scanned link `" + url + "` sent by " + message.getAuthor().getAsMention() + " is found to be potentially **malicious**.";
+        String pass = ":white_check_mark: `#" + id + "`: Scanned link `" + url + "` sent by " + message.getAuthor().getAsMention() + ".";
+        String failed = ":white_check_mark: `#" + id + "`: Scanned link `" + url + "` sent by " + message.getAuthor().getAsMention() + " is found to be potentially **malicious**.";
         if (jsonResponse.isEmpty()) {
             channel.sendMessage(pass).queue();
         } else {

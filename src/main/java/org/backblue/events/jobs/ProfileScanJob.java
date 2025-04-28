@@ -117,8 +117,6 @@ public class ProfileScanJob extends Job {
         info.put("user", user.getName());
         info.put("avatar", avatarLink);
         info.put("banner", bannerLink);
-        info.put("output", getOutput());
-        info.put("type", this.getClass().getSimpleName());
         info.put("source", source);
         return info;
     }
