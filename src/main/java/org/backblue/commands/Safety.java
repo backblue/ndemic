@@ -17,40 +17,38 @@ import java.util.HashMap;
 public class Safety extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        if (event.getName().equals("safetylookup")) {
-            if (Core.MODULES.get("safetyFeatures")) {
-                if (Job.ID_TO_JOB.isEmpty()) {
-                    event.reply(":x: No jobs have been run yet.").setEphemeral(true).queue();
-                    return;
-                }
-                int idToLookFor = event.getOption("identifier").getAsInt();
-                Job theJob = Job.search(idToLookFor);
-                if (theJob == null) {
-                    int jobCounter = Job.getCounter() - 1;
-                    event.reply(":x: Job ID not found! Job IDs are from `0 - " + jobCounter + "`.").setEphemeral(true).queue();
-                    return;
-                }
-                HashMap<String, String> jobData = theJob.lookup();
-                EmbedBuilder raw;
-                raw = new EmbedBuilder()
-                        .setColor(Color.YELLOW)
-                        .setTitle("Job ID: `" + idToLookFor + "`");
-                for (String key : jobData.keySet()) {
-                    if (jobData.get(key) == null) {
-                        raw.addField(key, "N/A", true);
-                    } else {
-                        raw.addField(key, jobData.get(key), true);
-                    }
-                }
-                MessageEmbed msg = raw.build();
-                event.replyEmbeds(msg).setEphemeral(true).queue();
-
-            } else {
-                event.reply(":x: **safetyFeatures** module must be enabled first!").setEphemeral(true).queue();
-            }
-        }
         if (event.getName().equals("safety")) {
             if (Core.MODULES.get("safetyFeatures")) {
+                if (event.getSubcommandName().equals("status")) {
+
+                }
+                if (event.getSubcommandName().equals("lookup")) {
+                    if (Job.ID_TO_JOB.isEmpty()) {
+                        event.reply(":x: No jobs have been run yet.").setEphemeral(true).queue();
+                        return;
+                    }
+                    int idToLookFor = event.getOption("identifier").getAsInt();
+                    Job theJob = Job.search(idToLookFor);
+                    if (theJob == null) {
+                        int jobCounter = Job.getCounter() - 1;
+                        event.reply(":x: Job ID not found! Job IDs are from `0 - " + jobCounter + "`.").setEphemeral(true).queue();
+                        return;
+                    }
+                    HashMap<String, String> jobData = theJob.lookup();
+                    EmbedBuilder raw;
+                    raw = new EmbedBuilder()
+                            .setColor(Color.YELLOW)
+                            .setTitle("Job ID: `" + idToLookFor + "`");
+                    for (String key : jobData.keySet()) {
+                        if (jobData.get(key) == null) {
+                            raw.addField(key, "N/A", true);
+                        } else {
+                            raw.addField(key, jobData.get(key), true);
+                        }
+                    }
+                    MessageEmbed msg = raw.build();
+                    event.replyEmbeds(msg).setEphemeral(true).queue();
+                }
                 if (event.getSubcommandName().equals("dequeue")) {
                     if (ProfileScanJob.QUEUE.isEmpty()) {
                         event.reply(":x: No jobs in queue!").setEphemeral(true).queue();

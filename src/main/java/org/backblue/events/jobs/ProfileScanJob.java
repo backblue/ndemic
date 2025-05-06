@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.backblue.Core;
 import org.backblue.utilities.SQLJSON;
+import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -22,7 +23,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.HashMap;
-
 public class ProfileScanJob extends Job {
 
     private final User user;
@@ -69,8 +69,6 @@ public class ProfileScanJob extends Job {
     @Override
     public void process() {
         this.started = System.currentTimeMillis();
-        TextChannel failurePing = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
-
         if (!Core.SAFETY.getJSONObject("scanProfile").getBoolean("enabled")) {
             return;
         }
@@ -80,20 +78,24 @@ public class ProfileScanJob extends Job {
             return;
         }
 
-        Boolean avatarAlert = scanImage(avatarLink, "Avatar", id);
-        Boolean bannerAlert = scanImage(bannerLink, "Banner", id);
+        if (nextJobSamePerson() != null) {
+            log();
+            markInvalid("User's profile no longer up-to-date");
+            return;
+        }
+
+        Boolean avatarAlert = scanImage(avatarLink, "Avatar");
+        Boolean bannerAlert = scanImage(bannerLink, "Banner");
         RECENT_COMPLETE_JOBS.push(this);
 
         if (avatarAlert == null) {
-            markInvalid("Avatar scan failed");
+            markInvalid();
             log();
-            failurePing.sendMessage("<@387336581775884288> <@852609613253443584> Job `" + id + "` failed");
             return;
         }
         if (bannerAlert == null) {
-            markInvalid("Banner scan failed");
+            markInvalid();
             log();
-            failurePing.sendMessage("<@387336581775884288> <@852609613253443584> Job `" + id + "` failed");
             return;
         }
 
@@ -126,7 +128,7 @@ public class ProfileScanJob extends Job {
         return "`" + this.id + "`: **" + user.getId() + "** " + this.getClass().getSimpleName() + " " + getOutput();
     }
 
-    private Boolean scanImage(String link, String type, int jobNo) {
+    private Boolean scanImage(String link, String type) {
 
         if (link == null) {
             return false;
@@ -138,7 +140,8 @@ public class ProfileScanJob extends Job {
         try {
             imageData = downloadUrl(new URL(link));
         } catch (MalformedURLException e) {
-            System.out.println("Malformed URL Data! URL Attempted: " + link + "\nJob ID:" + jobNo + "\n" + e);
+            System.out.println(e);
+            appendOutput("An error occurred: could not download URL ");
             return null;
         }
 
@@ -159,11 +162,11 @@ public class ProfileScanJob extends Job {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ImageIO.write(resized, "png", baos);
                 imageData = baos.toByteArray();
-                appendOutput(" Resized image to `" + width + " x " + height + "` ");
+                appendOutput(" " + type + ": Resized to `" + width + " x " + height + "` ");
             }
 
         } catch (IOException e) {
-            System.out.println("Can't convert to ImageIO" + link);
+            appendOutput("An error occurred: could not convert image to ImageIO ");
             return null;
         }
 
@@ -193,7 +196,7 @@ public class ProfileScanJob extends Job {
 
         TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
         if (channel != null) {
-            String fail = ":warning: `#" + jobNo + "`: Scanned [" + type + "](<" + link + ">) of " + user.getAsMention() + " **with problems**.\n-# Triggered by: `" + source + "`";
+            String fail = ":warning: `#" + this.id + "`: Scanned [" + type + "](<" + link + ">) of " + user.getAsMention() + " **with problems**.\n-# Triggered by: `" + source + "`";
             if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("trigger").getInt("SelfHarm")) {
                 channel.sendMessage(fail).queue();
                 return true;
@@ -207,11 +210,21 @@ public class ProfileScanJob extends Job {
                 channel.sendMessage(fail).queue();
                 return true;
             } else {
-                channel.sendMessage(":white_check_mark: `#" + jobNo + "`: Scanned [" + type + "](<" + link + ">) of " + user.getAsMention() + "." + "\n-# Triggered by: `" + source + "`").queue();
+                channel.sendMessage(":white_check_mark: `#" + this.id + "`: Scanned [" + type + "](<" + link + ">) of " + user.getAsMention() + "." + "\n-# Triggered by: `" + source + "`").queue();
                 return false;
             }
         }
-        System.out.println("Channel not found - ID: " + Core.DEPLOYMENT.get("channel.log"));
+        appendOutput("An error occurred: could not print output ");
+        return null;
+    }
+
+    private @Nullable Job nextJobSamePerson() {
+        String thisJobUserID = this.user.getId();
+        for (Job job : QUEUE) {
+            if (job instanceof ProfileScanJob && ((ProfileScanJob) job).user.getId().equals(thisJobUserID)) {
+                return job;
+            }
+        }
         return null;
     }
 }

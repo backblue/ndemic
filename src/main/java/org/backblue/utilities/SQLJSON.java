@@ -2,6 +2,7 @@ package org.backblue.utilities;
 
 import org.backblue.Core;
 import org.backblue.InvalidBotStateException;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -89,6 +90,34 @@ public class SQLJSON {
 
     public static SQLJSON read(String userId, String table) {
         return new SQLJSON(userId, table);
+    }
+
+    public static JSONArray readAllIntoArray(String table) {
+        JSONArray array = new JSONArray();
+        String query = "SELECT * FROM " + table;
+        try (Connection conn = openConnection();
+             PreparedStatement statement = conn.prepareStatement(query);
+             ResultSet rs = statement.executeQuery()) {
+
+            ResultSetMetaData meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+
+            while (rs.next()) {
+                JSONObject rowJson = new JSONObject();
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = meta.getColumnLabel(i);
+                    Object value = rs.getObject(i);
+                    rowJson.put(columnName, value != null ? value : JSONObject.NULL);
+                }
+                array.put(rowJson);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // or return empty JSONArray
+        }
+
+        return array;
     }
 
     public void write(String table) {
@@ -248,7 +277,7 @@ public class SQLJSON {
 
     }
 
-    private static boolean exists(String userId, String table) {
+    public static boolean exists(String userId, String table) {
         String query = "SELECT 1 FROM " + table + " WHERE id = ? LIMIT 1";
         try (Connection conn = openConnection()) {
             PreparedStatement statement = conn.prepareStatement(query);

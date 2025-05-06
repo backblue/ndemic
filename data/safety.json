@@ -1,12 +1,12 @@
 {
-  "provider": "azure",
   "interval": 2,
   "scanProfile": {
     "enabled": true,
     "onJoin": true,
     "onUserAvatarChange": true,
     "onGuildAvatarChange": true,
-    "onSlash": false
+    "onSlash": false,
+    "enforcementLevel": 1
   },
   "trigger": {
     "Hate": 2,
@@ -16,6 +16,6 @@
   },
   "linkChecks": {
     "enabled": true,
-    "takeAction": false
+    "takeAction": true
   }
 }

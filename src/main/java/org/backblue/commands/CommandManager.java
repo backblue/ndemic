@@ -20,7 +20,7 @@ public class CommandManager extends ListenerAdapter {
         List<CommandData> commands = new ArrayList<>();
 
         commands.add(Commands.slash("ping", "Ping, pong!"));
-        commands.add(Commands.slash("uptime", "About this bot & view bot performance"));
+        commands.add(Commands.slash("uptime", "About this bot, version, and performance"));
 
         OptionData moduleSelection = new OptionData(OptionType.STRING, "module", "The selected module", true)
                 .addChoice("INFO: Displays status of each module. More details with 'true'", "info");
@@ -35,12 +35,18 @@ public class CommandManager extends ListenerAdapter {
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("safety", "Administrator: View current, upcoming queue for safety scanning tasks")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
-                .addSubcommands(new SubcommandData("queue", "Administrator: View current queue for safety scanning tasks"))
+                .addSubcommands(new SubcommandData("status", "Administrator: View overall status of safety features"))
+                .addSubcommands(new SubcommandData("queue", "Administrator: View current queue for job task"))
                 .addSubcommands(new SubcommandData("dequeue", "Administrator: Force-run the next job in queue. Dequeue is performed automatically"))
-                .addSubcommands(new SubcommandData("skip", "Administrator: Skips the next job")));
-        commands.add(Commands.slash("safetylookup", "Administrator: Lookup a job by its ID")
-                .addOption(OptionType.INTEGER, "identifier", "Enter Job ID.", true)
-                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+                .addSubcommands(new SubcommandData("skip", "Administrator: Skips the next job"))
+                .addSubcommands(new SubcommandData("lookup", "Administrator: Lookup a job by its ID")
+                        .addOption(OptionType.INTEGER, "identifier", "Enter Job ID.", true)));
+        commands.add(Commands.slash("data", "Administrator: View data that the bot has collected")
+                .addSubcommands(new SubcommandData("user", "Administrator: View data about a user in an JSON file")
+                        .addOption(OptionType.STRING, "table", "Table to view data from", true)
+                        .addOption(OptionType.USER, "user", "User to view data about", true))
+                .addSubcommands(new SubcommandData("all", "Administrator: View all data in an JSON file")
+                        .addOption(OptionType.STRING, "table", "Table to view data from", true)));
         if (event.getGuild().getId().equals(Core.DEPLOYMENT.get("guild"))) {
             event.getGuild().updateCommands().addCommands(commands).queue();
         }

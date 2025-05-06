@@ -28,7 +28,7 @@ import java.util.*;
 
 public class Core {
 
-    public static final String VERSION = "0.5.3";
+    public static final String VERSION = "0.5.4";
     public static JDA BOT;
     public static long BOOT = Instant.now().getEpochSecond();
     public static String SERVER_RULES;
@@ -102,19 +102,15 @@ public class Core {
             JSONObject deployment = Core.SETTINGS.getJSONObject("deployment");
 
             Core.DEPLOYMENT.put("guild", deployment.getString("guild"));
-            Core.DEPLOYMENT.put("role.senior", deployment.getJSONObject("roles").getString("senior"));
-            Core.DEPLOYMENT.put("role.mod", deployment.getJSONObject("roles").getString("mod"));
+            Core.DEPLOYMENT.put("role.senior", deployment.getJSONObject("alerts").getString("all"));
+            Core.DEPLOYMENT.put("role.mod", deployment.getJSONObject("alerts").getString("optIn"));
             Core.DEPLOYMENT.put("channel.cmd", deployment.getJSONObject("channels").getString("cmd"));
             Core.DEPLOYMENT.put("channel.log", deployment.getJSONObject("channels").getString("log"));
             Core.DEPLOYMENT.put("channel.warn", deployment.getJSONObject("channels").getString("warn"));
 
-            Core.DEPLOYMENT.put("kick.length", String.valueOf(deployment.getJSONArray("autoModKick").length()));
-            for (int i = 0; i < deployment.getJSONArray("autoModKick").length(); i++) {
-                Core.DEPLOYMENT.put("kick." + i, deployment.getJSONArray("autoModKick").getString(i));
-            }
-            Core.DEPLOYMENT.put("ban.length", String.valueOf(deployment.getJSONArray("autoModBan").length()));
-            for (int i = 0; i < deployment.getJSONArray("autoModBan").length(); i++) {
-                Core.DEPLOYMENT.put("ban." + i, deployment.getJSONArray("autoModBan").getString(i));
+            JSONObject autoActions = deployment.getJSONObject("autoModActions");
+            for (String key : autoActions.keySet()) {
+                Core.DEPLOYMENT.put("action." + key, autoActions.getString(key));
             }
 
         } catch (Exception e) {
@@ -138,10 +134,10 @@ public class Core {
                 .build();
 
         // Register Events and Modules
-        BOT.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert(), new Safety(), new EnforceSafetyFeatures(), new EnforceLinkChecks());
+        BOT.addEventListener(new PrivateMessage(), new EnforceOneOP(), new EnforceFanRole(), new AutoModAlert(), new EnforceSafetyFeatures(), new EnforceLinkChecks());
 
         // Register Commands
-        BOT.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime());
+        BOT.addEventListener(new CommandManager(), new Ping(), new Module(), new Uptime(), new Data(), new Safety());
 
         // Azure Content Safety
         CONTENT_SAFETY_CLIENT = new ContentSafetyClientBuilder()

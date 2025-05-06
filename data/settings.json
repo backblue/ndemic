@@ -13,17 +13,17 @@
     {
       "name": "analytics",
       "enabled": true,
-      "desc": "Collects basic usage data to help improve bot."
+      "desc": "Collects basic usage data"
     },
     {
       "name": "autoModNotify",
       "enabled": true,
-      "desc": "Pings all moderators when AutoMod takes action."
+      "desc": "Pings most moderators when AutoMod takes action."
     },
     {
-      "name": "autoModTakeExtremeAction",
+      "name": "automaticActions",
       "enabled": true,
-      "desc": "Automatically Kick/Ban users. Does not notify Mods."
+      "desc": "Takes actions based on Discord AutoMod (does not ping mods)."
     },
     {
       "name": "enforceOPGuides",
@@ -38,23 +38,23 @@
     {
       "name": "safetyFeatures",
       "enabled": true,
-      "desc": "(beta) Use AI to detect potentially harmful content."
+      "desc": "Use AI to scan and profile profile pictures"
     }
   ],
   "deployment": {
     "guild": "523349543505362945",
-    "autoModKick": [
-      "1005660117808721981"
-    ],
+    "autoModActions": {
+      "suspiciousLinks": "",
+      "extremeLanguage": ""
+    },
     "channels": {
       "warn": "750352217495699528",
       "log": "558690605698514994",
       "cmd": "624056396639502336"
     },
-    "roles": {
-      "senior": "608420428192677899",
-      "mod": "523351538937233426"
-    },
-    "autoModBan": []
+    "alerts": {
+      "all": "523351538937233426",
+      "optIn": "1365758943363596388"
+    }
   }
 }

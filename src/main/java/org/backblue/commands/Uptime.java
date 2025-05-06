@@ -31,7 +31,7 @@ public class Uptime extends ListenerAdapter {
 
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Color.BLUE)
-                    .setTitle("About Bot: v" + Core.VERSION)
+                    .setTitle(event.getJDA().getSelfUser().getName() + ": v" + Core.VERSION)
                     .addField("CPU", "`" + Math.round(OS.getCpuLoad()*100) + "%`", true)
                     .addField("Memory", "`" + used / 1000000 + " MB / " + Runtime.getRuntime().totalMemory() / 1000000 + " MB`", true)
                     .addField("Uptime", "`" + FormatTime.formatTimeShort(Instant.now().getEpochSecond() - Core.BOOT) + "`", true)

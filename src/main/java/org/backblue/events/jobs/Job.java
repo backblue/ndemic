@@ -66,11 +66,6 @@ public abstract class Job {
         return completed = System.currentTimeMillis();
     }
 
-    public final Long markDone(String reason) {
-        this.output = this.output + " OK: <t:" + System.currentTimeMillis() / 1000 + ":R> " + reason;
-        return completed = System.currentTimeMillis();
-    }
-
     public final Long markDoneWithPrejudice(String reason) {
         this.output = this.output + " :warning: <t:" + System.currentTimeMillis() / 1000 + ":R> " + reason;
         return completed = System.currentTimeMillis();
