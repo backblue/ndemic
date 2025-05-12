@@ -44,8 +44,9 @@
   "deployment": {
     "guild": "523349543505362945",
     "autoModActions": {
-      "suspiciousLinks": "",
-      "extremeLanguage": ""
+      "suspiciousLinks": "970382590253088878",
+      "extremeLanguage": "970379396512899123",
+      "unwantedContent": "1122372698354483224"
     },
     "channels": {
       "warn": "750352217495699528",

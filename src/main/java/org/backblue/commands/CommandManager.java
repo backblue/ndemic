@@ -35,7 +35,6 @@ public class CommandManager extends ListenerAdapter {
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("safety", "Administrator: View current, upcoming queue for safety scanning tasks")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
-                .addSubcommands(new SubcommandData("status", "Administrator: View overall status of safety features"))
                 .addSubcommands(new SubcommandData("queue", "Administrator: View current queue for job task"))
                 .addSubcommands(new SubcommandData("dequeue", "Administrator: Force-run the next job in queue. Dequeue is performed automatically"))
                 .addSubcommands(new SubcommandData("skip", "Administrator: Skips the next job"))

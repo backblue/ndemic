@@ -14,6 +14,9 @@ public class EnforceLinkChecks extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (Core.MODULES.get("safetyFeatures") && Core.SAFETY.getJSONObject("linkChecks").getBoolean("enabled")) {
+            if (event.getMember() == null) {
+                return;
+            }
             if (event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
                 return;
             }

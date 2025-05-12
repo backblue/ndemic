@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.backblue.Core;
 import org.backblue.utilities.SQLJSON;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
@@ -23,12 +24,27 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+
 public class ProfileScanJob extends Job {
 
     private final User user;
     private String avatarLink;
     private String bannerLink;
     private final String source;
+
+    public ProfileScanJob(@NotNull ProfileScanJob job) {
+        super();
+        this.user = Core.BOT.getUserById(id);
+
+        this.source = job.source;
+        if (user != null) {
+            this.avatarLink = user.getAvatarUrl();
+            user.retrieveProfile().queue(profile -> this.bannerLink = profile.getBannerUrl());
+            QUEUE.add(this);
+        }
+    }
 
     public ProfileScanJob(String id, String source) {
         super();
@@ -50,9 +66,7 @@ public class ProfileScanJob extends Job {
             this.avatarLink = user.getAvatarUrl();
         }
 
-            user.retrieveProfile().queue(profile -> {
-                this.bannerLink = profile.getBannerUrl();
-            });
+            user.retrieveProfile().queue(profile -> this.bannerLink = profile.getBannerUrl());
         try {
             if (json.readString("lastBannerURL").equals(bannerLink)) {
                 bannerLink = null;
@@ -80,36 +94,60 @@ public class ProfileScanJob extends Job {
 
         if (nextJobSamePerson() != null) {
             log();
-            markInvalid("User's profile no longer up-to-date");
+            markInvalid("User's profile no longer up-to-date, retrying");
+            new ProfileScanJob(this);
             return;
         }
 
-        Boolean avatarAlert = scanImage(avatarLink, "Avatar");
-        Boolean bannerAlert = scanImage(bannerLink, "Banner");
+        TextChannel guildLog = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
+        TextChannel guildCmd = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
+        Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("alerts.optIn"));
+
+        List<ImageCategoriesAnalysis> avatarList = scanImage(avatarLink, "Avatar");
+        List<ImageCategoriesAnalysis> bannerList = scanImage(bannerLink, "Banner");
+
         RECENT_COMPLETE_JOBS.push(this);
 
-        if (avatarAlert == null) {
-            markInvalid();
-            log();
-            return;
+        String foundBadThing = "";
+
+        if (avatarList != null) {
+            for (ImageCategoriesAnalysis analysis : avatarList) {
+                if (analysis.getSeverity() >= Core.SAFETY.getJSONObject("trigger").getInt(analysis.getCategory().toString())) {
+                    foundBadThing = "Avatar";
+                    String fail = ":warning: `#" + this.id + "`: Scanned " + user.getAsMention() + "'s [avatar](<" + avatarLink + ">].\n-#From: `" + source + "`";
+                    if (guildLog != null) {
+                        guildLog.sendMessage(fail).queue();
+                    }
+                    break;
+                }
+            }
         }
-        if (bannerAlert == null) {
-            markInvalid();
-            log();
-            return;
+        if (foundBadThing.isEmpty() && bannerList != null) {
+            for (ImageCategoriesAnalysis analysis : bannerList) {
+                if (analysis.getSeverity() >= Core.SAFETY.getJSONObject("trigger").getInt(analysis.getCategory().toString())) {
+                    foundBadThing = "Banner";
+                    String fail = ":warning: `#" + this.id + "`: Scanned " + user.getAsMention() + "'s [banner](<" + bannerLink + ">].\n-#From: `" + source + "`";
+                    if (guildLog != null) {
+                        guildLog.sendMessage(fail).queue();
+                    }
+                    break;
+                }
+            }
+        }
+        if (!foundBadThing.isEmpty()) {
+            String msg = pingRole.getAsMention() + "Inappropriate " + foundBadThing.toLowerCase() + "found: " + user.getAsMention() + "'s " + foundBadThing.toLowerCase() + "\n" + "Link: " + (foundBadThing.equals("Avatar") ? avatarLink : bannerLink) + "\n" + "-# From: `" + source + "`";
+            if (guildCmd != null) {
+                guildCmd.sendMessage(msg).queue();
+            }
+            markDoneWithPrejudice("Potential Inappropriate " + foundBadThing.toLowerCase() + " detected");
+        } else {
+            String good = ":white_check_mark: `#" + this.id + "`: Scanned " + user.getAsMention() + "'s profile.\n-# From: `" + source + "`";
+            if (guildLog != null) {
+                guildLog.sendMessage(good).queue();
+            }
+            markDone();
         }
 
-        TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
-
-        if (avatarAlert != null && avatarAlert) {
-            markDoneWithPrejudice("Potential Inappropriate Avatar");
-            Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this avatar of user: " + user.getAsMention() + "\n" + avatarLink + "\n-# Output: " + getOutput() + ", Triggered from: " +source).queue();
-        } else if (bannerAlert != null && bannerAlert) {
-            Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
-            channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " flags this banner of user: " + user.getAsMention() + "\n" + bannerLink + "\n-# Output: " + getOutput() + ", Triggered from: " +source).queue();
-            markDoneWithPrejudice("Potential Inappropriate Banner");
-        } else {markDone();}
         log();
     }
 
@@ -128,20 +166,18 @@ public class ProfileScanJob extends Job {
         return "`" + this.id + "`: **" + user.getId() + "** " + this.getClass().getSimpleName() + " " + getOutput();
     }
 
-    private Boolean scanImage(String link, String type) {
+    private List<ImageCategoriesAnalysis> scanImage(String link, String type) {
 
-        if (link == null) {
-            return false;
+        if (type.equals("Banner") && link == null) {
+            return null;
         }
 
-        ContentSafetyImageData image = new ContentSafetyImageData();
         byte[] imageData;
-
         try {
             imageData = downloadUrl(new URL(link));
         } catch (MalformedURLException e) {
-            System.out.println(e);
-            appendOutput("An error occurred: could not download URL ");
+            ProfileScanJob newJob = new ProfileScanJob(this);
+            this.markInvalid(type + " link leads to nowhere, Retrying on job `" + newJob.id + "`");
             return null;
         }
 
@@ -166,56 +202,33 @@ public class ProfileScanJob extends Job {
             }
 
         } catch (IOException e) {
-            appendOutput("An error occurred: could not convert image to ImageIO ");
+            ProfileScanJob newJob = new ProfileScanJob(this);
+            this.markInvalid("Could not convert " + type + " image to byte array. Retrying on job `" + newJob.id + "`");
             return null;
         }
 
+        ContentSafetyImageData image = new ContentSafetyImageData();
         image.setContent(BinaryData.fromBytes(imageData));
-
         AnalyzeImageResult response;
 
         try {
             response = Core.CONTENT_SAFETY_CLIENT.analyzeImage(new AnalyzeImageOptions(image));
         } catch (HttpResponseException e) {
             TextChannel emergency = Core.BOT.getTextChannelById(Core.ANALYTICS.get("autoMod"));
-            assert emergency != null;
-            emergency.sendMessage("Manual " + type + " review needed! Skipping... " + link + "\n" + e).queue();
+            Objects.requireNonNull(emergency).sendMessage("Manual " + type + " review needed! Skipping... " + link + "\n`" + e + "`").queue();
             return null;
         }
 
-        HashMap<String, Integer> categories = new HashMap<>();
-        for (ImageCategoriesAnalysis result : response.getCategoriesAnalysis()) {
-            categories.put(result.getCategory().toString(), result.getSeverity());
+        HashMap<String, Integer> results = new HashMap<>();
+        for (ImageCategoriesAnalysis analysis : response.getCategoriesAnalysis()) {
+            results.put(analysis.getCategory().toString(), analysis.getSeverity());
         }
-
-        appendOutput(categories.toString());
-
+        appendOutput(results.toString());
         SQLJSON.read(user.getId(), "userinfo").writeString("lastProfileScan", String.valueOf(Instant.now().getEpochSecond()))
                 .writeString("last" + type + "URL", link)
                 .write("userinfo");
 
-        TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.log"));
-        if (channel != null) {
-            String fail = ":warning: `#" + this.id + "`: Scanned [" + type + "](<" + link + ">) of " + user.getAsMention() + " **with problems**.\n-# Triggered by: `" + source + "`";
-            if (categories.get("SelfHarm") >= Core.SAFETY.getJSONObject("trigger").getInt("SelfHarm")) {
-                channel.sendMessage(fail).queue();
-                return true;
-            } else if (categories.get("Sexual") >= Core.SAFETY.getJSONObject("trigger").getInt("Sexual")) {
-                channel.sendMessage(fail).queue();
-                return true;
-            } else if (categories.get("Violence") >= Core.SAFETY.getJSONObject("trigger").getInt("Violence")) {
-                channel.sendMessage(fail).queue();
-                return true;
-            } else if (categories.get("Hate") >= Core.SAFETY.getJSONObject("trigger").getInt("Hate")) {
-                channel.sendMessage(fail).queue();
-                return true;
-            } else {
-                channel.sendMessage(":white_check_mark: `#" + this.id + "`: Scanned [" + type + "](<" + link + ">) of " + user.getAsMention() + "." + "\n-# Triggered by: `" + source + "`").queue();
-                return false;
-            }
-        }
-        appendOutput("An error occurred: could not print output ");
-        return null;
+        return response.getCategoriesAnalysis();
     }
 
     private @Nullable Job nextJobSamePerson() {

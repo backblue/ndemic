@@ -22,10 +22,6 @@ public class JobRunner extends Job implements Runnable {
         }
     }
 
-    public JobRunner() {
-        System.out.println("Created Instance: JobRunner");
-    }
-
     @Override
     public void process() {
 

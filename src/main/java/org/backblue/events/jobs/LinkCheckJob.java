@@ -4,6 +4,8 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.Core;
+import org.backblue.InvalidBotStateException;
+import org.backblue.utilities.TakeAction;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
 public class LinkCheckJob extends Job {
 
     private final MessageReceivedEvent message;
+    private String messageRaw;
     private final List<String> links;
     private JSONObject jsonResponse = new JSONObject();
 
@@ -27,6 +30,7 @@ public class LinkCheckJob extends Job {
         super();
         this.message = message;
         this.links = links;
+        this.messageRaw = message.getMessage().getContentRaw();
         QUEUE.add(this);
     }
 
@@ -42,7 +46,7 @@ public class LinkCheckJob extends Job {
                 response = sendRequest(link);
                 if (response) {
                     TextChannel channel = Core.BOT.getTextChannelById(Core.DEPLOYMENT.get("channel.cmd"));
-                    Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("role.mod"));
+                    Role pingRole = Core.BOT.getRoleById(Core.DEPLOYMENT.get("alerts.optIn"));
                     channel.sendMessage(pingRole.getAsMention() + "\n" + Core.BOT.getSelfUser().getAsMention() + " thinks there is a malicious link from " + message.getMember().getAsMention() + "\n\nMessage:\n> " + message.getMessage().getContentRaw()).queue();
                     if (!response) {
                         response = true;
@@ -55,6 +59,9 @@ public class LinkCheckJob extends Job {
 
         if (response) {
             markDoneWithPrejudice("Malicious Links");
+            if (Core.SAFETY.getJSONObject("linkChecks").getBoolean("takeAction")) {
+                TakeAction.kickWarnLog(message.getMember(), "Malicious Links\n### Full Message:\n> `" + messageRaw + "`");
+            }
         } else {
             markDone();
         }

@@ -46,6 +46,9 @@ public class Safety extends ListenerAdapter {
                             raw.addField(key, jobData.get(key), true);
                         }
                     }
+                    double waited = (double) (Long.parseLong(jobData.get("started")) - Long.parseLong(jobData.get("created"))) / 1000;
+                    double completed = (double) (Long.parseLong(jobData.get("completed")) - Long.parseLong(jobData.get("started"))) / 1000;
+                    raw.setFooter("Waited to Run: " + waited + "s | Time Elapsed: " + completed + "s");
                     MessageEmbed msg = raw.build();
                     event.replyEmbeds(msg).setEphemeral(true).queue();
                 }

@@ -6,7 +6,7 @@
     "onUserAvatarChange": true,
     "onGuildAvatarChange": true,
     "onSlash": false,
-    "enforcementLevel": 1
+    "enforcementLevel": 0
   },
   "trigger": {
     "Hate": 2,

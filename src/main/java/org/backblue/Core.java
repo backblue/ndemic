@@ -102,8 +102,8 @@ public class Core {
             JSONObject deployment = Core.SETTINGS.getJSONObject("deployment");
 
             Core.DEPLOYMENT.put("guild", deployment.getString("guild"));
-            Core.DEPLOYMENT.put("role.senior", deployment.getJSONObject("alerts").getString("all"));
-            Core.DEPLOYMENT.put("role.mod", deployment.getJSONObject("alerts").getString("optIn"));
+            Core.DEPLOYMENT.put("alerts.all", deployment.getJSONObject("alerts").getString("all"));
+            Core.DEPLOYMENT.put("alerts.optIn", deployment.getJSONObject("alerts").getString("optIn"));
             Core.DEPLOYMENT.put("channel.cmd", deployment.getJSONObject("channels").getString("cmd"));
             Core.DEPLOYMENT.put("channel.log", deployment.getJSONObject("channels").getString("log"));
             Core.DEPLOYMENT.put("channel.warn", deployment.getJSONObject("channels").getString("warn"));
