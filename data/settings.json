@@ -1,61 +1,23 @@
 {
   "identifier": "ndemicBot",
   "owner": "387336581775884288",
-  "useSQL": true,
-  "analytics": {
+  "analysis": {
     "guild": "846837318132301904",
-    "enforcement": "1354229171076731111",
-    "DM": "1354224979755008191",
-    "autoMod": "1354224983924019491",
-    "jobs": "1356119673405702155"
+    "enforceFan": "1354229171076731111",
+    "enforceOneOPThread": "1354229171076731111",
+    "spy": "1354224979755008191",
+    "tasks": "1356119673405702155"
   },
-  "modules": [
-    {
-      "name": "analytics",
-      "enabled": true,
-      "desc": "Collects basic usage data"
-    },
-    {
-      "name": "autoModNotify",
-      "enabled": true,
-      "desc": "Pings most moderators when AutoMod takes action."
-    },
-    {
-      "name": "automaticActions",
-      "enabled": true,
-      "desc": "Takes actions based on Discord AutoMod (does not ping mods)."
-    },
-    {
-      "name": "enforceOPGuides",
-      "enabled": true,
-      "desc": "Automatically delete messages in guide channels that are not from the OP."
-    },
-    {
-      "name": "enforceFanRole",
-      "enabled": true,
-      "desc": "Force users to have any 'Fan' role before they can send messages."
-    },
-    {
-      "name": "safetyFeatures",
-      "enabled": true,
-      "desc": "Use AI to scan and profile profile pictures"
-    }
-  ],
   "deployment": {
     "guild": "523349543505362945",
-    "autoModActions": {
-      "suspiciousLinks": "970382590253088878",
-      "extremeLanguage": "970379396512899123",
-      "unwantedContent": "1122372698354483224"
+    "roles": {
+      "all": "523351538937233426",
+      "optIn": "1365758943363596388"
     },
     "channels": {
       "warn": "750352217495699528",
       "log": "558690605698514994",
       "cmd": "624056396639502336"
-    },
-    "alerts": {
-      "all": "523351538937233426",
-      "optIn": "1365758943363596388"
     }
   }
 }

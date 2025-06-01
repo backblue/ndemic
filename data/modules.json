@@ -1,0 +1,26 @@
+{
+  "analytics": {
+    "enabled": true,
+    "description": "basic logging functionality"
+  },
+  "discordAutoModNotify": {
+    "enabled": true,
+    "description": "pings most mods when discord AutoMod takes action"
+  },
+  "automaticActions": {
+    "enabled": false,
+    "description": "automatically punishes users known types of punishments"
+  },
+  "enforceOPGuides": {
+    "enabled": true,
+    "description": "force that only OP in thread can message in guide threads"
+  },
+  "enforceFanRole": {
+    "enabled": true,
+    "description": "force that users have 'Fan' role before they can chat."
+  },
+  "profileScanning": {
+    "enabled": true,
+    "description": "scans user profiles and bios for hate"
+  }
+}

@@ -6,7 +6,6 @@
 - :white_check_mark: Enforce user-created guide threads
 - :white_check_mark: Enforce roles before users can post, epically those who joined before Onboarding
 - :white_check_mark: Uses Microsoft Azure's content moderation API help moderate guilds
-- :white_check_mark: Uses Google Safe Search link checking to help moderate guilds
 
 ## Setup
 Either compile the executable yourself, [or download the JARs here](https://github.com/backblue/ndemic/releases/). **Requires Java 21**
@@ -22,7 +21,6 @@ TOKEN=
 AZURE_SAFETY_ENDPOINT=
 AZURE_SAFETY_KEY=
 JDBC=
-GOOGLE_SAFE_BROWSING_KEY_ENDPOINT=
 ``` 
 
 Note: Building using IntellJ Artifacts produces a non-executable jar.
