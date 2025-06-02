@@ -2,28 +2,33 @@ package org.backblue;
 
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import org.backblue.commands.*;
+import org.backblue.commands.Module;
+import org.backblue.events.EnforceProfileScan;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Properties;
 
 public class Bot {
-    private final String version = "0.6.0";
-
+    public static final String VERSION = "0.6.0";
+    public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
     private JSONObject modules;
@@ -94,6 +99,10 @@ public class Bot {
         return shardManager;
     }
 
+    public JSONObject getModules() {
+        return modules;
+    }
+
     public Boolean getModuleValue(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getBoolean("enabled");
@@ -123,10 +132,29 @@ public class Bot {
         return botStatic;
     }
 
+    public void sendDebugMessage(String type, String message) {
+        if (getModuleValue("analytics")) {
+            TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
+            if (analysisChannel != null) {
+                analysisChannel.sendMessage(message).queue();
+            }
+        }
+    }
+
+    public void sendDebugEmbed(String type, MessageEmbed embed) {
+        if (getModuleValue("analytics")) {
+            TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
+            if (analysisChannel != null) {
+                analysisChannel.sendMessageEmbeds(embed).queue();
+            }
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         Bot bot = new Bot();
-
-
+        bot.getJDA().addEventListener(new CommandList());
+        bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks());
+        bot.getJDA().addEventListener(new EnforceProfileScan());
     }
 
 }
