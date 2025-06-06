@@ -2,7 +2,9 @@ package org.backblue;
 
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
@@ -11,7 +13,8 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
-import org.backblue.events.EnforceProfileScan;
+import org.backblue.events.*;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -25,6 +28,8 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class Bot {
     public static final String VERSION = "0.6.0";
@@ -36,6 +41,12 @@ public class Bot {
     private static Bot botStatic;
     private final HashMap<String, String> analysis;
     private final HashMap<String, String> deployment;
+
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    public ScheduledExecutorService getScheduler() {
+        return scheduler;
+    }
 
     public Bot() throws IOException {
 
@@ -84,8 +95,13 @@ public class Bot {
     private HashMap<String, String> generateDeployment() {
         HashMap<String, String> map = new HashMap<>();
         for (String key : settings.getJSONObject("deployment").keySet()) {
-            if (key.equals("guild")) {
-                map.put("guild", settings.getJSONObject("deployment").getString(key));
+            if (key.equals("guild") || key.contains("FailureMsg")) {
+                map.put(key, settings.getJSONObject("deployment").getString(key));
+            } else if (key.contains("List")) {
+                JSONArray arr = settings.getJSONObject("deployment").getJSONArray(key);
+                for (int i = 0; i < arr.length(); i++) {
+                    map.put(key + "." + i, arr.getString(i));
+                }
             } else {
                 for (String anotherKey : settings.getJSONObject("deployment").getJSONObject(key).keySet()) {
                     map.put(key + "." + anotherKey, settings.getJSONObject("deployment").getJSONObject(key).getString(anotherKey));
@@ -150,11 +166,27 @@ public class Bot {
         }
     }
 
+    public void sendUserMessage(User user, String message) {
+        user.openPrivateChannel()
+                .queue(privateChannel -> {
+                    privateChannel.sendMessage(message).queue();
+                });
+    }
+
+    public void sendUserEmbed(User user, MessageEmbed embed) {
+        user.openPrivateChannel()
+                .queue(privateChannel -> {
+                    privateChannel.sendMessageEmbeds(embed).queue();
+                });
+    }
+
     public static void main(String[] args) throws IOException {
         Bot bot = new Bot();
         bot.getJDA().addEventListener(new CommandList());
         bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks());
-        bot.getJDA().addEventListener(new EnforceProfileScan());
+        bot.getJDA().addEventListener(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert());
+
+
     }
 
 }

@@ -1,7 +1,6 @@
 package org.backblue.tasks;
 
 import net.dv8tion.jda.api.entities.User;
-import org.backblue.Bot;
 
 public class ProfileScanTask extends Task {
 
@@ -12,7 +11,7 @@ public class ProfileScanTask extends Task {
 
     @Override
     public String toString() {
-        return "";
+        return "`#" + id + "` - " + this.getClass().getSimpleName();
     }
 
     @Override

@@ -22,7 +22,7 @@ public class EnforceProfileScan extends ListenerAdapter {
 
     @Override
     public void onUserUpdateAvatar(@NotNull UserUpdateAvatarEvent event) {
-        Member member = Objects.requireNonNull(event.getJDA().getGuildById(Bot.getBot().getDeployment().get("guild")).getMember(event.getUser()));
+        Member member = Objects.requireNonNull(Objects.requireNonNull(event.getJDA().getGuildById(Bot.getBot().getDeployment().get("guild"))).getMember(event.getUser()));
         runFromEvent(member, "global-newAvatar");
     }
 
@@ -38,10 +38,7 @@ public class EnforceProfileScan extends ListenerAdapter {
 
     private static void runFromEvent(Member member, String source) {
         if (Bot.getBot().getModuleValue("profileScanning")) {
-            if (member.getUser().getAvatarUrl() == null) {
-                return;
-            }
-            if (member.hasPermission(Permission.ADMINISTRATOR)) {
+            if (member.getUser().getAvatarUrl() == null || member.hasPermission(Permission.ADMINISTRATOR)) {
                 return;
             }
             new ProfileScanTask(member.getUser(), source);
