@@ -1,16 +1,9 @@
 {
-  "interval": 1,
   "profileScanning": {
-    "enabled": true,
     "join": true,
     "userAvatarChange": true,
     "guildAvatarChange": true,
-    "basicSlursScan": true,
-    "detection": {
-      "Hate": 2,
-      "SelfHarm": 4,
-      "Sexual": 4,
-      "Violence": 4
-    }
+    "slash": true,
+    "doBasicTextScan": true
   }
 }

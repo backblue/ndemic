@@ -1,6 +1,8 @@
 package org.backblue.utilities;
 
 import org.backblue.Bot;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,7 +49,7 @@ public class SQLProfile {
         return this;
     }
 
-    public String readString(String key) {
+    public @Nullable String readString(String key) {
         try {
             return json.getString(key);
         } catch (JSONException e) {
@@ -55,7 +57,7 @@ public class SQLProfile {
         }
     }
 
-    public Integer readInt(String key) {
+    public @Nullable Integer readInt(String key) {
         try {
             return json.getInt(key);
         } catch (JSONException e) {
@@ -63,7 +65,7 @@ public class SQLProfile {
         }
     }
 
-    public Long readLong(String key) {
+    public @Nullable Long readLong(String key) {
         try {
             return json.getLong(key);
         } catch (JSONException e) {
@@ -71,7 +73,7 @@ public class SQLProfile {
         }
     }
 
-    public JSONObject readJSONObject(String key) {
+    public @Nullable JSONObject readJSONObject(String key) {
         try {
             return json.getJSONObject(key);
         } catch (JSONException e) {
@@ -79,7 +81,7 @@ public class SQLProfile {
         }
     }
 
-    public static SQLProfile read(String userId, String table) {
+    public static @NotNull SQLProfile read(String userId, String table) {
         return new SQLProfile(userId, table);
     }
 

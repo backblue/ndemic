@@ -21,6 +21,6 @@
   },
   "profileScanning": {
     "description": "scans user profiles and bios for hate",
-    "enabled": true
+    "enabled": false
   }
 }

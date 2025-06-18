@@ -1,19 +1,25 @@
 package org.backblue;
 
+import com.azure.ai.contentsafety.ContentSafetyClient;
+import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
+import com.azure.core.credential.AzureKeyCredential;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
+import org.backblue.tasks.Task;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -27,34 +33,44 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class Bot {
-    public static final String VERSION = "0.6.0";
+    public static final String VERSION = "0.6.0_noSafetyFeatures";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
-    private JSONObject settings;
-    private JSONObject modules;
+    private final JSONObject settings;
+    private final JSONObject modules;
+    private final JSONObject tasks;
     private final ShardManager shardManager;
     private static Bot botStatic;
     private final HashMap<String, String> analysis;
     private final HashMap<String, String> deployment;
+
+    private final ContentSafetyClient contentSafetyClient;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public ScheduledExecutorService getScheduler() {
         return scheduler;
     }
+    public ContentSafetyClient getContentSafetyClient() {
+        return contentSafetyClient;
+    }
 
     public Bot() throws IOException {
+        botStatic = this;
 
         keys = loadKeys();
         settings = new JSONObject(new JSONTokener(Files.readString(Path.of("data/settings.json"))));
         modules = new JSONObject(new JSONTokener(Files.readString(Path.of("data/modules.json"))));
         analysis = generateAnalysis();
         deployment = generateDeployment();
+        tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
+        AutoModAlert.generateStaticVariables();
 
         try {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));
@@ -64,13 +80,17 @@ public class Bot {
             System.exit(1);
         }
 
+        contentSafetyClient = new ContentSafetyClientBuilder()
+                .endpoint(keys.getProperty("AZURE_SAFETY_ENDPOINT"))
+                .credential(new AzureKeyCredential(keys.getProperty("AZURE_SAFETY_KEY")))
+                .buildClient();
+
         DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.create(keys.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class));
         builder.setActivity(Activity.customStatus("Facilitating requests"));
         builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setChunkingFilter(ChunkingFilter.ALL);
         shardManager = builder.build();
-        botStatic = this;
     }
 
     private static Properties loadKeys() {
@@ -119,6 +139,10 @@ public class Bot {
         return modules;
     }
 
+    public JSONObject getTasks() {
+        return tasks;
+    }
+
     public Boolean getModuleValue(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getBoolean("enabled");
@@ -157,12 +181,28 @@ public class Bot {
         }
     }
 
+    public void sendDebugMessage(String type, String message, FileUpload attachment) {
+        if (getModuleValue("analytics")) {
+            TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
+            if (analysisChannel != null) {
+                analysisChannel.sendMessage(message).addFiles(attachment).queue();
+            }
+        }
+    }
+
     public void sendDebugEmbed(String type, MessageEmbed embed) {
         if (getModuleValue("analytics")) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessageEmbeds(embed).queue();
             }
+        }
+    }
+
+    public void sendDeploymentMessage(String type, String message) {
+        TextChannel analysisChannel = getJDA().getTextChannelById(getDeployment().get("channels." + type));
+        if (analysisChannel != null) {
+            analysisChannel.sendMessage(message).queue();
         }
     }
 
@@ -173,11 +213,19 @@ public class Bot {
                 });
     }
 
-    public void sendUserEmbed(User user, MessageEmbed embed) {
+    public void sendUserMessage(User user, MessageEmbed embed) {
         user.openPrivateChannel()
                 .queue(privateChannel -> {
                     privateChannel.sendMessageEmbeds(embed).queue();
                 });
+    }
+
+    public @NotNull Role getMostModerators() {
+        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.all")));
+    }
+
+    public @NotNull Role getAllModerators() {
+        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn")));
     }
 
     public static void main(String[] args) throws IOException {
@@ -185,8 +233,6 @@ public class Bot {
         bot.getJDA().addEventListener(new CommandList());
         bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks());
         bot.getJDA().addEventListener(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert());
-
-
     }
 
 }
