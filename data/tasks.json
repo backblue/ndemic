@@ -4,6 +4,21 @@
     "userAvatarChange": true,
     "guildAvatarChange": true,
     "slash": true,
-    "doBasicTextScan": true
+    "msg": false,
+    "doBasicTextScan": true,
+    "detection": {
+      "pointsThresholdToWarn": 12,
+      "resetPointsAfterSeconds": 86400,
+      "similaritiesPercentageToNotScan": 80
+    }
+  },
+  "messageScanning": {
+    "enabled": false,
+    "detection": {
+      "Hate": 0,
+      "Sexual": 0,
+      "Violence": 0,
+      "SelfHarm": 0
+    }
   }
 }

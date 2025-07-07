@@ -7,15 +7,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.*;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.Objects;
 
-public class SQLProfile {
+public final class SQLProfile {
 
     private final String userId;
     private final JSONObject json;
@@ -57,7 +54,7 @@ public class SQLProfile {
         }
     }
 
-    public @Nullable Integer readInt(String key) {
+    public Integer readInt(String key) {
         try {
             return json.getInt(key);
         } catch (JSONException e) {

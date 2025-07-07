@@ -3,6 +3,7 @@ package org.backblue;
 import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -20,10 +21,12 @@ import org.backblue.commands.Module;
 import org.backblue.events.*;
 import org.backblue.tasks.Task;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,15 +34,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class Bot {
-    public static final String VERSION = "0.6.0_noSafetyFeatures";
+    public static final String VERSION = "0.6.0";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;
@@ -51,8 +53,9 @@ public class Bot {
     private final HashMap<String, String> deployment;
 
     private final ContentSafetyClient contentSafetyClient;
-
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final BlockingQueue<Task> taskqueue;
+    private final Stack<Task> completedTasks;
 
     public ScheduledExecutorService getScheduler() {
         return scheduler;
@@ -70,7 +73,9 @@ public class Bot {
         analysis = generateAnalysis();
         deployment = generateDeployment();
         tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
+        taskqueue = new LinkedBlockingDeque<>();
         AutoModAlert.generateStaticVariables();
+        completedTasks = new Stack<>();
 
         try {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));
@@ -86,7 +91,7 @@ public class Bot {
                 .buildClient();
 
         DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.create(keys.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class));
-        builder.setActivity(Activity.customStatus("Facilitating requests"));
+        builder.setActivity(Activity.customStatus(settings.getString("status")));
         builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setChunkingFilter(ChunkingFilter.ALL);
@@ -122,6 +127,7 @@ public class Bot {
                 for (int i = 0; i < arr.length(); i++) {
                     map.put(key + "." + i, arr.getString(i));
                 }
+                map.put(key + ".size", String.valueOf(arr.length()));
             } else {
                 for (String anotherKey : settings.getJSONObject("deployment").getJSONObject(key).keySet()) {
                     map.put(key + "." + anotherKey, settings.getJSONObject("deployment").getJSONObject(key).getString(anotherKey));
@@ -172,6 +178,10 @@ public class Bot {
         return botStatic;
     }
 
+    public BlockingQueue<Task> getTaskQueue() {
+        return taskqueue;
+    }
+
     public void sendDebugMessage(String type, String message) {
         if (getModuleValue("analytics")) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
@@ -206,6 +216,13 @@ public class Bot {
         }
     }
 
+    public void sendDeploymentMessage(String type, String message, FileUpload attachment) {
+        TextChannel analysisChannel = getJDA().getTextChannelById(getDeployment().get("channels." + type));
+        if (analysisChannel != null) {
+            analysisChannel.sendMessage(message).addFiles(attachment).queue();
+        }
+    }
+
     public void sendUserMessage(User user, String message) {
         user.openPrivateChannel()
                 .queue(privateChannel -> {
@@ -220,19 +237,70 @@ public class Bot {
                 });
     }
 
+    public @Nullable Task searchTask(int id) {
+        return Task.IDS_TO_TASK.get(id);
+    }
+
+    public @Nullable EmbedBuilder taskToEmbed(int id) {
+        Task task = searchTask(id);
+        if (task == null) {
+            return null;
+        }
+        HashMap<String, String> info = task.lookup();
+        EmbedBuilder embed = new EmbedBuilder();
+        embed.setColor(Color.YELLOW);
+        embed.setTitle("Task `" + id + "`");
+        for (String key : info.keySet()) {
+            if (info.get(key) == null) {
+                embed.addField(key, "N/A", true);
+                continue;
+            }
+            embed.addField(key, info.get(key), true);
+        }
+        if (task.getStarted() > 0 && task.getFinished() > 0) {
+            long waited = (task.getStarted() - task.getCreated())/1000;
+            long elapsed = (task.getFinished() - task.getCreated())/1000;
+            embed.setFooter("Waited " + waited + "s to run, Ran for " + elapsed + "s");
+        }
+        return embed;
+    }
+
     public @NotNull Role getMostModerators() {
-        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.all")));
+        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn")));
     }
 
     public @NotNull Role getAllModerators() {
-        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn")));
+        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.all")));
+    }
+
+    public BlockingQueue<Task> getTaskqueue() {
+        return taskqueue;
+    }
+
+    public Stack<Task> getCompletedTasks() {
+        return completedTasks;
     }
 
     public static void main(String[] args) throws IOException {
         Bot bot = new Bot();
         bot.getJDA().addEventListener(new CommandList());
         bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks());
-        bot.getJDA().addEventListener(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert());
+        bot.getJDA().addEventListener(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
+
+        Thread taskRunner = new Thread(() -> {
+            while (true) {
+                try {
+                    Task task = bot.getTaskQueue().take();
+                    task.process();
+                    bot.completedTasks.push(task);
+                    bot.sendDebugEmbed("tasks", bot.taskToEmbed(task.getId()).build());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+        taskRunner.start();
     }
 
 }

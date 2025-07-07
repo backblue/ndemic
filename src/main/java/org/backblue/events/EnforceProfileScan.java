@@ -5,9 +5,11 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateAvatarEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Bot;
+import org.backblue.tasks.ProfileScanTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -35,10 +37,21 @@ public class EnforceProfileScan extends ListenerAdapter {
         runFromEvent(event.getMember(), "slash");
     }
 
+    @Override
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        runFromEvent(event.getMember(), "msg");
+    }
+
     private static void runFromEvent(Member member, String source) {
         if (Bot.getBot().getModuleValue("profileScanning")) {
-            if (!Bot.getBot().getTasks().getJSONObject("profileScanning").getBoolean(source) || member.getUser().getAvatarUrl() == null || member.hasPermission(Permission.ADMINISTRATOR)) {
+            if (member == null) {
                 return;
+            }
+            if (Bot.getBot().getTasks().getJSONObject("profileScanning").getBoolean(source)) {
+                if (member.getUser().getAvatarUrl() == null || member.hasPermission(Permission.ADMINISTRATOR)) {
+                    return;
+                }
+                new ProfileScanTask(member.getUser().getId(), source);
             }
 
         }
