@@ -22,5 +22,9 @@
   "profileScanning": {
     "description": "scans user profiles and bios for hate",
     "enabled": true
+  },
+  "messageScanning": {
+    "description": "scans messages for inappropriate content",
+    "enabled": true
   }
 }

@@ -13,12 +13,12 @@
     }
   },
   "messageScanning": {
-    "enabled": false,
+    "autoDelete": true,
     "detection": {
-      "Hate": 0,
-      "Sexual": 0,
-      "Violence": 0,
-      "SelfHarm": 0
+      "Hate": 2,
+      "Sexual": 8,
+      "Violence": 8,
+      "SelfHarm": 8
     }
   }
 }

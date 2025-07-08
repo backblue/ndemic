@@ -1,14 +1,10 @@
 package org.backblue.tasks;
-
-import net.dv8tion.jda.api.EmbedBuilder;
-
 import java.util.HashMap;
 
 public abstract class Task {
 
     public static int IDS = 0;
     public static final HashMap<Integer, Task> IDS_TO_TASK = new HashMap<>();
-
     private final int id;
     private final long createdTimestamp;
     private long startedTimestamp;
@@ -28,7 +24,7 @@ public abstract class Task {
 
     @Override
     protected final Task clone() throws CloneNotSupportedException {
-        throw new CloneNotSupportedException("Task cannot be cloned");
+        throw new CloneNotSupportedException("Unsupported, create a new instance instead.");
     }
 
     public int getId() {

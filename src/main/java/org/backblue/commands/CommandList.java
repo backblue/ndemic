@@ -33,9 +33,6 @@ public class CommandList extends ListenerAdapter {
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("tasks", "Administrator: View current, upcoming tasks")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
-                .addSubcommands(new SubcommandData("queue", "Administrator: View current queue for tasks"))
-                .addSubcommands(new SubcommandData("scan", "Administrator: Scan a user")
-                        .addOption(OptionType.USER, "user", "User needed to scan", true))
                 .addSubcommands(new SubcommandData("lookup", "Administrator: Lookup a task by its ID")
                         .addOption(OptionType.INTEGER, "identifier", "Enter Task ID.", true)));
         commands.add(Commands.slash("data", "Administrator: View data that the bot has collected")
