@@ -37,7 +37,7 @@ public class EnforceMessageScan extends ListenerAdapter {
     }
 
     private void process(MessageReceivedEvent event) {
-        if (event.getMember() == null) {
+        if (event.getMember() == null || event.getMessage().getContentRaw().isEmpty()) {
             return;
         }
         if (event.getMember().hasPermission(Permission.ADMINISTRATOR)) {

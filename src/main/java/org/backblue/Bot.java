@@ -4,21 +4,24 @@ import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
+import org.backblue.tasks.BlueSkyReadTask;
+import org.backblue.tasks.ProfileScanTask;
 import org.backblue.tasks.Task;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +30,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.awt.*;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,10 +39,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 
 public class Bot {
     public static final String VERSION = "0.6.0";
@@ -64,7 +65,7 @@ public class Bot {
         return contentSafetyClient;
     }
 
-    public Bot() throws IOException {
+    public Bot() throws IOException, InterruptedException {
         botStatic = this;
 
         keys = loadKeys();
@@ -95,7 +96,12 @@ public class Bot {
         builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setChunkingFilter(ChunkingFilter.ALL);
+        builder.enableCache(EnumSet.allOf(CacheFlag.class));
         shardManager = builder.build();
+
+        while (!shardManager.getShards().stream().allMatch(jda -> jda.getStatus() == JDA.Status.CONNECTED)) {
+            Thread.sleep(1000);
+        }
     }
 
     private static Properties loadKeys() {
@@ -200,11 +206,22 @@ public class Bot {
         }
     }
 
-    public void sendDebugEmbed(String type, MessageEmbed embed) {
+    public void sendDebugMessage(String type, MessageEmbed embed) {
         if (getModuleValue("analytics")) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessageEmbeds(embed).queue();
+            }
+        }
+    }
+
+    public void sendDeploymentMessage(String type, String message, MessageEmbed embed) {
+        String channelId = getDeployment().get("channels." + type);
+        GuildChannel analysisChannel = getJDA().getGuildChannelById(channelId);
+        if (analysisChannel != null) {
+            switch (analysisChannel.getType()) {
+                case TEXT -> ((TextChannel) analysisChannel).sendMessage(message).setEmbeds(embed).queue();
+                case NEWS -> ((NewsChannel) analysisChannel).sendMessage(message).setEmbeds(embed).queue();
             }
         }
     }
@@ -235,6 +252,28 @@ public class Bot {
                 .queue(privateChannel -> {
                     privateChannel.sendMessageEmbeds(embed).queue();
                 });
+    }
+
+    public void sendTaskUpdate() {
+        HashMap<String, String> info = Task.getProgress();
+        String totalTasks = info.get("total");
+        String msgScanTasks = info.get("msgScanTasks");
+        String profileScanTasks = info.get("profileScanTasks");
+        String scannedWithWarning = info.get("scannedWithWarning");
+        sendDeploymentMessage("log", "## Last Hour Stats\n`" + totalTasks + " tasks completed`\n`" +
+                profileScanTasks + " profile scans`\n`" +
+                msgScanTasks + " message scans`\n`" + scannedWithWarning + " with ping(s) to mods`");
+        if (this.settings.getBoolean("caching")) {
+            System.out.println("Attempting to cache img data...");
+            JSONObject cache = ProfileScanTask.toBase64();
+            try {
+                FileWriter writer = new FileWriter("data/cache/imageScan.json");
+                writer.write(cache.toString());
+                writer.close();
+            } catch (IOException e) {
+                sendDebugMessage("imageDump", getOwner() + " caching for image scans failed!");
+            }
+        }
     }
 
     public @Nullable Task searchTask(int id) {
@@ -273,6 +312,10 @@ public class Bot {
         return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.all")));
     }
 
+    public @NotNull User getOwner() {
+        return Objects.requireNonNull(getJDA().getUserById(this.settings.getString("owner")));
+    }
+
     public BlockingQueue<Task> getTaskqueue() {
         return taskqueue;
     }
@@ -281,7 +324,11 @@ public class Bot {
         return completedTasks;
     }
 
-    public static void main(String[] args) throws IOException {
+    public Properties getKeys() {
+        return keys;
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
         Bot bot = new Bot();
         bot.getJDA().addEventListener(new CommandList());
         bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks());
@@ -293,7 +340,7 @@ public class Bot {
                     Task task = bot.getTaskQueue().take();
                     task.process();
                     bot.completedTasks.push(task);
-                    bot.sendDebugEmbed("tasks", bot.taskToEmbed(task.getId()).build());
+                    bot.sendDebugMessage("tasks", bot.taskToEmbed(task.getId()).build());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -301,6 +348,18 @@ public class Bot {
             }
         });
         taskRunner.start();
+
+        bot.getScheduler().scheduleWithFixedDelay(bot::sendTaskUpdate, 1, 1, TimeUnit.HOURS);
+        if (bot.getModuleValue("bSkyTracker")) {
+            try {
+
+                int timeBetween = Integer.parseInt(bot.keys.getProperty("BSKY_REFRESH_MINS", "1"));
+                bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, timeBetween, TimeUnit.MINUTES);
+            } catch (NumberFormatException e) {
+                System.out.println("Failed to parse BSky refresh time, defaulting to 1 minute.");
+                bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, 1, TimeUnit.MINUTES);
+            }
+        }
     }
 
 }

@@ -38,5 +38,5 @@ build/
 .DS_Store
 
 ### Key ###
-data/users/*
 *.properties
+data/cache/*

@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.Bot;
 import org.backblue.utilities.SQLProfile;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -20,16 +21,20 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
 public final class ProfileScanTask extends Task {
 
-    private static final HashMap<byte[], Integer> HASH_TO_POINTS = new HashMap<>();
-    private static final ArrayList<byte[]> HASHES = new ArrayList<>();
-    private static final HashMap<byte[], HashMap<String, Integer>> HASH_TO_OUTPUT = new HashMap<>();
+    private static final HashMap<byte[], Integer> HASH_TO_POINTS;
+    private static final ArrayList<byte[]> HASHES;
+    private static final HashMap<byte[], HashMap<String, Integer>> HASH_TO_OUTPUT;
     private static ArrayList<String> DETECTION_TEXT;
     private @NotNull final User user;
     private String avatarURL;
@@ -38,6 +43,26 @@ public final class ProfileScanTask extends Task {
     private FileUpload avatarFile;
     private FileUpload bannerFile;
     private final String source; // Source is event that triggered scan, eg "join", "guildAvatarChange", "userAvatarChange", "slash"
+
+    static {
+        HASHES = new ArrayList<>();
+        HASH_TO_POINTS = new HashMap<>();
+        HASH_TO_OUTPUT = new HashMap<>();
+        String path = "data/cache/imageScan.json";
+        if (Paths.get(path).toFile().exists()) {
+            try {
+                JSONObject packed = new JSONObject(Files.readString(Path.of(path)));
+                for (String base64 : packed.keySet()) {
+                    byte[] hash = Base64.getDecoder().decode(base64);
+                    HASHES.add(hash);
+                    HASH_TO_POINTS.put(hash, packed.getInt(base64));
+                    HashMap<String, Integer> output = new HashMap<>();
+                    output.put("cachePoints", packed.getInt(base64));
+                    HASH_TO_OUTPUT.put(hash, output);
+                }
+            } catch (IOException ignored) {}
+        }
+    }
 
     public ProfileScanTask(String userID, String source) {
         super();
@@ -65,6 +90,15 @@ public final class ProfileScanTask extends Task {
             this.customStatus = null;
         }
         Bot.getBot().getTaskQueue().add(this);
+    }
+
+    public static JSONObject toBase64() {
+        JSONObject packed = new JSONObject();
+        for (byte[] hash : HASHES) {
+            String base64 = Base64.getEncoder().encodeToString(hash);
+            packed.put(base64, HASH_TO_POINTS.get(hash));
+        }
+        return packed;
     }
 
     @Override

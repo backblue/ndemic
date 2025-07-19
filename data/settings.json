@@ -2,6 +2,7 @@
   "identifier": "ndemicBot",
   "owner": "387336581775884288",
   "status": "Handing out bribes",
+  "caching": true,
   "analysis": {
     "guild": "846837318132301904",
     "enforceFan": "1354229171076731111",
@@ -20,7 +21,8 @@
     "channels": {
       "warn": "750352217495699528",
       "log": "558690605698514994",
-      "cmd": "624056396639502336"
+      "cmd": "624056396639502336",
+      "bsky": "699373249338802226"
     },
     "autoModDefaultActionsIds": {
       "compromisedAccount": "970382590253088878",

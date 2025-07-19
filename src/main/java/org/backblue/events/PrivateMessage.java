@@ -22,7 +22,7 @@ public class PrivateMessage extends ListenerAdapter {
                         .addField("Message", event.getMessage().getContentRaw(), false)
                         .addField("Author", event.getAuthor().getName(), false)
                         .build();
-                Bot.getBot().sendDebugEmbed("spy", message);
+                Bot.getBot().sendDebugMessage("spy", message);
             }
         }
     }
