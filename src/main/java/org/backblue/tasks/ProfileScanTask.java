@@ -212,7 +212,7 @@ public final class ProfileScanTask extends Task {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ImageIO.write(resized, "png", baos);
                 bytes = baos.toByteArray();
-                appendOutput(" " + type + ": Resized to `" + width + " x " + height + "` ");
+                appendOutput(" " + type + ": Resized to **" + width + " x " + height + "** ");
             }
         } catch (IOException ignored) {}
 

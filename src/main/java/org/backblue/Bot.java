@@ -255,14 +255,6 @@ public class Bot {
     }
 
     public void sendTaskUpdate() {
-        HashMap<String, String> info = Task.getProgress();
-        String totalTasks = info.get("total");
-        String msgScanTasks = info.get("msgScanTasks");
-        String profileScanTasks = info.get("profileScanTasks");
-        String scannedWithWarning = info.get("scannedWithWarning");
-        sendDeploymentMessage("log", "## Last Hour Stats\n`" + totalTasks + " tasks completed`\n`" +
-                profileScanTasks + " profile scans`\n`" +
-                msgScanTasks + " message scans`\n`" + scannedWithWarning + " with ping(s) to mods`");
         if (this.settings.getBoolean("caching")) {
             System.out.println("Attempting to cache img data...");
             JSONObject cache = ProfileScanTask.toBase64();
