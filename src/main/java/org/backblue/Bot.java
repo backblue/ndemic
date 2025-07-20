@@ -99,9 +99,6 @@ public class Bot {
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
         shardManager = builder.build();
 
-        while (!shardManager.getShards().stream().allMatch(jda -> jda.getStatus() == JDA.Status.CONNECTED)) {
-            Thread.sleep(1000);
-        }
     }
 
     private static Properties loadKeys() {

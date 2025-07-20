@@ -90,6 +90,7 @@ public abstract class Task {
         info.put("startedTimestamp", String.valueOf(startedTimestamp));
         info.put("finishedTimestamp", String.valueOf(finishedTimestamp));
         info.put("output", output);
+        info.put("class", this.getClass().getSimpleName());
         return info;
     }
 

@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
+import org.backblue.Bot;
 import org.backblue.utilities.SQLProfile;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -19,6 +20,10 @@ public class Data extends ListenerAdapter {
         if (event.getName().equals("data")) {
             if (event.getSubcommandName() == null) {
                 return;
+            }
+            if (event.getSubcommandName().equals("overwrite")) {
+                Bot.getBot().sendTaskUpdate();
+                event.reply(":white_check_mark: Forced writing of cache files early to disk!").setEphemeral(true).queue();
             }
             if (event.getSubcommandName().equals("all")) {
                 event.deferReply(true).queue();

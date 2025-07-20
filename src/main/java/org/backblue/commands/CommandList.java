@@ -36,6 +36,7 @@ public class CommandList extends ListenerAdapter {
                 .addSubcommands(new SubcommandData("lookup", "Administrator: Lookup a task by its ID")
                         .addOption(OptionType.INTEGER, "identifier", "Enter Task ID.", true)));
         commands.add(Commands.slash("data", "Administrator: View data that the bot has collected")
+                .addSubcommands(new SubcommandData("overwrite", "Administrator: Force write update of caches"))
                 .addSubcommands(new SubcommandData("user", "Administrator: View data about a user in an JSON file")
                         .addOption(OptionType.STRING, "table", "Table to view data from", true)
                         .addOption(OptionType.USER, "user", "User to view data about", true))
