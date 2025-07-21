@@ -1,9 +1,6 @@
 package org.backblue.tasks;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import org.backblue.Bot;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,8 +52,12 @@ public final class BlueSkyReadTask extends Task {
         markStarted();
         try {
             JSONObject post = getUserFeed();
+            if (post == null) {
+                markDoneWithWarning("No posts found or failed to fetch feed.");
+                return;
+            }
             Instant createdAt = Instant.parse(post.getJSONObject("record").getString("createdAt"));
-            if (lastTimeStamp.toString().equals(createdAt.toString())) {
+            if (lastTimeStamp.toEpochMilli() >= createdAt.toEpochMilli()) {
                 markDoneWithWarning("No new posts since last check.");
                 return;
             }
@@ -160,7 +161,9 @@ public final class BlueSkyReadTask extends Task {
         JSONObject data = new JSONObject(responseHttp.body());
 
         JSONArray feed = data.getJSONArray("feed");
-
+        if (feed.isEmpty()) {
+            return null;
+        }
         return feed.getJSONObject(0).getJSONObject("post");
     }
 
