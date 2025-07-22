@@ -1,6 +1,4 @@
 package org.backblue.tasks;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -8,7 +6,6 @@ public abstract class Task {
 
     public static int IDS = 0;
     public static final HashMap<Integer, Task> IDS_TO_TASK = new HashMap<>();
-    public static final ArrayList<Task> TASKS_LAST_INTERVAL = new ArrayList<>();
     private final int id;
     private final long createdTimestamp;
     private long startedTimestamp;
@@ -19,29 +16,6 @@ public abstract class Task {
         id = IDS++;
         IDS_TO_TASK.put(id, this);
         createdTimestamp = System.currentTimeMillis();
-    }
-
-    public static @NotNull HashMap<String, String> getProgress() {
-        HashMap<String, String> info = new HashMap<>();
-        info.put("total", String.valueOf(TASKS_LAST_INTERVAL.size()));
-        int msgScanTasks = 0;
-        int profileScanTasks = 0;
-        int scannedWithWarning = 0;
-        for (Task task : TASKS_LAST_INTERVAL) {
-            if (task instanceof MessageScanTask) {
-                msgScanTasks++;
-            } else if (task instanceof ProfileScanTask) {
-                profileScanTasks++;
-            }
-            if (task.output.contains(":warning:")) {
-                scannedWithWarning++;
-            }
-        }
-        info.put("msgScanTasks", String.valueOf(msgScanTasks));
-        info.put("profileScanTasks", String.valueOf(profileScanTasks));
-        info.put("scannedWithWarning", String.valueOf(scannedWithWarning));
-        TASKS_LAST_INTERVAL.clear();
-        return info;
     }
 
     @Override

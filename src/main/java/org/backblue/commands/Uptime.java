@@ -24,9 +24,9 @@ public class Uptime extends ListenerAdapter {
 
         if (event.getName().equals("uptime")) {
             long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-            String whatsNew = "General bug fixes and improvements";
+            String whatsNew = null;
             try {
-                Files.readString(Path.of("data/news.txt"));
+                whatsNew = Files.readString(Path.of("data/news.txt"));
             } catch (IOException ignored) {}
 
             EmbedBuilder embed = new EmbedBuilder()
@@ -36,7 +36,9 @@ public class Uptime extends ListenerAdapter {
                     .addField("Memory", "`" + used / 1000000 + " MB / " + Runtime.getRuntime().totalMemory() / 1000000 + " MB`", true)
                     .addField("Uptime", "`" + TimeFormat.formatTimeShort(Instant.now().getEpochSecond() - Bot.BOOT) + "`", true)
                     .setFooter("Built by killergotrekt for Ndemic");
-            // embed.addField("What's New", whatsNew, false);
+            if (whatsNew != null && !whatsNew.isBlank()) {
+                embed.addField("What's New", whatsNew, false);
+            }
             event.replyEmbeds(embed.build()).queue();
         }
     }

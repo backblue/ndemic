@@ -4,7 +4,6 @@ import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
@@ -239,16 +238,12 @@ public class Bot {
 
     public void sendUserMessage(User user, String message) {
         user.openPrivateChannel()
-                .queue(privateChannel -> {
-                    privateChannel.sendMessage(message).queue();
-                });
+                .queue(privateChannel -> privateChannel.sendMessage(message).queue());
     }
 
     public void sendUserMessage(User user, MessageEmbed embed) {
         user.openPrivateChannel()
-                .queue(privateChannel -> {
-                    privateChannel.sendMessageEmbeds(embed).queue();
-                });
+                .queue(privateChannel -> privateChannel.sendMessageEmbeds(embed).queue());
     }
 
     public void sendTaskUpdate() {
@@ -329,11 +324,8 @@ public class Bot {
                     Task task = bot.getTaskQueue().take();
                     task.process();
                     bot.completedTasks.push(task);
-                    bot.sendDebugMessage("tasks", bot.taskToEmbed(task.getId()).build());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
+                    bot.sendDebugMessage("tasks", Objects.requireNonNull(bot.taskToEmbed(task.getId())).build());
+                } catch (InterruptedException ignored) {}
             }
         });
         taskRunner.start();

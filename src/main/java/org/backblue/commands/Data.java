@@ -40,8 +40,8 @@ public class Data extends ListenerAdapter {
             }
             if (event.getSubcommandName().equals("user")) {
                 event.deferReply(true).queue();
-                String table = event.getOption("table").getAsString();
-                User user = event.getOption("user").getAsUser();
+                String table = Objects.requireNonNull(event.getOption("table")).getAsString();
+                User user = Objects.requireNonNull(event.getOption("user")).getAsUser();
                 if (user.isBot() || !SQLProfile.exists(user.getId(), table)) {
                     event.getHook().sendMessage(":x: User **" + user.getName() + "** has no entries in table `" + table + "`").setEphemeral(true).queue();
                     return;

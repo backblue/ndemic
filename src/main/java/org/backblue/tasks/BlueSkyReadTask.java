@@ -97,9 +97,6 @@ public final class BlueSkyReadTask extends Task {
                     byte[] restOfDescInBytes = Arrays.copyOfRange(descInBytes, end, descInBytes.length);
                     desc = new StringBuilder(new String(descWithURI, StandardCharsets.UTF_8));
                     desc.append(new String(restOfDescInBytes, StandardCharsets.UTF_8));
-
-                    //desc.insert(start, "[");
-                    //desc.insert(end+1, "](" + facet.getJSONArray("features").getJSONObject(0).getString("uri") + ")");
                     shiftedDesc += 4 + facet.getJSONArray("features").getJSONObject(0).getString("uri").getBytes().length;
                 }
             }

@@ -42,7 +42,7 @@ public final class ProfileScanTask extends Task {
     private String customStatus;
     private FileUpload avatarFile;
     private FileUpload bannerFile;
-    private final String source; // Source is event that triggered scan, eg "join", "guildAvatarChange", "userAvatarChange", "slash"
+    private final String source; // Source is event that triggered scan, e.g. "join", "guildAvatarChange", "userAvatarChange", "slash"
 
     static {
         HASHES = new ArrayList<>();
