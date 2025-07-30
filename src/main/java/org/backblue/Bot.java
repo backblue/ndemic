@@ -272,7 +272,7 @@ public class Bot {
         HashMap<String, String> info = task.lookup();
         EmbedBuilder embed = new EmbedBuilder();
         embed.setColor(Color.YELLOW);
-        embed.setTitle("Task `" + id + "`");
+        embed.setTitle("Task `" + String.format("%,d", id) + "`");
         for (String key : info.keySet()) {
             if (info.get(key) == null) {
                 embed.addField(key, "N/A", true);
