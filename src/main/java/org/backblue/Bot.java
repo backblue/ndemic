@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Bot {
-    public static final String VERSION = "0.6.0";
+    public static final String VERSION = "0.6.1";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;

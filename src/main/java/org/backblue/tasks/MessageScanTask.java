@@ -34,19 +34,18 @@ public final class MessageScanTask extends Task {
         }
         for (String category : result.keySet()) {
             if (result.get(category) >= Bot.getBot().getTasks().getJSONObject("messageScanning").getJSONObject("detection").getInt(category)) {
+                boolean silent = false;
+                boolean blocked = false;
                 if (Bot.getBot().getTasks().getJSONObject("messageScanning").getBoolean("autoDelete")) {
-                    try {
-                        this.msg.delete().queue();
-                        if (!timeBetweenScans.containsKey(this.user) || timeBetweenScans.get(user) + 30 > Instant.now().getEpochSecond()) {
-                            warnModerators(true, true);
-                            timeBetweenScans.put(this.user, Instant.now().getEpochSecond());
-                        }
-                    } catch (Exception ignored) {}
-                } else {
-                    if (!timeBetweenScans.containsKey(this.user) || timeBetweenScans.get(user) + 30 > Instant.now().getEpochSecond()) {
-                        warnModerators(false, false);
-                        timeBetweenScans.put(this.user, Instant.now().getEpochSecond());
-                    }
+                    this.msg.delete().queue();
+                    blocked = true;
+                }
+                if (Bot.getBot().getTasks().getJSONObject("messageScanning").getBoolean("alert")) {
+                    silent = true;
+                }
+                if (!timeBetweenScans.containsKey(this.user) || timeBetweenScans.get(user) + 30 > Instant.now().getEpochSecond()) {
+                    warnModerators(silent, blocked, this.msg);
+                    timeBetweenScans.put(this.user, Instant.now().getEpochSecond());
                 }
                 break;
             }
@@ -54,13 +53,17 @@ public final class MessageScanTask extends Task {
         this.markDone();
     }
 
-    private void warnModerators(boolean silent, boolean blocked) {
+    private void warnModerators(boolean silent, boolean blocked, Message msg) {
         String flagged = blocked ? "Blocked" : "Flagged";
         String moderatorPing = "";
+        String gotoMessage = "";
         if (!silent) {
             moderatorPing = Bot.getBot().getMostModerators().getAsMention();
         }
-        Bot.getBot().sendDeploymentMessage("cmd", moderatorPing + " Message " + flagged + " of " + user.getAsMention() + "\n**Message:**\n> " + this.msg.getContentRaw() + "\n**Details**:\n```" + this.output + "```");
+        if (flagged.equals("Flagged")) {
+            gotoMessage = "\n**Click to jump to message:**: " + msg.getJumpUrl();
+        }
+        Bot.getBot().sendDeploymentMessage("cmd", moderatorPing + " Message " + flagged + " of " + user.getAsMention() + "\n**Message:**\n> " + this.msg.getContentRaw() + "\n**Details**:\n```" + this.output + "```" + gotoMessage);
     }
 
     private HashMap<String, Integer> processMessage(String content) {

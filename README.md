@@ -12,6 +12,6 @@
 - :white_check_mark: Stalk a BlueSky account and post new updates to a channel
 
 ## Setup
-Check out the [Wiki](https://github.com/backblue/ndemic/wiki) for instructions.
+Check out the [Wiki](https://github.com/backblue/ndemic/wiki/Setup) for instructions.
 
 Note: Building using IntellJ Artifacts produces a non-executable jar.

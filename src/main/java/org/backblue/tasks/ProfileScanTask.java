@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.Bot;
 import org.backblue.utilities.SQLProfile;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.imageio.ImageIO;
@@ -60,7 +61,10 @@ public final class ProfileScanTask extends Task {
                     output.put("cachePoints", packed.getInt(base64));
                     HASH_TO_OUTPUT.put(hash, output);
                 }
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+            } catch (JSONException e) {
+                Bot.getBot().sendDebugMessage("autoMod", "Disable cache or fix:\n" + e.getMessage());
+            }
         }
     }
 

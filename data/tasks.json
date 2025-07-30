@@ -13,7 +13,8 @@
     }
   },
   "messageScanning": {
-    "autoDelete": true,
+    "autoDelete": false,
+    "alert": true,
     "detection": {
       "Hate": 4,
       "Sexual": 8,
