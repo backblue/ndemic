@@ -40,7 +40,7 @@ public final class MessageScanTask extends Task {
                     this.msg.delete().queue();
                     blocked = true;
                 }
-                if (Bot.getBot().getTasks().getJSONObject("messageScanning").getBoolean("alert")) {
+                if (!Bot.getBot().getTasks().getJSONObject("messageScanning").getBoolean("alert")) {
                     silent = true;
                 }
                 if (!timeBetweenScans.containsKey(this.user) || timeBetweenScans.get(user) + 30 > Instant.now().getEpochSecond()) {

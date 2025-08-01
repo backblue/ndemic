@@ -10,6 +10,7 @@ public abstract class Task {
     private long startedTimestamp;
     private long finishedTimestamp;
     protected String output = "\n";
+    protected boolean silenced = false;
 
     Task() {
         id = IDS++;
@@ -44,6 +45,9 @@ public abstract class Task {
     }
     protected final void appendOutput(String text) {
         output += text + "\n";
+    }
+    public boolean isSilenced() {
+        return silenced;
     }
 
     protected final void markDone() {

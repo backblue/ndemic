@@ -54,11 +54,17 @@ public final class BlueSkyReadTask extends Task {
             JSONObject post = getUserFeed();
             if (post == null) {
                 markDoneWithWarning("No posts found or failed to fetch feed.");
+                if (Bot.getBot().getTasks().getJSONObject("bSkyTracker").getBoolean("silentWhenNoUpdate")) {
+                    super.silenced = true;
+                }
                 return;
             }
             Instant createdAt = Instant.parse(post.getJSONObject("record").getString("createdAt"));
             if (lastTimeStamp.toEpochMilli() >= createdAt.toEpochMilli()) {
                 markDoneWithWarning("No new posts since last check.");
+                if (Bot.getBot().getTasks().getJSONObject("bSkyTracker").getBoolean("silentWhenNoUpdate")) {
+                    super.silenced = true;
+                }
                 return;
             }
             EmbedBuilder embed = new EmbedBuilder();

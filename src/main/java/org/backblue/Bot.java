@@ -324,7 +324,9 @@ public class Bot {
                     Task task = bot.getTaskQueue().take();
                     task.process();
                     bot.completedTasks.push(task);
-                    bot.sendDebugMessage("tasks", Objects.requireNonNull(bot.taskToEmbed(task.getId())).build());
+                    if (!task.isSilenced()) {
+                        bot.sendDebugMessage("tasks", Objects.requireNonNull(bot.taskToEmbed(task.getId())).build());
+                    }
                 } catch (InterruptedException ignored) {}
             }
         });
