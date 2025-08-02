@@ -34,8 +34,8 @@
                                 </transformer>
                             </transformers>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <finalName>ndemic</finalName>
-                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName></shadedClassifierName>
 
                             <filters>
                                 <filter>
