@@ -5,12 +5,14 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.Bot;
+import org.backblue.tasks.Task;
 import org.backblue.utilities.SQLProfile;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Objects;
 
 public class Data extends ListenerAdapter {
@@ -18,9 +20,6 @@ public class Data extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("data")) {
-            if (event.getSubcommandName() == null) {
-                return;
-            }
             if (event.getSubcommandName().equals("overwrite")) {
                 Bot.getBot().sendTaskUpdate();
                 event.reply(":white_check_mark: Forced writing of cache files early to disk!").setEphemeral(true).queue();
@@ -30,8 +29,14 @@ public class Data extends ListenerAdapter {
                 String table = Objects.requireNonNull(event.getOption("table")).getAsString();
                 JSONArray data = SQLProfile.readAllIntoArray(table);
                 File file = new File("data-all-" + table + ".json");
-                try (FileWriter writer = new FileWriter(file)){
+                try (FileWriter writer = new FileWriter(file)) {
+                    if (!file.canWrite()) {
+                        throw new IOException();
+                    }
                     writer.write(data != null ? data.toString() : null);
+                } catch (IOException e) {
+                    event.getHook().sendMessage(":x: Not allowed to write to file: " + file.getAbsolutePath()).queue();
+                    return;
                 } catch (Exception e) {
                     event.getHook().sendMessage(":x: Could not get data!").queue();
                     return;
@@ -48,8 +53,14 @@ public class Data extends ListenerAdapter {
                 }
                 String data = SQLProfile.read(user.getId(), table).toString();
                 File file = new File("data-" + table + ".json");
-                try (FileWriter writer = new FileWriter(file)){
+                try (FileWriter writer = new FileWriter(file)) {
+                    if (!file.canWrite()) {
+                        throw new IOException();
+                    }
                     writer.write(data);
+                } catch (IOException e) {
+                    event.getHook().sendMessage(":x: Not allowed to write to file:" + file.getAbsolutePath()).queue();
+                    return;
                 } catch (Exception e) {
                     event.getHook().sendMessage(":x: Could not get data!").queue();
                     return;

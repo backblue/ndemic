@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Bot {
-    public static final String VERSION = "0.6.1";
+    public static final String VERSION = "0.6.2";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;
@@ -142,40 +142,36 @@ public class Bot {
     public ShardManager getJDA() {
         return shardManager;
     }
-
     public JSONObject getModules() {
         return modules;
     }
-
     public JSONObject getTasks() {
         return tasks;
     }
-
+    public JSONObject getSettings() {
+        return settings;
+    }
     public Boolean getModuleValue(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getBoolean("enabled");
         }
         return null;
     }
-
     public String getModuleDescription(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getString("description");
         }
         return null;
     }
-
     public HashMap<String, String> getAnalysis() {
         return analysis;
     }
-
     public HashMap<String, String> getDeployment() {
         return deployment;
     }
     public String getSQL() {
         return keys.getProperty("JDBC");
     }
-
     public static Bot getBot() {
         return botStatic;
     }

@@ -12,10 +12,23 @@ public abstract class Task {
     protected String output = "\n";
     protected boolean silenced = false;
 
+    public static class Stats {
+        public static int bsky = 0;
+        public static int message = 0;
+        public static int profile = 0;
+    }
+
     Task() {
         id = IDS++;
         IDS_TO_TASK.put(id, this);
         createdTimestamp = System.currentTimeMillis();
+        switch (this) {
+            case MessageScanTask messageScanTask -> Stats.message++;
+            case ProfileScanTask profileScanTask -> Stats.profile++;
+            case BlueSkyReadTask blueSkyReadTask -> Stats.bsky++;
+            default -> {
+            }
+        }
     }
 
     @Override
