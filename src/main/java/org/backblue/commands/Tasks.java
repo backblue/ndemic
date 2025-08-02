@@ -15,7 +15,7 @@ public class Tasks extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("tasks")) {
-            if ("info".equals(event.getSubcommandName())) {
+            if ("stats".equals(event.getSubcommandName())) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("All Tasks: `" + String.format("%,d", Task.IDS) + "`");
                 embedBuilder.setColor(0x00FF00);
