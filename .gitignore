@@ -39,4 +39,3 @@ build/
 
 ### Key ###
 *.properties
-data/cache/*
