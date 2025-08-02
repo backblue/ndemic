@@ -181,7 +181,7 @@ public class Bot {
     }
 
     public void sendDebugMessage(String type, String message) {
-        if (getModuleValue("analytics")) {
+        if (Boolean.TRUE.equals(getModuleValue("analytics"))) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessage(message).queue();
@@ -190,7 +190,7 @@ public class Bot {
     }
 
     public void sendDebugMessage(String type, String message, FileUpload attachment) {
-        if (getModuleValue("analytics")) {
+        if (Boolean.TRUE.equals(getModuleValue("analytics"))) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessage(message).addFiles(attachment).queue();
@@ -199,7 +199,7 @@ public class Bot {
     }
 
     public void sendDebugMessage(String type, MessageEmbed embed) {
-        if (getModuleValue("analytics")) {
+        if (Boolean.TRUE.equals(getModuleValue("analytics"))) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessageEmbeds(embed).queue();
@@ -329,7 +329,7 @@ public class Bot {
         taskRunner.start();
 
         bot.getScheduler().scheduleWithFixedDelay(bot::sendTaskUpdate, 1, 1, TimeUnit.HOURS);
-        if (bot.getModuleValue("bSkyTracker")) {
+        if (Boolean.TRUE.equals(bot.getModuleValue("bSkyTracker"))) {
             try {
 
                 int timeBetween = Integer.parseInt(bot.keys.getProperty("BSKY_REFRESH_MINS", "1"));
