@@ -1,6 +1,8 @@
 name: Beta JARs
 on:
-  push
+  push:
+    branches:
+      - beta
 
 jobs:
   build:
