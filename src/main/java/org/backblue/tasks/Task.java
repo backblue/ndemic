@@ -26,8 +26,7 @@ public abstract class Task {
             case MessageScanTask messageScanTask -> Stats.message++;
             case ProfileScanTask profileScanTask -> Stats.profile++;
             case BlueSkyReadTask blueSkyReadTask -> Stats.bsky++;
-            default -> {
-            }
+            default -> {}
         }
     }
 
