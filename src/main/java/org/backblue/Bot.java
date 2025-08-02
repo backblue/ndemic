@@ -106,7 +106,7 @@ public class Bot {
             String rawKey = Files.readString(Path.of("data/keys.properties"));
             SECURE_KEYS.load(new java.io.StringReader(rawKey));
         } catch (IOException e) {
-            System.out.println("Keys cannot be loaded. Please ensure the file exists and is accessible.");
+            System.out.println("Keys cannot be loaded. Ensure the file exists and is accessible.");
             System.exit(1);
         }
         return SECURE_KEYS;
@@ -151,13 +151,13 @@ public class Bot {
     public JSONObject getSettings() {
         return settings;
     }
-    public Boolean getModuleValue(String key) {
+    public @Nullable Boolean getModuleValue(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getBoolean("enabled");
         }
         return null;
     }
-    public String getModuleDescription(String key) {
+    public @Nullable String getModuleDescription(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getString("description");
         }
