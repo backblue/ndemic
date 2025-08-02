@@ -8,6 +8,7 @@ import org.backblue.Bot;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -69,6 +70,10 @@ public final class MessageScanTask extends Task {
     private HashMap<String, Integer> processMessage(String content) {
         AnalyzeTextResult response;
         try {
+            for (int i = 0; i < Integer.parseInt(Bot.getBot().getDeployment().get("msgScanRemoveWordsList.size")); i++) {
+                content = content.replace(Bot.getBot().getDeployment().get("msgScanRemoveWordsList." + i), "");
+            }
+
             response = Bot.getBot().getContentSafetyClient().analyzeText(new AnalyzeTextOptions(content));
         } catch (HttpResponseException e) {
             Bot.getBot().sendDebugMessage("autoMod", "Failed to analyze msg text for " + user.getName() + " (" + user.getId() + ") due to: " + e.getMessage());
