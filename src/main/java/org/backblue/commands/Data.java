@@ -5,7 +5,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.Bot;
-import org.backblue.tasks.Task;
 import org.backblue.utilities.SQLProfile;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -19,11 +18,10 @@ public class Data extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
-        if (event.getName().equals("data")) {
+        if (event.getName().equals("data") && event.getSubcommandName() != null) {
             if (event.getSubcommandName().equals("overwrite")) {
-                Bot.getBot().sendTaskUpdate();
-                event.reply(":white_check_mark: Forced writing of cache files early to disk!").setEphemeral(true).queue();
-            }
+                event.reply("Forced writing of cache files earlier.").setEphemeral(true).queue();
+                Bot.getBot().sendTaskUpdate();}
             if (event.getSubcommandName().equals("all")) {
                 event.deferReply(true).queue();
                 String table = Objects.requireNonNull(event.getOption("table")).getAsString();
