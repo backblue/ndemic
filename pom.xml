@@ -34,9 +34,7 @@
                                 </transformer>
                             </transformers>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName></shadedClassifierName>
-
+                            <finalName>ndemic</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -143,11 +141,5 @@
             <scope>compile</scope>
         </dependency>
     </dependencies>
-    <distributionManagement>
-        <repository>
-                <id>github</id>
-                <url>https://maven.pkg.github.com/backblue/ndemic</url>
-        </repository>
-    </distributionManagement>
 
 </project>
