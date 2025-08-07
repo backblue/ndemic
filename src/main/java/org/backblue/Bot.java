@@ -242,20 +242,6 @@ public class Bot {
                 .queue(privateChannel -> privateChannel.sendMessageEmbeds(embed).queue());
     }
 
-    public void sendTaskUpdate() {
-        if (this.settings.getBoolean("caching")) {
-            System.out.println("Attempting to cache img data...");
-            JSONObject cache = ProfileScanTask.toBase64();
-            try {
-                FileWriter writer = new FileWriter("data/cache/imageScan.json");
-                writer.write(cache.toString());
-                writer.close();
-            } catch (IOException e) {
-                sendDebugMessage("imageDump", getOwner() + " caching for image scans failed!");
-            }
-        }
-    }
-
     public @Nullable Task searchTask(int id) {
         return Task.IDS_TO_TASK.get(id);
     }
@@ -327,8 +313,6 @@ public class Bot {
             }
         });
         taskRunner.start();
-
-        bot.getScheduler().scheduleWithFixedDelay(bot::sendTaskUpdate, 1, 1, TimeUnit.HOURS);
         if (Boolean.TRUE.equals(bot.getModuleValue("bSkyTracker"))) {
             try {
 

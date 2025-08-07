@@ -39,6 +39,9 @@ public class Uptime extends ListenerAdapter {
             if (whatsNew != null && !whatsNew.isBlank()) {
                 embed.addField("What's New", whatsNew, false);
             }
+            if (Bot.getBot().getSettings().getString("watermark") != null && Bot.getBot().getSettings().getString("watermarkLogoLink") != null) {
+                embed.setFooter(Bot.getBot().getSettings().getString("watermark"), Bot.getBot().getSettings().getString("watermarkLogoLink"));
+            }
             event.replyEmbeds(embed.build()).queue();
         }
     }

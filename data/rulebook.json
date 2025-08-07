@@ -3,32 +3,47 @@
     {
       "id": 1,
       "title": "Rule 1: Be Kind and Respectful",
-      "shortTitle": "R1: Be Kind and Respectful",
       "desc": "This is a nice, friendly community, where hate speech or harassment will not be tolerated in messages or your profile."
     },
     {
       "id": 2,
       "title": "Rule 2: No NSFW",
-      "shortTitle": "R2: No NSFW",
       "desc": "No sexual, gore or illegal content. Keep it PG-13!"
     },
     {
       "id": 3,
       "title": "Rule 3: No Spam",
-      "shortTitle": "R3: No Spam",
       "desc": "Avoid spamming, trolling, heavy tagging/DMing and excessive self-promotion. Do not post unsolicited links/invites in channels and in member's DMs."
     },
     {
       "id": 4,
-      "title": "Rule 6: No Memes",
-      "shortTitle": "R6: No Memes",
-      "desc": "All users must follow Discord's Terms of Service and Community Guidelines."
+      "title": "Rule 4: Stay On Topic",
+      "desc": "Try to stay on topic within channels. Especially in help channels"
     },
     {
       "id": 5,
+      "title": "Rule 5: Politics",
+      "desc": "Be cautious of introducing divisive discussions of laws, political candidates, etc. There's no such thing as keeping politics out of games"
+    },
+    {
+      "id": 6,
+      "title": "Rule 6: No Memes",
+      "desc": "All users must follow Discord's Terms of Service and Community Guidelines."
+    },
+    {
+      "id": 7,
       "title": "Rule 7: No Piracy",
-      "shortTitle": "R7: No piracy",
       "desc": "No discussions of cracking or pirating software"
+    },
+    {
+      "id": 8,
+      "title": "Rule 8: English Only",
+      "desc": "Please keep all messages and images in English."
+    },
+    {
+      "id": 99,
+      "title": "Compromised Account",
+      "desc": "Your account has been compromised. You have been removed from the server, and your messages from the past hour has been removed."
     }
   ]
 }

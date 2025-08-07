@@ -55,13 +55,7 @@ public final class ProfileScanTask extends Task {
         HASH_TO_POINTS = new HashMap<>();
         HASH_TO_OUTPUT = new HashMap<>();
         Path path = Paths.get("data/cache/imageScan.json");
-        if (Bot.getBot().getSettings().getBoolean("caching")) {
-            if (!path.toFile().exists()) {
-                JSONObject cache = new JSONObject();
-                try {
-                    cache.write(new FileWriter("data/cache/imageScan.json"));
-                } catch (IOException ignored) {}
-            }
+        if (Bot.getBot().getSettings().getBoolean("caching") && path.toFile().exists()) {
             try {
                 JSONObject packed = new JSONObject(Files.readString(path));
                 for (String base64 : packed.keySet()) {
@@ -72,10 +66,10 @@ public final class ProfileScanTask extends Task {
                     output.put("cachePoints", packed.getInt(base64));
                     HASH_TO_OUTPUT.put(hash, output);
                 }
-            } catch (IOException ignored) {
-                Bot.getBot().sendDebugMessage("autoMod", "Cannot read from file:\n" + ignored.getMessage());
+            } catch (IOException e) {
+                Bot.getBot().sendDebugMessage("autoMod", "Cannot read from file:\n`" + e.getMessage() + "`");
             } catch (JSONException e) {
-                Bot.getBot().sendDebugMessage("autoMod", "Disable cache or fix:\n" + e.getMessage());
+                Bot.getBot().sendDebugMessage("autoMod", "Disable cache or fix:\n`" + e.getMessage() + "`");
             }
         }
     }
