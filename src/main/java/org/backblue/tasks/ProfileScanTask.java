@@ -67,9 +67,9 @@ public final class ProfileScanTask extends Task {
                     HASH_TO_OUTPUT.put(hash, output);
                 }
             } catch (IOException e) {
-                Bot.getBot().sendDebugMessage("autoMod", "Cannot read from file:\n`" + e.getMessage() + "`");
+                Bot.getBot().sendDebugMessage("autoMod", "Cannot read from file:\n`" + e.getMessage() + "`\nCache will not be used.");
             } catch (JSONException e) {
-                Bot.getBot().sendDebugMessage("autoMod", "Disable cache or fix:\n`" + e.getMessage() + "`");
+                Bot.getBot().sendDebugMessage("autoMod", "Disable cache or fix:\n`" + e.getMessage() + "`\nCache will not be used.");
             }
         }
     }
@@ -255,6 +255,11 @@ public final class ProfileScanTask extends Task {
         SQLProfile.read(user.getId(), "userinfo").writeString("lastProfileScan", String.valueOf(Instant.now().getEpochSecond()))
                 .writeString("last" + type + "URL", url)
                 .write("userinfo");
+        if (HASHES.size() >= Bot.getBot().getTasks().getJSONObject("profileScanning").getJSONObject("detection").getInt("maxCacheSize")) {
+            byte[] removed = HASHES.removeFirst();
+            HASH_TO_POINTS.remove(removed);
+            HASH_TO_OUTPUT.remove(removed);
+        }
         HASH_TO_POINTS.put(bytes, points/2);
         HASHES.add(bytes);
         HASH_TO_OUTPUT.put(bytes, results);

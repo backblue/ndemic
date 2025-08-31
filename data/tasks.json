@@ -9,7 +9,8 @@
     "detection": {
       "pointsThresholdToWarn": 12,
       "resetPointsAfterSeconds": 86400,
-      "similaritiesPercentageToNotScan": 80
+      "similaritiesPercentageToNotScan": 80,
+      "maxCache": 1000
     }
   },
   "messageScanning": {
