@@ -2,6 +2,8 @@ package org.backblue.utilities;
 
 public class TimeFormat {
 
+    private TimeFormat() {}
+
     public static String relativeTime(String seconds) {
         return relativeTime(Long.parseLong(seconds));
     }

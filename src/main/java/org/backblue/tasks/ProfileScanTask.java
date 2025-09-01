@@ -6,6 +6,12 @@ import com.azure.ai.contentsafety.models.ContentSafetyImageData;
 import com.azure.ai.contentsafety.models.ImageCategoriesAnalysis;
 import com.azure.core.exception.HttpResponseException;
 import com.azure.core.util.BinaryData;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.separator.Separator;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
+import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
@@ -327,5 +333,37 @@ public final class ProfileScanTask extends Task {
         for (int i=0; i<n; i++)
             if (a[i] != b[i]) unequalCount++;
         return unequalCount * 100.0 / nLarge;
+    }
+
+    private Container generateResponse() {
+        return Container.of(
+                TextDisplay.of("## :warning: Moderator Review Suggested"),
+                Section.of(
+                        // A thumbnail, it should work with all image formats Discord supports.
+                        // You can make it a spoiler and also give it a description (alternative text)
+                        Thumbnail.fromUrl(user.getEffectiveAvatarUrl()),
+                        TextDisplay.of("A profile, " + user.getAsMention() + ", has been flagged for review.\n" +
+                                "Review the flagged content and take appropriate action.\n\n"),
+                        TextDisplay.of("\u200E \u200E \u200E \u200E "),
+                        TextDisplay.of("Flagged Item: " + " **Avatar**\nDetails:" + " `{SelfHarm=0, Sexual=0, Violence=4, Hate=0}`")
+                ),
+                Separator.createDivider(Separator.Spacing.SMALL),
+                Section.of(
+                        // For the sake of the example, this button will do nothing.
+                        net.dv8tion.jda.api.components.buttons.Button.danger("warn_kick", "Warn + Kick"),
+                        TextDisplay.of("Warns and kicks the user (with logging)")
+                ),
+                Section.of(
+                        // For the sake of the example, this button will do nothing.
+                        net.dv8tion.jda.api.components.buttons.Button.danger("ban_kick", "Warn + Ban"),
+                        TextDisplay.of("Warns and bans the user (with logging)")
+                ),
+                Section.of(
+                        // For the sake of the example, this button will do nothing.
+                        Button.secondary("do_nothing", "Do nothing"),
+                        TextDisplay.of("Clears the review without taking action")
+                ),
+                TextDisplay.of("-# These convenient actions will be locked after selection.")
+        );
     }
 }

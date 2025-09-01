@@ -5,6 +5,7 @@ import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.components.Component;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -72,7 +73,6 @@ public class Bot {
         deployment = generateDeployment();
         tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
         taskqueue = new LinkedBlockingDeque<>();
-        AutoModAlert.generateStaticVariables();
         completedTasks = new Stack<>();
 
         try {

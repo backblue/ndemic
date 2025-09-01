@@ -11,10 +11,6 @@
     "description": "force that only OP in thread can message in guide threads",
     "enabled": true
   },
-  "discordAutoModNotify": {
-    "description": "pings most mods when discord AutoMod takes action",
-    "enabled": true
-  },
   "automaticActions": {
     "description": "deliver automatic punishment for common infractions",
     "enabled": true
@@ -25,7 +21,7 @@
   },
   "messageScanning": {
     "description": "scans messages for inappropriate content",
-    "enabled": true
+    "enabled": false
   },
   "bSkyTracker": {
     "description": "tracks user posts on BlueSky",
