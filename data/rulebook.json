@@ -28,7 +28,7 @@
     {
       "id": 6,
       "title": "Rule 6: No Memes",
-      "desc": "All users must follow Discord's Terms of Service and Community Guidelines."
+      "desc": "We don't have a memes channel, please do not meme dump in any channel. Memes are only acceptable when relevant to the current conversation, otherwise, don't post them."
     },
     {
       "id": 7,
@@ -41,9 +41,14 @@
       "desc": "Please keep all messages and images in English."
     },
     {
+      "id": 98,
+      "title": "Inappropriate Profile",
+      "desc": "Your profile has been reviewed by the moderators and found to have content deemed too explicit for this community. Please update your profile to comply with the server rules before re-joining."
+    },
+    {
       "id": 99,
       "title": "Compromised Account",
-      "desc": "Your account has been compromised. You have been removed from the server, and your messages from the past hour has been removed."
+      "desc": "Your account has been compromised. Secure your account before re-joining the server."
     }
   ]
 }

@@ -255,7 +255,7 @@ public final class ProfileScanTask extends Task {
         SQLProfile.read(user.getId(), "userinfo").writeString("lastProfileScan", String.valueOf(Instant.now().getEpochSecond()))
                 .writeString("last" + type + "URL", url)
                 .write("userinfo");
-        if (HASHES.size() >= Bot.getBot().getTasks().getJSONObject("profileScanning").getJSONObject("detection").getInt("maxCacheSize")) {
+        if (HASHES.size() >= Bot.getBot().getTasks().getJSONObject("profileScanning").getJSONObject("detection").getInt("maxCache")) {
             byte[] removed = HASHES.removeFirst();
             HASH_TO_POINTS.remove(removed);
             HASH_TO_OUTPUT.remove(removed);

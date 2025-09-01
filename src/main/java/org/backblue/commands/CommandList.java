@@ -45,18 +45,12 @@ public class CommandList extends ListenerAdapter {
                 .addSubcommands(new SubcommandData("all", "Administrator: View all data in an JSON file")
                         .addOption(OptionType.STRING, "table", "Table to view data from", true))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
-        commands.add(Commands.slash("ezkick", "Administrator: Notify, Logs, and kicks a user. Evidence required")
+        commands.add(Commands.slash("ezpunish", "Administrator: Softban a user, then logs the action. Proof required")
                 .addOption(OptionType.USER, "user", "User to kick", true)
                 .addOption(OptionType.INTEGER, "ruleid", "Rule Violation", true)
+                .addOption(OptionType.BOOLEAN, "ban", "Permanently removes user from guild", true)
                 .addOption(OptionType.ATTACHMENT, "evidenceimage", "Evidence: as attachment (eg img)", false)
                 .addOption(OptionType.STRING, "evidencetext", "Evidence: as text (eg link)", false)
-                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
-        commands.add(Commands.slash("ezban", "Administrator: Notify, Logs, and bans a user. Evidence required")
-                .addOption(OptionType.USER, "user", "User to kick", true)
-                .addOption(OptionType.INTEGER, "ruleid", "Rule Violation", true)
-                .addOption(OptionType.ATTACHMENT, "evidenceimage", "Evidence: as attachment (eg img)", false)
-                .addOption(OptionType.STRING, "evidencetext", "Evidence: as text (eg link)", false)
-                .addOption(OptionType.BOOLEAN, "softban", "Immediately unbans the user after execution", false)
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         if (event.getGuild().getId().equals(Bot.getBot().getDeployment().get("guild")) || event.getGuild().getId().equals(Bot.getBot().getAnalysis().get("guild"))) {
             event.getGuild().updateCommands().addCommands(commands).queue();

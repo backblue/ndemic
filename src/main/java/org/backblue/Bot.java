@@ -20,7 +20,6 @@ import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
 import org.backblue.tasks.BlueSkyReadTask;
-import org.backblue.tasks.ProfileScanTask;
 import org.backblue.tasks.Task;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +28,6 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.awt.*;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +39,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Bot {
-    public static final String VERSION = "0.6.3";
+    public static final String VERSION = "0.6.7";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;
@@ -151,11 +149,11 @@ public class Bot {
     public JSONObject getSettings() {
         return settings;
     }
-    public @Nullable Boolean getModuleValue(String key) {
+    public boolean getModuleValue(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getBoolean("enabled");
         }
-        return null;
+        return false;
     }
     public @Nullable String getModuleDescription(String key) {
         if (modules.has(key)) {
@@ -181,7 +179,7 @@ public class Bot {
     }
 
     public void sendDebugMessage(String type, String message) {
-        if (Boolean.TRUE.equals(getModuleValue("analytics"))) {
+        if (getModuleValue("analytics")) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessage(message).queue();
@@ -190,7 +188,7 @@ public class Bot {
     }
 
     public void sendDebugMessage(String type, String message, FileUpload attachment) {
-        if (Boolean.TRUE.equals(getModuleValue("analytics"))) {
+        if (getModuleValue("analytics")) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessage(message).addFiles(attachment).queue();
@@ -199,7 +197,7 @@ public class Bot {
     }
 
     public void sendDebugMessage(String type, MessageEmbed embed) {
-        if (Boolean.TRUE.equals(getModuleValue("analytics"))) {
+        if (getModuleValue("analytics")) {
             TextChannel analysisChannel = getJDA().getTextChannelById(getAnalysis().get(type));
             if (analysisChannel != null) {
                 analysisChannel.sendMessageEmbeds(embed).queue();
@@ -282,10 +280,6 @@ public class Bot {
         return Objects.requireNonNull(getJDA().getUserById(this.settings.getString("owner")));
     }
 
-    public BlockingQueue<Task> getTaskqueue() {
-        return taskqueue;
-    }
-
     public Stack<Task> getCompletedTasks() {
         return completedTasks;
     }
@@ -297,7 +291,7 @@ public class Bot {
     public static void main(String[] args) throws IOException, InterruptedException {
         Bot bot = new Bot();
         bot.getJDA().addEventListener(new CommandList());
-        bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks());
+        bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks(), new EZPunish());
         bot.getJDA().addEventListener(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
         Thread taskRunner = new Thread(() -> {
@@ -313,7 +307,7 @@ public class Bot {
             }
         });
         taskRunner.start();
-        if (Boolean.TRUE.equals(bot.getModuleValue("bSkyTracker"))) {
+        if (bot.getModuleValue("bSkyTracker")) {
             try {
 
                 int timeBetween = Integer.parseInt(bot.keys.getProperty("BSKY_REFRESH_MINS", "1"));

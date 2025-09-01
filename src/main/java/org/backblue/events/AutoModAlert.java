@@ -74,7 +74,7 @@ public class AutoModAlert extends ListenerAdapter {
                 return;
             }
             TextChannel channel = event.getJDA().getTextChannelById(Bot.getBot().getDeployment().get("channels.cmd"));
-            Role role = event.getJDA().getRoleById(Bot.getBot().getDeployment().get("channels.optIn"));
+            Role role = event.getJDA().getRoleById(Bot.getBot().getDeployment().get("roles.optIn"));
             if (channel != null && role != null) {
                 channel.sendMessage(role.getAsMention()).queue();
                 Bot.getBot().sendDebugMessage("autoMod", "AutoMod @ Mods pinged for violation: " + "https://discord.com/channels/" + event.getGuild().getId() + "/" + channel.getId() + "/" + event.getAlertMessageId());
