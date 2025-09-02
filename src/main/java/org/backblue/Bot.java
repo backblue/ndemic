@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Bot {
-    public static final String VERSION = "0.6.3";
+    public static final String VERSION = "0.7.0";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;
@@ -90,7 +90,16 @@ public class Bot {
 
         DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.create(keys.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class));
         builder.setActivity(Activity.customStatus(settings.getString("status")));
-        builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
+        int color = settings.getInt("presence");
+        if (color == 1) {
+            builder.setStatus(OnlineStatus.IDLE);
+        } else if (color == 2) {
+            builder.setStatus(OnlineStatus.DO_NOT_DISTURB);
+        } else if (color == 3) {
+            builder.setStatus(OnlineStatus.INVISIBLE);
+        } else {
+            builder.setStatus(OnlineStatus.ONLINE);
+        }
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));

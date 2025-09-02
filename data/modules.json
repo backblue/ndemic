@@ -11,8 +11,8 @@
     "description": "force that only OP in thread can message in guide threads",
     "enabled": true
   },
-  "automaticActions": {
-    "description": "deliver automatic punishment for common infractions",
+  "discordAutoModNotify": {
+    "description": "pings most mods when discord AutoMod takes action",
     "enabled": true
   },
   "profileScanning": {
