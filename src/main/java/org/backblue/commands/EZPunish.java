@@ -84,7 +84,7 @@ public class EZPunish extends ListenerAdapter {
                 Bot.getBot().sendUserMessage(user, generatePunishEmbed(ruleId, user, ban, event));
                 logToWarnings(ruleId, user, ban, evidenceText, evidenceImage, event);
                 member.ban(1, TimeUnit.HOURS).reason("Moderator initiated, rule " + ruleId + " (" + event.getUser().getName() + ")").queue();
-                event.reply("User has been " + (ban ? "banned" : "removed") + " and logged.").setEphemeral(true).queue();
+                event.reply(":white_check_list: User has been " + (ban ? "banned" : "removed") + " and logged.").queue();
                 Bot.getBot().getScheduler().schedule(() -> {
                     if (!ban) {
                         event.getGuild().unban(member).queue();
@@ -125,7 +125,7 @@ public class EZPunish extends ListenerAdapter {
     private void logToWarnings(int ruleId, User user, boolean ban, String evidenceText, Message.Attachment evidenceImage, SlashCommandInteractionEvent e) {
         String status = ban ? "Banned" : "Kicked";
         if (evidenceImage == null) {
-            Bot.getBot().sendDeploymentMessage("warn", user.getAsTag() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: " + e.getUser().getAsMention() + "\n" + evidenceText);
+            Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: `" + e.getUser().getName()+ "`\n" + evidenceText);
         } else {
             if (evidenceText == null) {
                 evidenceText = "";
@@ -133,7 +133,7 @@ public class EZPunish extends ListenerAdapter {
             String finalEvidenceText = evidenceText;
             evidenceImage.getProxy().download().thenAccept(inputStream -> {
                 FileUpload fileUpload = FileUpload.fromData(inputStream, evidenceImage.getFileName());
-                Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: " + e.getUser().getAsMention() + "\n" + finalEvidenceText, fileUpload);
+                Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: `" + e.getUser().getName() + "`\n" + finalEvidenceText, fileUpload);
             });
         }
     }
