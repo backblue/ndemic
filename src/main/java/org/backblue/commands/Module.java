@@ -45,6 +45,12 @@ public class Module extends ListenerAdapter {
             Bot.getBot().getModules().remove(module);
             Bot.getBot().getModules().put(module, moduleData);
 
+            if (module.equals("restrictDMs") && enabled) {
+                Bot.getBot().getDiscordSecurityIncidentActions().check();
+            } else if (module.equals("restrictDMs")) {
+                Bot.getBot().getDiscordSecurityIncidentActions().disable();
+            }
+
             event.reply(":white_check_mark: Module **" + module + "** is " + (enabled ? "**enabled**." : "**disabled**.")).queue();
             Bot.getBot().sendDebugMessage("autoMod", event.getUser().getName() + " changed setting " + module + " to " + enabled);
         }

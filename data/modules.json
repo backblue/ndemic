@@ -26,5 +26,9 @@
   "bSkyTracker": {
     "description": "tracks user posts on BlueSky",
     "enabled": true
+  },
+  "restrictDMs": {
+    "description": "Restricts DMs between members in the guild",
+    "enabled": true
   }
 }

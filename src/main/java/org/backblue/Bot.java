@@ -5,11 +5,13 @@ import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.components.Component;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
+import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -39,7 +41,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class Bot {
+public class Bot extends ListenerAdapter {
     public static final String VERSION = "0.6.4";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
@@ -55,6 +57,7 @@ public class Bot {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final BlockingQueue<Task> taskqueue;
     private final Stack<Task> completedTasks;
+    private EnforceSecurityActions discordSecurityIncidentActions;
 
     public ScheduledExecutorService getScheduler() {
         return scheduler;
@@ -79,7 +82,7 @@ public class Bot {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));
             test.close();
         } catch (SQLException e) {
-            System.out.println("\u001B[0mSQL configuration is required!\n" + e);
+            System.err.println("\u001B[0mSQL configuration is required!\n" + e);
             System.exit(1);
         }
 
@@ -104,7 +107,6 @@ public class Bot {
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
         shardManager = builder.build();
-
     }
 
     private static Properties loadKeys() {
@@ -113,7 +115,7 @@ public class Bot {
             String rawKey = Files.readString(Path.of("data/keys.properties"));
             SECURE_KEYS.load(new java.io.StringReader(rawKey));
         } catch (IOException e) {
-            System.out.println("Keys cannot be loaded. Ensure the file exists and is accessible.");
+            System.err.println("Keys cannot be loaded. Ensure the file exists and is accessible.");
             System.exit(1);
         }
         return SECURE_KEYS;
@@ -144,6 +146,10 @@ public class Bot {
             }
         }
         return map;
+    }
+
+    public EnforceSecurityActions getDiscordSecurityIncidentActions() {
+        return discordSecurityIncidentActions;
     }
 
     public ShardManager getJDA() {
@@ -299,7 +305,7 @@ public class Bot {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Bot bot = new Bot();
-        bot.getJDA().addEventListener(new CommandList());
+        bot.getJDA().addEventListener(new CommandList(), new Bot());
         bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks(), new EZPunish());
         bot.getJDA().addEventListener(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
@@ -328,4 +334,10 @@ public class Bot {
         }
     }
 
+    @Override
+    public void onGuildReady(@NotNull GuildReadyEvent event) {
+        if (event.getGuild().getId().equals(getDeployment().get("guild"))) {
+            discordSecurityIncidentActions = new EnforceSecurityActions();
+        }
+    }
 }
