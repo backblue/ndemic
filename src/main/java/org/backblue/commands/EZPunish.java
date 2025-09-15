@@ -84,7 +84,7 @@ public class EZPunish extends ListenerAdapter {
                 Bot.getBot().sendUserMessage(user, generatePunishEmbed(ruleId, user, ban, event));
                 logToWarnings(ruleId, user, ban, evidenceText, evidenceImage, event);
                 member.ban(1, TimeUnit.HOURS).reason("Moderator initiated, rule " + ruleId + " (" + event.getUser().getName() + ")").queue();
-                event.reply(":white_check_list: User has been " + (ban ? "banned" : "removed") + " and logged.").queue();
+                event.reply(":white_check_mark: User has been " + (ban ? "banned" : "removed") + " and logged.").queue();
                 Bot.getBot().getScheduler().schedule(() -> {
                     if (!ban) {
                         event.getGuild().unban(member).queue();
