@@ -17,7 +17,8 @@ public class EnforceSecurityActions {
     }
 
     public void schedule() {
-        scheduler.scheduleWithFixedDelay(this::check, 0, 1, java.util.concurrent.TimeUnit.MINUTES);
+        check();
+        scheduler.scheduleWithFixedDelay(this::check, 1, 1, java.util.concurrent.TimeUnit.MINUTES);
     }
 
     private boolean isEnabled() {

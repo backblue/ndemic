@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import org.backblue.Bot;
+import org.backblue.events.EnforceSecurityActions;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -17,6 +18,11 @@ import java.util.List;
 public class CommandList extends ListenerAdapter {
     @Override
     public void onGuildReady(@NotNull GuildReadyEvent event) {
+
+        if (event.getGuild().getId().equals(Bot.getBot().getDeployment().get("guild"))) {
+            Bot.getBot().setDiscordSecurityIncidentActions(new EnforceSecurityActions());
+        }
+
         List<CommandData> commands = new ArrayList<>();
 
         commands.add(Commands.slash("ping", "Ping, pong!"));

@@ -10,7 +10,6 @@ import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
-import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
@@ -41,7 +40,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class Bot extends ListenerAdapter {
+public class Bot {
     public static final String VERSION = "0.6.4";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
@@ -106,6 +105,11 @@ public class Bot extends ListenerAdapter {
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
+
+        builder.addEventListeners(new CommandList());
+        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new Tasks(), new EZPunish());
+        builder.addEventListeners(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
+
         shardManager = builder.build();
     }
 
@@ -191,6 +195,10 @@ public class Bot extends ListenerAdapter {
 
     public BlockingQueue<Task> getTaskQueue() {
         return taskqueue;
+    }
+
+    public void setDiscordSecurityIncidentActions(EnforceSecurityActions discordSecurityIncidentActions) {
+        this.discordSecurityIncidentActions = discordSecurityIncidentActions;
     }
 
     public void sendDebugMessage(String type, String message) {
@@ -305,9 +313,6 @@ public class Bot extends ListenerAdapter {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Bot bot = new Bot();
-        bot.getJDA().addEventListener(new CommandList(), new Bot());
-        bot.getJDA().addEventListener(new Ping(), new Uptime(), new Data(), new Module(), new Tasks(), new EZPunish());
-        bot.getJDA().addEventListener(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
         Thread taskRunner = new Thread(() -> {
             while (true) {
@@ -331,13 +336,6 @@ public class Bot extends ListenerAdapter {
                 System.out.println("Failed to parse BSky refresh time, defaulting to 1 minute.");
                 bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, 1, TimeUnit.MINUTES);
             }
-        }
-    }
-
-    @Override
-    public void onGuildReady(@NotNull GuildReadyEvent event) {
-        if (event.getGuild().getId().equals(getDeployment().get("guild"))) {
-            discordSecurityIncidentActions = new EnforceSecurityActions();
         }
     }
 }
