@@ -30,7 +30,10 @@ public class EnforceSecurityActions {
     }
 
     private boolean isActive() {
-        return getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil() != null;
+        if (getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil() == null) {
+            return false;
+        }
+        return getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil().toEpochSecond() > OffsetDateTime.now().toEpochSecond();
     }
 
     public void check() {

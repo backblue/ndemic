@@ -9,8 +9,6 @@ import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
-import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -333,7 +331,7 @@ public class Bot {
                 int timeBetween = Integer.parseInt(bot.keys.getProperty("BSKY_REFRESH_MINS", "1"));
                 bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, timeBetween, TimeUnit.MINUTES);
             } catch (NumberFormatException e) {
-                System.out.println("Failed to parse BSky refresh time, defaulting to 1 minute.");
+                System.err.println("Failed to parse BSky refresh time, defaulting to 1 minute.");
                 bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, 1, TimeUnit.MINUTES);
             }
         }
