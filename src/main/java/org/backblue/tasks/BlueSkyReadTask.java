@@ -29,7 +29,7 @@ public final class BlueSkyReadTask extends Task {
     private String footerIcon;
 
     public BlueSkyReadTask() {
-        if (Boolean.FALSE.equals(Bot.getBot().getModuleValue("bSkyTracker"))) {
+        if (!Bot.getBot().getModuleValue("bSkyTracker")) {
             return;
         }
         try {

@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import org.backblue.Bot;
-import org.backblue.events.EnforceSecurityActions;
+import org.backblue.events.EnforceRestrictDMs;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ public class CommandList extends ListenerAdapter {
     public void onGuildReady(@NotNull GuildReadyEvent event) {
 
         if (event.getGuild().getId().equals(Bot.getBot().getDeployment().get("guild"))) {
-            Bot.getBot().setDiscordSecurityIncidentActions(new EnforceSecurityActions());
+            Bot.getBot().setDiscordSecurityIncidentActions(new EnforceRestrictDMs());
         }
 
         List<CommandData> commands = new ArrayList<>();

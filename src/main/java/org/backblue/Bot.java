@@ -54,7 +54,7 @@ public class Bot {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final BlockingQueue<Task> taskqueue;
     private final Stack<Task> completedTasks;
-    private EnforceSecurityActions discordSecurityIncidentActions;
+    private EnforceRestrictDMs discordSecurityIncidentActions;
 
     public ScheduledExecutorService getScheduler() {
         return scheduler;
@@ -150,7 +150,11 @@ public class Bot {
         return map;
     }
 
-    public EnforceSecurityActions getDiscordSecurityIncidentActions() {
+    public Guild getDeploymentGuild() {
+        return Bot.getBot().getJDA().getGuildById(Bot.getBot().getDeployment().get("guild"));
+    }
+
+    public EnforceRestrictDMs getDiscordSecurityIncidentActions() {
         return discordSecurityIncidentActions;
     }
 
@@ -195,7 +199,7 @@ public class Bot {
         return taskqueue;
     }
 
-    public void setDiscordSecurityIncidentActions(EnforceSecurityActions discordSecurityIncidentActions) {
+    public void setDiscordSecurityIncidentActions(EnforceRestrictDMs discordSecurityIncidentActions) {
         this.discordSecurityIncidentActions = discordSecurityIncidentActions;
     }
 
@@ -293,13 +297,6 @@ public class Bot {
         return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn")));
     }
 
-    public @NotNull Role getAllModerators() {
-        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.all")));
-    }
-
-    public @NotNull User getOwner() {
-        return Objects.requireNonNull(getJDA().getUserById(this.settings.getString("owner")));
-    }
 
     public Stack<Task> getCompletedTasks() {
         return completedTasks;
@@ -311,7 +308,6 @@ public class Bot {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Bot bot = new Bot();
-
         Thread taskRunner = new Thread(() -> {
             while (true) {
                 try {
