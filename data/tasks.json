@@ -1,4 +1,5 @@
 {
+  "saveAfterUse": false,
   "profileScanning": {
     "join": true,
     "userAvatarChange": true,

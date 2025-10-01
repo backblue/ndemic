@@ -1,10 +1,12 @@
 package org.backblue.tasks;
+import org.backblue.Bot;
+
 import java.util.HashMap;
 
 public abstract class Task {
 
     public static int IDS = 0;
-    public static final HashMap<Integer, Task> IDS_TO_TASK = new HashMap<>();
+    public static HashMap<Integer, Task> IDS_TO_TASK;
     private final int id;
     private final long createdTimestamp;
     private long startedTimestamp;
@@ -20,7 +22,12 @@ public abstract class Task {
 
     Task() {
         id = IDS++;
-        IDS_TO_TASK.put(id, this);
+        if (Bot.getBot().getTasks().getBoolean("saveAfterUse")) {
+            if (IDS_TO_TASK == null) {
+                IDS_TO_TASK = new HashMap<>();
+            }
+            IDS_TO_TASK.put(id, this);
+        }
         createdTimestamp = System.currentTimeMillis();
         switch (this) {
             case MessageScanTask messageScanTask -> Stats.message++;

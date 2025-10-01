@@ -266,7 +266,10 @@ public class Bot {
     }
 
     public @Nullable Task searchTask(int id) {
-        return Task.IDS_TO_TASK.get(id);
+        if (Bot.getBot().getTasks().getBoolean("saveAfterUse")) {
+            return Task.IDS_TO_TASK.get(id);
+        }
+        return null;
     }
 
     public @Nullable EmbedBuilder taskToEmbed(int id) {
