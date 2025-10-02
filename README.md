@@ -4,10 +4,11 @@
 ### Moderation
 - :white_check_mark: Get notified when AutoMod runs
 - :white_check_mark: Enforce user-created guide threads
-- :white_check_mark: Enforce roles before users can post, epically those who joined before Onboarding
+- :white_check_mark: Enforce roles before users can post, especially those who joined before Onboarding
 - :white_check_mark: Uses Microsoft Azure's content moderation API:
   - Scan profiles pictures/bios for inappropriate content
   - Scan messages for inappropriate content
+- :white_check_mark: Permanently enable Discord Security Action: Pause DM
 ### Utilities
 - :white_check_mark: Stalk a BlueSky account and post new updates to a channel
 
