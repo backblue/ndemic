@@ -44,7 +44,7 @@ public final class BlueSkyReadTask extends Task {
         pass = keys.getProperty("BSKY_PASSWORD");
         footerText = keys.getProperty("BSKY_FOOTER_TEXT", "BlueSky");
         footerIcon = keys.getProperty("BSKY_FOOTER_ICON", "https://media.discordapp.net/attachments/1281683524688281704/1393415080200110153/Bluesky_Logo.svg.png?ex=6873166b&is=6871c4eb&hm=6e09c86a44316b789719fda166ba1617ace6ac7ea32228102540ae0f0b4c3ff5&=&format=webp&quality=lossless");
-        Bot.getBot().getTaskQueue().add(this);
+        completedTaskCreation();
     }
 
     @Override

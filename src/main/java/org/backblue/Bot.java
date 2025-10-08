@@ -39,7 +39,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Bot {
-    public static final String VERSION = "0.6.4";
+    public static final String VERSION = "0.6.5";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;
@@ -300,7 +300,6 @@ public class Bot {
         return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn")));
     }
 
-
     public Stack<Task> getCompletedTasks() {
         return completedTasks;
     }
@@ -316,7 +315,9 @@ public class Bot {
                 try {
                     Task task = bot.getTaskQueue().take();
                     task.process();
-                    bot.completedTasks.push(task);
+                    if (bot.getTasks().getBoolean("saveAfterUse")) {
+                        bot.completedTasks.push(task);
+                    }
                     if (!task.isSilenced()) {
                         bot.sendDebugMessage("tasks", Objects.requireNonNull(bot.taskToEmbed(task.getId())).build());
                     }
@@ -330,8 +331,8 @@ public class Bot {
                 int timeBetween = Integer.parseInt(bot.keys.getProperty("BSKY_REFRESH_MINS", "1"));
                 bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, timeBetween, TimeUnit.MINUTES);
             } catch (NumberFormatException e) {
-                System.err.println("Failed to parse BSky refresh time, defaulting to 1 minute.");
-                bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, 1, TimeUnit.MINUTES);
+                System.err.println("Failed to parse BSky refresh time, defaulting to 2 minute.");
+                bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 2, 2, TimeUnit.MINUTES);
             }
         }
     }

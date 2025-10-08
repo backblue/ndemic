@@ -21,7 +21,7 @@ public final class MessageScanTask extends Task {
         super();
         this.user = Objects.requireNonNull(Bot.getBot().getJDA().getUserById(user));
         this.msg = msg;
-        Bot.getBot().getTaskQueue().add(this);
+        completedTaskCreation();
     }
 
     @Override

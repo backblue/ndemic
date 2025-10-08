@@ -1,5 +1,6 @@
 {
   "saveAfterUse": false,
+  "queueItems": false,
   "profileScanning": {
     "join": true,
     "userAvatarChange": true,

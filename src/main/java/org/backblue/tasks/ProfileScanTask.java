@@ -105,7 +105,7 @@ public final class ProfileScanTask extends Task {
         if (customStatus != null && customStatus.equals(userProfile.readString("lastCustomStatus"))) {
             this.customStatus = null;
         }
-        Bot.getBot().getTaskQueue().add(this);
+        completedTaskCreation();
     }
 
     public static JSONObject toBase64() {

@@ -90,6 +90,14 @@ public abstract class Task {
         return info;
     }
 
+    protected final void completedTaskCreation() {
+        if (Bot.getBot().getTasks().getBoolean("queueItems")) {
+            Bot.getBot().getTaskQueue().add(this);
+        } else {
+            this.process();
+        }
+    }
+
     public abstract void process();
     public abstract HashMap<String, String> lookup();
 }
