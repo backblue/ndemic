@@ -79,7 +79,7 @@ public abstract class Task {
         output += " :warning: " + warning + " ";
     }
 
-    protected final HashMap<String, String> lookupBase() {
+    public HashMap<String, String> lookup() {
         HashMap<String, String> info = new HashMap<>();
         info.put("id", String.valueOf(id));
         info.put("createdTimestamp", String.valueOf(createdTimestamp));
@@ -87,6 +87,7 @@ public abstract class Task {
         info.put("finishedTimestamp", String.valueOf(finishedTimestamp));
         info.put("output", output);
         info.put("class", this.getClass().getSimpleName());
+        info.put("silenced", String.valueOf(silenced));
         return info;
     }
 
@@ -99,5 +100,4 @@ public abstract class Task {
     }
 
     public abstract void process();
-    public abstract HashMap<String, String> lookup();
 }

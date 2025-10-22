@@ -172,6 +172,6 @@ public final class BlueSkyReadTask extends Task {
 
     @Override
     public HashMap<String, String> lookup() {
-        return lookupBase();
+        return super.lookup();
     }
 }

@@ -271,7 +271,7 @@ public final class ProfileScanTask extends Task {
 
     @Override
     public HashMap<String, String> lookup() {
-        HashMap<String, String> info = lookupBase();
+        HashMap<String, String> info = super.lookup();
         info.put("user", user.getName());
         info.put("avatarURL", avatarURL);
         info.put("bannerURL", bannerURL);

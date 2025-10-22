@@ -88,7 +88,7 @@ public final class MessageScanTask extends Task {
 
     @Override
     public HashMap<String, String> lookup() {
-        HashMap<String, String> map = lookupBase();
+        HashMap<String, String> map = super.lookup();
         map.put("msg", msg.getContentRaw());
         map.put("userID", user.getId());
         map.put("user", user.getName());
