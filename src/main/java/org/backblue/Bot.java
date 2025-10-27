@@ -21,6 +21,7 @@ import org.backblue.commands.Module;
 import org.backblue.events.*;
 import org.backblue.tasks.BlueSkyReadTask;
 import org.backblue.tasks.Task;
+import org.backblue.utilities.RedditChecker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -74,6 +75,7 @@ public class Bot {
         tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
         taskqueue = new LinkedBlockingDeque<>();
         completedTasks = new Stack<>();
+        new RedditChecker(getSettings().getJSONObject("reddit"));
 
         try {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));
@@ -201,6 +203,13 @@ public class Bot {
 
     public void setDiscordSecurityIncidentActions(EnforceRestrictDMs discordSecurityIncidentActions) {
         this.discordSecurityIncidentActions = discordSecurityIncidentActions;
+    }
+
+    public void sendTextChannelMessage(String id, MessageEmbed message) {
+        TextChannel channel = getJDA().getTextChannelById(id);
+        if (channel != null) {
+            channel.sendMessageEmbeds(message).queue();
+        }
     }
 
     public void sendDebugMessage(String type, String message) {
