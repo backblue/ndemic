@@ -35,6 +35,7 @@ public class RedditChecker implements NdemicModule {
             String lastPostID = data.getJSONObject(0).getJSONObject("data").getString("id");
             subredditMap.put(key, subreddits.getString(key));
             subredditLastPost.put(key, lastPostID);
+            System.out.println("RedditChecker: Monitoring subreddit r/" + key + " and posting to channel ID " + subreddits.getString(key));
             scheduler().scheduleWithFixedDelay(() -> {
                 try {checkSubreddit(key);} catch (Exception ignored) {}}, 1, 1, TimeUnit.MINUTES);
         }
@@ -42,6 +43,7 @@ public class RedditChecker implements NdemicModule {
 
     private void checkSubreddit(String subreddit) {
         JSONArray jsonArray = fetchData(subreddit, false);
+        System.out.println("RedditChecker: Looking up data for subreddit r/" + subreddit);
         int i = 0;
         String firstNewPostID = null;
         if (jsonArray == null) {
@@ -57,7 +59,11 @@ public class RedditChecker implements NdemicModule {
             }
         }
         subredditLastPost.put(subreddit, firstNewPostID);
+        if (i == 0) {
+            System.out.println("RedditChecker: found " + i + " new posts since last check for r/" + subreddit);
+        }
         for (; i > 0; i--) {
+            System.out.println("RedditChecker: found " + i + " new posts since last check for r/" + subreddit);
 
             String postPrefix = "";
 
@@ -79,6 +85,7 @@ public class RedditChecker implements NdemicModule {
             e.setAuthor("New" + postPrefix + " post in r/" + subreddit,
                     "https://reddit.com" + a.getString("permalink"),
                     getIcon(subreddit));
+            System.out.println("RedditChecker: Sending new post embed for r/" + subreddit + " to channel ID " + subredditMap.get(subreddit));
             Bot.getBot().sendTextChannelMessage(subredditMap.get(subreddit), e.build());
         }
     }
@@ -122,7 +129,9 @@ public class RedditChecker implements NdemicModule {
             if (response.statusCode() == 200) {
                 JSONObject jsonResponse = new JSONObject(response.body());
                 String link = jsonResponse.getJSONObject("data").getString("community_icon");
-                int cutoff = link.indexOf(".png");
+                int cutoffPNG = link.indexOf(".png");
+                int cutoffJPG = link.indexOf(".jpg");
+                int cutoff = Math.max(cutoffPNG, cutoffJPG);
                 return link.substring(0, cutoff + 4);
             }
         } catch (IOException | InterruptedException e) {

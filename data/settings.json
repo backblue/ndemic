@@ -39,6 +39,8 @@
     "msgScanRemoveWordsList": ["necroa virus", "necroa", "insect blood", "mutation", "fungus", "simian flu"]
   },
   "reddit": {
-    "afterinc": "1315578560119050270"
+    "afterinc": "1315578560119050270",
+    "news": "1281683524688281704",
+    "politics": "1281683524688281704"
   }
 }
