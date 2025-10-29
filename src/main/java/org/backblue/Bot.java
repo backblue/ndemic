@@ -108,7 +108,7 @@ public class Bot {
 
         builder.addEventListeners(new CommandList());
         builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new Tasks(), new EZPunish());
-        builder.addEventListeners(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
+        builder.addEventListeners(new RestrictedChannel(), new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
         shardManager = builder.build();
     }
@@ -274,14 +274,14 @@ public class Bot {
                 .queue(privateChannel -> privateChannel.sendMessageEmbeds(embed).queue());
     }
 
-    public @Nullable Task searchTask(int id) {
+    public Task searchTask(int id) {
         if (Bot.getBot().getTasks().getBoolean("saveAfterUse")) {
             return Task.IDS_TO_TASK.get(id);
         }
         return null;
     }
 
-    public @Nullable EmbedBuilder taskToEmbed(int id) {
+    public EmbedBuilder taskToEmbed(int id) {
         Task task = searchTask(id);
         if (task == null) {
             return null;
@@ -327,8 +327,8 @@ public class Bot {
                     if (bot.getTasks().getBoolean("saveAfterUse")) {
                         bot.completedTasks.push(task);
                     }
-                    if (!task.isSilenced()) {
-                        bot.sendDebugMessage("tasks", Objects.requireNonNull(bot.taskToEmbed(task.getId())).build());
+                    if (!task.isSilenced() && bot.taskToEmbed(task.getId()) != null) {
+                        bot.sendDebugMessage("tasks", bot.taskToEmbed(task.getId()).build());
                     }
                 } catch (InterruptedException ignored) {}
             }

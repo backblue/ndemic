@@ -8,15 +8,14 @@ import org.json.JSONObject;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Objects;
 
 public class Module extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("module")) {
-            String module = Objects.requireNonNull(event.getOption("module")).getAsString();
-            Boolean enabled = Objects.requireNonNull(event.getOption("enabled")).getAsBoolean();
+            String module = event.getOption("module").getAsString();
+            Boolean enabled = event.getOption("enabled").getAsBoolean();
 
             if (module.equals("info")) {
                 event.reply(Bot.getBot().getModules().toString()).setEphemeral(true).queue();

@@ -25,7 +25,8 @@
       "warn": "750352217495699528",
       "log": "558690605698514994",
       "cmd": "624056396639502336",
-      "bsky": "699373249338802226"
+      "bsky": "699373249338802226",
+      "restrict": "1432386234378096752"
     },
     "autoModDefaultActionsIds": {
       "compromisedAccount": "970382590253088878",
@@ -38,8 +39,6 @@
     "msgScanRemoveWordsList": ["necroa virus", "necroa", "insect blood", "mutation", "fungus", "simian flu"]
   },
   "reddit": {
-    "rebelinc": "1281683524688281704",
-    "afterinc": "1281683524688281704",
-    "plagueinc": "1281683524688281704"
+    "afterinc": "1315578560119050270"
   }
 }

@@ -13,12 +13,12 @@ import java.util.HashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RedditChecker {
+public class RedditChecker implements NdemicModule {
 
     private final HashMap<String, String> subredditMap = new HashMap<>();
     private final HashMap<String, String> subredditLastPost = new HashMap<>();
 
-    public static boolean isEnabled() {
+    public boolean isEnabled() {
         return Bot.getBot().getModuleValue("reddit");
     }
 
