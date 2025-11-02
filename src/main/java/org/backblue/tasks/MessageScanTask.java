@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Objects;
 
+@Deprecated
 public final class MessageScanTask extends Task {
     private static final HashMap<User, Long> timeBetweenScans = new HashMap<>();
 

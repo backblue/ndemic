@@ -1,7 +1,8 @@
-package org.backblue.utilities;
+package org.backblue.modules;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.backblue.Bot;
+import org.backblue.utilities.NdemicModule;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -10,24 +11,31 @@ import java.io.IOException;
 import java.net.http.HttpRequest;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RedditChecker implements NdemicModule {
+public class RedditBot implements NdemicModule {
 
     private final HashMap<String, String> subredditMap = new HashMap<>();
     private final HashMap<String, String> subredditLastPost = new HashMap<>();
 
-    public boolean isEnabled() {
-        return Bot.getBot().getModuleValue("reddit");
+    @Override
+    public String name() {
+        return "reddit";
     }
 
-    public ScheduledExecutorService scheduler() {
-        return Bot.getBot().getScheduler();
-    }
-
-    public RedditChecker(JSONObject subreddits) {
+    public RedditBot(JSONObject subreddits) {
+        if (subreddits == null) {
+            System.err.println("RedditBot: No subreddits configured, disabling Reddit module.");
+            return;
+        }
+        int cooldown = 1;
         for (String key : subreddits.keySet()) {
+            if (key.charAt(0) == '_') {
+                if (key.equals("_cooldown")) {
+                    cooldown = subreddits.getInt(key);
+                }
+                continue;
+            }
             JSONArray data = fetchData(key, true);
             if (data == null) {
                 continue;
@@ -35,18 +43,19 @@ public class RedditChecker implements NdemicModule {
             String lastPostID = data.getJSONObject(0).getJSONObject("data").getString("id");
             subredditMap.put(key, subreddits.getString(key));
             subredditLastPost.put(key, lastPostID);
-            System.out.println("RedditChecker: Monitoring subreddit r/" + key + " and posting to channel ID " + subreddits.getString(key));
+            System.out.println("RedditBot: Monitoring subreddit r/" + key + " and posting to channel ID " + subreddits.getString(key));
             scheduler().scheduleWithFixedDelay(() -> {
-                try {checkSubreddit(key);} catch (Exception ignored) {}}, 1, 1, TimeUnit.MINUTES);
+                try {checkSubreddit(key);} catch (Exception ignored) {}}, 1, cooldown, TimeUnit.MINUTES);
         }
     }
 
     private void checkSubreddit(String subreddit) {
-        JSONArray jsonArray = fetchData(subreddit, false);
         System.out.println("RedditChecker: Looking up data for subreddit r/" + subreddit);
+        JSONArray jsonArray = fetchData(subreddit, false);
         int i = 0;
         String firstNewPostID = null;
         if (jsonArray == null) {
+            System.out.println("RedditChecker: didn't find anything for " + subreddit + " :(");
             return;
         }
         for (; i < jsonArray.length(); i++) {
@@ -65,7 +74,6 @@ public class RedditChecker implements NdemicModule {
         for (; i > 0; i--) {
             System.out.println("RedditChecker: found " + i + " new posts since last check for r/" + subreddit);
 
-            String postPrefix = "";
 
             JSONObject a = jsonArray.getJSONObject(i - 1).getJSONObject("data");
 
@@ -77,12 +85,10 @@ public class RedditChecker implements NdemicModule {
             e.setTimestamp(Instant.ofEpochSecond(a.getLong("created_utc")));
             e.setColor(Color.CYAN);
             if (a.has("preview")) {
-                e.setImage(a.getString("url_overridden_by_dest"));
-                postPrefix = " image";
-            } else if (a.has("crosspost_parent_list")) {
-                postPrefix = " link";
+                String link = a.getJSONObject("preview").getJSONArray("images").getJSONObject(0).getJSONObject("source").getString("url");
+                e.setImage(link.replace("&amp;", "&"));
             }
-            e.setAuthor("New" + postPrefix + " post in r/" + subreddit,
+            e.setAuthor("New post in r/" + subreddit,
                     "https://reddit.com" + a.getString("permalink"),
                     getIcon(subreddit));
             System.out.println("RedditChecker: Sending new post embed for r/" + subreddit + " to channel ID " + subredditMap.get(subreddit));
@@ -141,3 +147,4 @@ public class RedditChecker implements NdemicModule {
     }
 
 }
+

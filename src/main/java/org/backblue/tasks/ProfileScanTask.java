@@ -37,6 +37,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Objects;
 
+@Deprecated
 public final class ProfileScanTask extends Task {
 
     private static final HashMap<byte[], Integer> HASH_TO_POINTS;

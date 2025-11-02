@@ -19,9 +19,10 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
+import org.backblue.modules.BlueSkyBot;
 import org.backblue.tasks.BlueSkyReadTask;
 import org.backblue.tasks.Task;
-import org.backblue.utilities.RedditChecker;
+import org.backblue.modules.RedditBot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -40,7 +41,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Bot {
-    public static final String VERSION = "0.6.5";
+    public static final String VERSION = "0.7_1";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;
@@ -75,7 +76,8 @@ public class Bot {
         tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
         taskqueue = new LinkedBlockingDeque<>();
         completedTasks = new Stack<>();
-        new RedditChecker(getSettings().getJSONObject("reddit"));
+        new RedditBot(getSettings().getJSONObject("reddit"));
+        new BlueSkyBot(keys.getProperty("BSKY_USER", null), keys.getProperty("BSKY_PASSWORD", null), getSettings().getJSONObject("bSky"));
 
         try {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));

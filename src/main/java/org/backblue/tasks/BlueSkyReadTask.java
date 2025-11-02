@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Properties;
 
+@Deprecated
 public final class BlueSkyReadTask extends Task {
     private static Instant lastTimeStamp;
     private String did;

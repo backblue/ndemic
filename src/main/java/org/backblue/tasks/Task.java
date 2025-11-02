@@ -3,6 +3,7 @@ import org.backblue.Bot;
 
 import java.util.HashMap;
 
+@Deprecated
 public abstract class Task {
 
     public static int IDS = 0;

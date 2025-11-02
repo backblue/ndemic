@@ -52,8 +52,8 @@ public class EnforceProfileScan extends ListenerAdapter {
                     return;
                 }
                 new ProfileScanTask(member.getUser().getId(), source);
-            }
 
+            }
         }
     }
 
