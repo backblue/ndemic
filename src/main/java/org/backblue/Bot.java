@@ -41,7 +41,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Bot {
-    public static final String VERSION = "0.7_1";
+    public static final String VERSION = "0.7.0_2";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private final JSONObject settings;
@@ -77,7 +77,11 @@ public class Bot {
         taskqueue = new LinkedBlockingDeque<>();
         completedTasks = new Stack<>();
         new RedditBot(getSettings().getJSONObject("reddit"));
-        new BlueSkyBot(keys.getProperty("BSKY_USER", null), keys.getProperty("BSKY_PASSWORD", null), getSettings().getJSONObject("bSky"));
+        new BlueSkyBot(keys.getProperty("BSKY_USER", null),
+                keys.getProperty("BSKY_PASSWORD", null),
+                getSettings().getJSONObject("bSky"),
+                keys.getProperty("BSKY_FOOTER_TEXT", "BlueSky"),
+                keys.getProperty("BSKY_FOOTER_ICON", "https://i.imgur.com/8iz3PZJ.jpeg"));
 
         try {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));

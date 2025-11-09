@@ -7,7 +7,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.awt.*;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.time.Instant;
 import java.util.HashMap;
@@ -15,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RedditBot implements NdemicModule {
 
-    private final HashMap<String, String> subredditMap = new HashMap<>();
+    public static final HashMap<String, String> subredditMap = new HashMap<>();
     private final HashMap<String, String> subredditLastPost = new HashMap<>();
 
     @Override
@@ -28,13 +30,13 @@ public class RedditBot implements NdemicModule {
             System.err.println("RedditBot: No subreddits configured, disabling Reddit module.");
             return;
         }
-        int cooldown = 1;
+        long cd = 1;
         for (String key : subreddits.keySet()) {
             if (key.charAt(0) == '_') {
-                if (key.equals("_cooldown")) {
-                    cooldown = subreddits.getInt(key);
+                if (key.contains("cooldown")) {
+                    cd = subreddits.getLong(key);
+                    continue;
                 }
-                continue;
             }
             JSONArray data = fetchData(key, true);
             if (data == null) {
@@ -45,7 +47,7 @@ public class RedditBot implements NdemicModule {
             subredditLastPost.put(key, lastPostID);
             System.out.println("RedditBot: Monitoring subreddit r/" + key + " and posting to channel ID " + subreddits.getString(key));
             scheduler().scheduleWithFixedDelay(() -> {
-                try {checkSubreddit(key);} catch (Exception ignored) {}}, 1, cooldown, TimeUnit.MINUTES);
+                try {checkSubreddit(key);} catch (Exception ignored) {}}, 1, cd, TimeUnit.MINUTES);
         }
     }
 
@@ -71,10 +73,8 @@ public class RedditBot implements NdemicModule {
         if (i == 0) {
             System.out.println("RedditChecker: found " + i + " new posts since last check for r/" + subreddit);
         }
-        for (; i > 0; i--) {
+        for (; i > 0 && i < 10; i--) {
             System.out.println("RedditChecker: found " + i + " new posts since last check for r/" + subreddit);
-
-
             JSONObject a = jsonArray.getJSONObject(i - 1).getJSONObject("data");
 
             EmbedBuilder e = new EmbedBuilder();
@@ -105,15 +105,20 @@ public class RedditBot implements NdemicModule {
         String url = "https://www.reddit.com/r/" + subreddit + "/new.json";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(java.net.URI.create(url))
-                .header("User-Agent", "Mozilla/5.0")
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36")
                 .GET()
                 .build();
         try {
-            var client = java.net.http.HttpClient.newHttpClient();
+            HttpClient client = HttpClient.newHttpClient();
             var response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
                 JSONObject jsonResponse = new JSONObject(response.body());
                 return jsonResponse.getJSONObject("data").getJSONArray("children");
+            } else {
+                System.err.println("Unknown response code " + response.statusCode());
+                FileWriter writer = new FileWriter("error.txt");
+                writer.write("Error fetching subreddit " + subreddit + ": " + response.statusCode() + "\n" + response.body());
+                writer.close();
             }
         } catch (InterruptedException | IOException e) {
             System.err.println("Error fetching data for subreddit: " + subreddit);
