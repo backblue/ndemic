@@ -1,8 +1,10 @@
 package org.backblue.modules;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import org.backblue.Bot;
 import org.backblue.utilities.NdemicModule;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.awt.*;
@@ -61,6 +63,29 @@ public class BlueSkyBot implements NdemicModule {
             EmbedBuilder embed = new EmbedBuilder();
             embed.setColor(Color.CYAN);
             StringBuilder desc = new StringBuilder(post.getJSONObject("record").getString("text"));
+            JSONObject facets = post.getJSONObject("record").optJSONObject("facets");
+            embed.setDescription(formatDescription(desc, facets));
+            embed.setFooter(footer, footerIcon);
+
+            embed.setTimestamp(postTime);
+            embed.setAuthor(post.getJSONObject("author").getString("displayName"),
+                    "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle"),
+                    post.getJSONObject("author").getString("avatar"));
+            boolean imagefound = false;
+            try {
+                embed.setImage(post.getJSONObject("embed").getJSONObject("external").getString("thumb"));
+                imagefound = true;
+            } catch (JSONException ignored) {}
+            if (!imagefound) {
+                try {
+                    embed.setImage(post.getJSONObject("embed").getJSONObject("images").getJSONArray("images").getJSONObject(0).getString("fullsize"));
+                } catch (JSONException ignored) {}
+            }
+
+            String[] parts = post.getString("uri").split("/");
+            String rKey = parts[parts.length - 1];
+            String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
+            Bot.getBot().sendDeploymentMessage("bsky", urlInTxt, embed.build());
 
         } catch (IOException | InterruptedException e) {
             System.err.println("BlueSkyBot: Can not fetch feed for user " + did + "\n" + e);
@@ -92,7 +117,18 @@ public class BlueSkyBot implements NdemicModule {
         if (feed.isEmpty()) {
             return null;
         }
-        return feed.getJSONObject(0).getJSONObject("post");
+        return feed.getJSONObject(1).getJSONObject("post");
+    }
+
+    private String formatDescription(StringBuilder desc, JSONObject facets) {
+        if (facets == null) {
+            return desc.toString();
+        }
+        JSONArray facetsArray = facets.getJSONArray("facets");
+        for (int i = 0; i < facetsArray.length(); i++) {
+
+        }
+        return desc.toString();
     }
 
     @Override
