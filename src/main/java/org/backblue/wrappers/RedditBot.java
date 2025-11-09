@@ -1,4 +1,4 @@
-package org.backblue.modules;
+package org.backblue.wrappers;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.backblue.Bot;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RedditBot implements NdemicModule {
 
-    public static final HashMap<String, String> subredditMap = new HashMap<>();
+    public final HashMap<String, String> subredditMap = new HashMap<>();
     private final HashMap<String, String> subredditLastPost = new HashMap<>();
 
     @Override

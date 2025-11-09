@@ -19,10 +19,12 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
-import org.backblue.modules.BlueSkyBot;
+import org.backblue.utilities.NdemicModule;
+import org.backblue.wrappers.BlueSkyBot;
 import org.backblue.tasks.BlueSkyReadTask;
 import org.backblue.tasks.Task;
-import org.backblue.modules.RedditBot;
+import org.backblue.wrappers.RedditBot;
+import org.backblue.wrappers.RestrictDMs;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -56,7 +58,7 @@ public class Bot {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final BlockingQueue<Task> taskqueue;
     private final Stack<Task> completedTasks;
-    private EnforceRestrictDMs discordSecurityIncidentActions;
+    private final Set<NdemicModule> ndemicModules = new HashSet<>();
 
     public ScheduledExecutorService getScheduler() {
         return scheduler;
@@ -76,12 +78,12 @@ public class Bot {
         tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
         taskqueue = new LinkedBlockingDeque<>();
         completedTasks = new Stack<>();
-        new RedditBot(getSettings().getJSONObject("reddit"));
-        new BlueSkyBot(keys.getProperty("BSKY_USER", null),
+        registerNdemicModule(new RedditBot(getSettings().getJSONObject("reddit")));
+        registerNdemicModule(new BlueSkyBot(keys.getProperty("BSKY_USER", null),
                 keys.getProperty("BSKY_PASSWORD", null),
                 getSettings().getJSONObject("bSky"),
                 keys.getProperty("BSKY_FOOTER_TEXT", "BlueSky"),
-                keys.getProperty("BSKY_FOOTER_ICON", "https://i.imgur.com/8iz3PZJ.jpeg"));
+                keys.getProperty("BSKY_FOOTER_ICON", "https://i.imgur.com/8iz3PZJ.jpeg")));
 
         try {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));
@@ -114,9 +116,22 @@ public class Bot {
 
         builder.addEventListeners(new CommandList());
         builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new Tasks(), new EZPunish());
-        builder.addEventListeners(new RestrictedChannel(), new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
+        builder.addEventListeners(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
         shardManager = builder.build();
+    }
+
+    public Set<NdemicModule> getNdemicModules() {
+        return this.ndemicModules;
+    }
+
+    public void registerNdemicModule(NdemicModule module) {
+        for (NdemicModule mod : Bot.getBot().getNdemicModules()) {
+            if (mod.name().equals(module.name())) {
+                this.ndemicModules.remove(mod);
+            }
+        }
+        this.ndemicModules.add(module);
     }
 
     private static Properties loadKeys() {
@@ -162,10 +177,6 @@ public class Bot {
         return Bot.getBot().getJDA().getGuildById(Bot.getBot().getDeployment().get("guild"));
     }
 
-    public EnforceRestrictDMs getDiscordSecurityIncidentActions() {
-        return discordSecurityIncidentActions;
-    }
-
     public ShardManager getJDA() {
         return shardManager;
     }
@@ -205,10 +216,6 @@ public class Bot {
 
     public BlockingQueue<Task> getTaskQueue() {
         return taskqueue;
-    }
-
-    public void setDiscordSecurityIncidentActions(EnforceRestrictDMs discordSecurityIncidentActions) {
-        this.discordSecurityIncidentActions = discordSecurityIncidentActions;
     }
 
     public void sendTextChannelMessage(String id, MessageEmbed message) {
@@ -325,24 +332,8 @@ public class Bot {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Bot bot = new Bot();
-        Thread taskRunner = new Thread(() -> {
-            while (true) {
-                try {
-                    Task task = bot.getTaskQueue().take();
-                    task.process();
-                    if (bot.getTasks().getBoolean("saveAfterUse")) {
-                        bot.completedTasks.push(task);
-                    }
-                    if (!task.isSilenced() && bot.taskToEmbed(task.getId()) != null) {
-                        bot.sendDebugMessage("tasks", bot.taskToEmbed(task.getId()).build());
-                    }
-                } catch (InterruptedException ignored) {}
-            }
-        });
-        taskRunner.start();
         if (bot.getModuleValue("bSkyTracker")) {
             try {
-
                 int timeBetween = Integer.parseInt(bot.keys.getProperty("BSKY_REFRESH_MINS", "1"));
                 bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, timeBetween, TimeUnit.MINUTES);
             } catch (NumberFormatException e) {

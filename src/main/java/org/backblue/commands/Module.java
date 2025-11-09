@@ -3,6 +3,7 @@ package org.backblue.commands;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Bot;
+import org.backblue.utilities.NdemicModule;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
@@ -44,12 +45,16 @@ public class Module extends ListenerAdapter {
             Bot.getBot().getModules().remove(module);
             Bot.getBot().getModules().put(module, moduleData);
 
-            if (module.equals("restrictDMs") && enabled) {
-                Bot.getBot().getDiscordSecurityIncidentActions().check();
-            } else if (module.equals("restrictDMs")) {
-                Bot.getBot().getDiscordSecurityIncidentActions().disable();
+            for (NdemicModule mod : Bot.getBot().getNdemicModules()) {
+                if (mod.name().equals(module) && mod instanceof NdemicModule.ToggleActions) {
+                    if (mod.isEnabled()) {
+                        ((NdemicModule.ToggleActions) mod).enable();
+                    } else {
+                        ((NdemicModule.ToggleActions) mod).disable();
+                    }
+                    break;
+                }
             }
-
             event.reply(":white_check_mark: Module **" + module + "** is " + (enabled ? "**enabled**." : "**disabled**.")).queue();
             Bot.getBot().sendDebugMessage("autoMod", event.getUser().getName() + " changed setting " + module + " to " + enabled);
         }

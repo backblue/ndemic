@@ -31,10 +31,6 @@
     "description": "Restricts DMs between members in the guild",
     "enabled": true
   },
-  "restrictedChannels": {
-    "description": "restricts users b/c they messaged",
-    "enabled": false
-  },
   "reddit": {
     "description": "post new posts from reddit to specified channels",
     "enabled": true

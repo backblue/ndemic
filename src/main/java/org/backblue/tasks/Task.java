@@ -2,6 +2,7 @@ package org.backblue.tasks;
 import org.backblue.Bot;
 
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 @Deprecated
 public abstract class Task {
@@ -33,7 +34,6 @@ public abstract class Task {
         switch (this) {
             case MessageScanTask messageScanTask -> Stats.message++;
             case ProfileScanTask profileScanTask -> Stats.profile++;
-            case BlueSkyReadTask blueSkyReadTask -> Stats.bsky++;
             default -> {}
         }
     }
@@ -93,11 +93,7 @@ public abstract class Task {
     }
 
     protected final void completedTaskCreation() {
-        if (Bot.getBot().getTasks().getBoolean("queueItems")) {
-            Bot.getBot().getTaskQueue().add(this);
-        } else {
-            this.process();
-        }
+        Bot.getBot().getScheduler().schedule(this::process, 0, TimeUnit.NANOSECONDS);
     }
 
     public abstract void process();

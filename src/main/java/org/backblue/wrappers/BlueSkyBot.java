@@ -1,4 +1,4 @@
-package org.backblue.modules;
+package org.backblue.wrappers;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import org.backblue.Bot;
