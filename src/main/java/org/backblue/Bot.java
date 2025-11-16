@@ -127,7 +127,7 @@ public class Bot {
 
     public void registerNdemicModule(NdemicModule module) {
         for (NdemicModule mod : Bot.getBot().getNdemicModules()) {
-            if (mod.name().equals(module.name())) {
+            if (mod.equals(module)) {
                 this.ndemicModules.remove(mod);
             }
         }

@@ -2,7 +2,6 @@ package org.backblue.utilities;
 
 import org.backblue.Bot;
 
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 public interface NdemicModule {
@@ -14,11 +13,12 @@ public interface NdemicModule {
     default ScheduledExecutorService scheduler() {
         return Bot.getBot().getScheduler();
     }
-    default Set<NdemicModule> set() {
-        return Bot.getBot().getNdemicModules();
+    default boolean equals(NdemicModule other) {
+        return other.getClass() == this.getClass() && this.name().equals(other.name());
     }
+    String toString();
 
-    interface ToggleActions {
+    interface ToggleActions extends NdemicModule {
         void disable();
         void enable();
     }

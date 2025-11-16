@@ -6,7 +6,7 @@ import org.backblue.utilities.NdemicModule;
 
 import java.time.OffsetDateTime;
 
-public class RestrictDMs implements NdemicModule, NdemicModule.ToggleActions {
+public class RestrictDMs implements NdemicModule.ToggleActions {
 
     public RestrictDMs() {
         Bot.getBot().getScheduler().scheduleWithFixedDelay(this::enable, 0, 1, java.util.concurrent.TimeUnit.MINUTES);
@@ -26,7 +26,7 @@ public class RestrictDMs implements NdemicModule, NdemicModule.ToggleActions {
 
     public void enable() {
         if (isEnabled() && Bot.getBot().getDeploymentGuild() != null && !isActive()) {
-            SecurityIncidentActions incidentActions = SecurityIncidentActions.enabled(Bot.getBot().getDeploymentGuild().getSecurityIncidentActions().getInvitesDisabledUntil(), OffsetDateTime.now().plusMinutes(1438));
+            SecurityIncidentActions incidentActions = SecurityIncidentActions.enabled(Bot.getBot().getDeploymentGuild().getSecurityIncidentActions().getInvitesDisabledUntil(), OffsetDateTime.now().plusSeconds(86399));
             Bot.getBot().getDeploymentGuild().modifySecurityIncidents(incidentActions).queue();
         }
     }

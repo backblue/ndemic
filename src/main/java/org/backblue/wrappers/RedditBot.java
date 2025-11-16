@@ -105,7 +105,7 @@ public class RedditBot implements NdemicModule {
         String url = "https://www.reddit.com/r/" + subreddit + "/new.json";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(java.net.URI.create(url))
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36")
+                .header("User-Agent", Bot.getBot().getKeys().getProperty("REDDIT_AGENT", ""))
                 .GET()
                 .build();
         try {

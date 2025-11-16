@@ -31,11 +31,6 @@ public abstract class Task {
             IDS_TO_TASK.put(id, this);
         }
         createdTimestamp = System.currentTimeMillis();
-        switch (this) {
-            case MessageScanTask messageScanTask -> Stats.message++;
-            case ProfileScanTask profileScanTask -> Stats.profile++;
-            default -> {}
-        }
     }
 
     @Override

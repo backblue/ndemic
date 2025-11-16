@@ -18,8 +18,19 @@ public class Module extends ListenerAdapter {
             String module = event.getOption("module").getAsString();
             Boolean enabled = event.getOption("enabled").getAsBoolean();
 
+
             if (module.equals("info")) {
-                event.reply(Bot.getBot().getModules().toString()).setEphemeral(true).queue();
+                if (enabled) {
+                    event.reply(Bot.getBot().getModules().toString()).setEphemeral(true).queue();
+                } else {
+                    StringBuilder a = new StringBuilder("[");
+                    for (NdemicModule mod : Bot.getBot().getNdemicModules()) {
+                        a.append(mod.name()).append("=").append(mod.isEnabled()).append(",");
+                    }
+                    a.deleteCharAt(a.length() -1 );
+                    a.append("]");
+                    event.reply("**NdemicModules loaded/status.** NdemicModules will gradually replace 'Tasks'.\n" + a).setEphemeral(true).queue();
+                }
                 return;
             } else if (!Bot.getBot().getModules().has(module)) {
                 event.reply(":x: Module **" + module + "** does not exist!").setEphemeral(true).queue();
