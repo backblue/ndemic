@@ -1,35 +1,38 @@
 package org.backblue.commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.components.attachmentupload.AttachmentUpload;
+import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.selections.EntitySelectMenu;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
+import net.dv8tion.jda.api.components.textinput.TextInput;
+import net.dv8tion.jda.api.components.textinput.TextInputStyle;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.modals.Modal;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.Bot;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.awt.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.io.*;
-import java.util.concurrent.TimeUnit;
 
 public class EZPunish extends ListenerAdapter {
 
     private static JSONArray RULEBOOK = null;
+    private static StringSelectMenu VIOLATIONS_DROPDOWN = null;
 
     static {
         Path path = Path.of("data/rulebook.json");
+        JSONObject fileContent = null;
         if (Files.exists(path)) {
-            JSONObject fileContent;
             try {
                 fileContent = new JSONObject(Files.readString(path));
                 EZPunish.RULEBOOK = fileContent.getJSONArray("content");
@@ -38,65 +41,63 @@ public class EZPunish extends ListenerAdapter {
                     if (!rule.has("id") || !rule.has("title") || !rule.has("desc")) {
                         Bot.getBot().sendDebugMessage("autoMod", "Rulebook entry " + (i) + " is missing fields 'id', 'title', 'desc'. Disabling Rulebook and ezpunish");
                         EZPunish.RULEBOOK = null;
+                        break;
                     }
                 }
             } catch (IOException ignored) {
             }
+        }
+        if (fileContent != null && fileContent.getJSONArray("keywords") != null) {
+            StringSelectMenu.Builder builder = StringSelectMenu.create("ezpunish:violations");
+            for (int i = 0; i < fileContent.getJSONArray("keywords").length(); i++) {
+                JSONObject rule = fileContent.getJSONArray("keywords").getJSONObject(i);
+                builder.addOption(rule.getString("title"), "ezpunish:"+rule.getString("modal"), rule.getString("desc"));
+            }
+            builder.setMinValues(1);
+            builder.setMaxValues(4);
+            VIOLATIONS_DROPDOWN = builder.build();
         }
     }
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if ("ezpunish".equals(event.getName())) {
-            if (event.getGuild() == null) {
-                event.reply("This command can only be used in a server").setEphemeral(true).queue();
-                return;
-            }
             if (EZPunish.RULEBOOK == null) {
-                event.reply("The rulebook is not loaded, cannot use this feature").setEphemeral(true).queue();
+                event.reply(":x: The rulebook is not configured!").setEphemeral(true).queue();
                 return;
             }
-            @NotNull User user = Objects.requireNonNull(event.getOption("user")).getAsUser();
-            Member member = event.getGuild().getMember(user);
-            boolean ban = Objects.requireNonNull(event.getOption("ban")).getAsBoolean();
-            int ruleId = Objects.requireNonNull(event.getOption("ruleid")).getAsInt();
-            String evidenceText = null;
-            if (event.getOption("evidencetext") != null) {
-                evidenceText = Objects.requireNonNull(event.getOption("evidencetext")).getAsString();
-            }
-            Message.Attachment evidenceImage = null;
-            if (event.getOption("evidenceimage") != null) {
-                evidenceImage = Objects.requireNonNull(event.getOption("evidenceimage")).getAsAttachment();
-            }
-            if (evidenceText == null && evidenceImage == null) {
-                event.reply("You must provide at least one form of evidence, either text or image.").setEphemeral(true).queue();
-                return;
-            }
-            if (search(ruleId) == null) {
-                event.reply("The rule ID provided does not exist in the rulebook.").setEphemeral(true).queue();
-                return;
-            }
-            if (member != null) {
-                if (!Objects.requireNonNull(event.getMember()).hasPermission(Permission.ADMINISTRATOR) || Objects.requireNonNull(member).hasPermission(Permission.ADMINISTRATOR)) {
-                    event.reply(":x: Cannot perform this action. Check logs").setEphemeral(true).queue();
-                    return;
-                }
-                Bot.getBot().sendUserMessage(user, generatePunishEmbed(ruleId, user, ban, event));
-                logToWarnings(ruleId, user, ban, evidenceText, evidenceImage, event);
-                member.ban(1, TimeUnit.HOURS).reason("Moderator initiated, rule " + ruleId + " (" + event.getUser().getName() + ")").queue();
-                event.reply(":white_check_mark: User has been " + (ban ? "banned" : "removed") + " and logged.").queue();
-                Bot.getBot().getScheduler().schedule(() -> {
-                    if (!ban) {
-                        event.getGuild().unban(member).queue();
-                    }
-                }, 4, TimeUnit.SECONDS);
-            } else {
-                event.reply("The user is not in the server, cannot remove.").setEphemeral(true).queue();
-            }
+            EntitySelectMenu menu = EntitySelectMenu.create("ezpunish:target", EntitySelectMenu.SelectTarget.USER).build();
+            StringSelectMenu punishment = StringSelectMenu.create("ezpunish:type")
+                    .addOption("Softban", "softban", "Kicks the user and deletes an hour of messages")
+                    .addOption("Ban", "ban", "Bans the user and deletes an hour of messages")
+                    .setDefaultValues("softban")
+                    .build();
+            StringSelectMenu violations = StringSelectMenu.create("ezpunish:violations")
+                    .addOption("Softban", "softban", "Kicks the user and deletes an hour of messages")
+                    .addOption("Ban", "ban", "Bans the user and deletes an hour of messages")
+                    .setMinValues(1)
+                    .setMaxValues(4)
+                    .build();
+            TextInput note = TextInput.create("ezpunish:note", TextInputStyle.PARAGRAPH)
+                    .setPlaceholder("Personalized note to the user regarding their punishment")
+                    .setMinLength(1)
+                    .setMaxLength(1000)
+                    .setRequired(false)
+                    .build();
+            Modal modal = Modal.create("modal:ezpunish", "Moderation Action")
+                    .addComponents(
+                            Label.of("Target", menu),
+                            Label.of("Punishment", punishment),
+                            Label.of("Violations", VIOLATIONS_DROPDOWN),
+                            Label.of("Attachments / Evidence", AttachmentUpload.of("ezpunish:evidence")),
+                            Label.of("Notes", note)
+                    )
+                    .build();
+            event.replyModal(modal).queue();
         }
     }
 
-    private static @Nullable JSONObject search(int i) {
+    public static JSONObject search(int i) {
         for (int j = 0; j < RULEBOOK.length(); j++) {
             JSONObject rule = RULEBOOK.getJSONObject(j);
             if (rule.getInt("id") == i) {
@@ -106,26 +107,27 @@ public class EZPunish extends ListenerAdapter {
         return null;
     }
 
-    private MessageEmbed generatePunishEmbed(int ruleId, User user, boolean ban, SlashCommandInteractionEvent e) {
+    public static MessageEmbed generatePunishEmbed(int ruleId, Member user, boolean ban) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         if (ban) {
             embedBuilder.setColor(Color.RED);
-            embedBuilder.setTitle("Permanently Banned from " + Objects.requireNonNull(e.getGuild()).getName());
+            embedBuilder.setTitle("Permanently Banned from " + user.getGuild().getName());
             embedBuilder.setFooter("You may not rejoin this guild.");
         } else {
             embedBuilder.setColor(Color.YELLOW);
-            embedBuilder.setTitle("Removed from " + Objects.requireNonNull(e.getGuild()).getName());
+            embedBuilder.setTitle("Removed from " + user.getGuild().getName());
             embedBuilder.setFooter("You may rejoin this guild in the future.");
         }
-        embedBuilder.setDescription("You have been " + (ban ? "permanently banned" : "removed") + " from " + e.getGuild().getName() + " for violating the following rule below:");
+        embedBuilder.setDescription("You have been " + (ban ? "permanently banned" : "removed") + " from " + user.getGuild().getName() + " for violating the following rule below:");
         JSONObject rule = search(ruleId);
         embedBuilder.addField(rule.getString("title"), rule.getString("desc"), false);
         return embedBuilder.build();
     }
-    private void logToWarnings(int ruleId, User user, boolean ban, String evidenceText, Message.Attachment evidenceImage, SlashCommandInteractionEvent e) {
+
+    public static void logToWarnings(int ruleId, Member user, boolean ban, String evidenceText, Message.Attachment evidenceImage, Member executor) {
         String status = ban ? "Banned" : "Kicked";
         if (evidenceImage == null) {
-            Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: `" + e.getUser().getName()+ "`\n" + evidenceText);
+            Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: `" + executor.getUser().getName()+ "`\n" + evidenceText);
         } else {
             if (evidenceText == null) {
                 evidenceText = "";
@@ -133,8 +135,10 @@ public class EZPunish extends ListenerAdapter {
             String finalEvidenceText = evidenceText;
             evidenceImage.getProxy().download().thenAccept(inputStream -> {
                 FileUpload fileUpload = FileUpload.fromData(inputStream, evidenceImage.getFileName());
-                Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: `" + e.getUser().getName() + "`\n" + finalEvidenceText, fileUpload);
+                Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + search(ruleId).getString("title") + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText, fileUpload);
             });
         }
     }
+
+    public record EZPunishResult(boolean success, String message) {}
 }

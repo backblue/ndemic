@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Bot;
-import org.backblue.tasks.MessageScanTask;
+import org.backblue.wrappers.MessageHandler;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -43,6 +43,6 @@ public class EnforceMessageScan extends ListenerAdapter {
         if (event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
             return;
         }
-        new MessageScanTask(event.getMember().getId(), event.getMessage());
+        new MessageHandler(event.getMessage(), event.getMember());
     }
 }

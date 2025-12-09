@@ -13,7 +13,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +27,7 @@ public class BlueSkyBot implements NdemicModule {
     private final String footerIcon;
     private final HashMap<String, String> bSkyMap = new HashMap<>();
     private final HashMap<String, Instant> bSkyUserLastPost = new HashMap<>();
+    private boolean linkOnly;
 
     public BlueSkyBot(String user, String pass, JSONObject json, String footer, String footerIcon) {
         if (user == null || pass == null || json == null || footer == null || footerIcon == null) {
@@ -39,16 +42,26 @@ public class BlueSkyBot implements NdemicModule {
         this.pass = pass;
         this.footer = footer;
         this.footerIcon = footerIcon;
+        this.linkOnly = json.keySet().contains("linkOnly");
         for (String key : json.keySet()) {
-            bSkyMap.put(key, json.getString(key));
-            bSkyUserLastPost.put(key, Instant.now());
-            System.out.println("BlueSkyBot: Monitoring user " + key + " and posting to channel ID " + json.getString(key));
-            scheduler().scheduleWithFixedDelay(() -> {
-                try {checkAccount(key);} catch (Exception ignored) {}}, 1, 1, TimeUnit.MINUTES);
+            if (!key.equals("linkOnly") && json.get(key) instanceof String) {
+                bSkyMap.put(key, json.getString(key));
+                bSkyUserLastPost.put(key, Instant.now());
+                System.out.println("BlueSkyBot: Monitoring user " + key + " and posting to channel ID " + json.getString(key));
+                scheduler().scheduleWithFixedDelay(() -> {
+                    try {
+                        checkAccount(key);
+                    } catch (Exception ignored) {
+                    }
+                }, 1, 1, TimeUnit.MINUTES);
+            }
         }
     }
 
     private void checkAccount(String did) {
+        if (!isEnabled()) {
+            return;
+        }
         try {
             JSONObject post = getUserFeed(did);
             if (post == null) {
@@ -60,33 +73,42 @@ public class BlueSkyBot implements NdemicModule {
                 System.out.println("BlueSkyBot: No new posts found for user " + did);
                 return;
             }
-            EmbedBuilder embed = new EmbedBuilder();
-            embed.setColor(Color.CYAN);
-            StringBuilder desc = new StringBuilder(post.getJSONObject("record").getString("text"));
-            JSONObject facets = post.getJSONObject("record").optJSONObject("facets");
-            embed.setDescription(formatDescription(desc, facets));
-            embed.setFooter(footer, footerIcon);
+            if (linkOnly) {
+                String[] parts = post.getString("uri").split("/");
+                String rKey = parts[parts.length - 1];
+                String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
+                Bot.getBot().sendDeploymentMessage("bsky", urlInTxt);
+                Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt);
+            } else {
+                EmbedBuilder embed = new EmbedBuilder();
+                embed.setColor(Color.CYAN);
+                StringBuilder desc = new StringBuilder(post.getJSONObject("record").getString("text"));
+                JSONObject facets = post.getJSONObject("record").optJSONObject("facets");
+                embed.setDescription(formatDescription(desc, facets));
+                embed.setFooter(footer, footerIcon);
 
-            embed.setTimestamp(postTime);
-            embed.setAuthor(post.getJSONObject("author").getString("displayName"),
-                    "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle"),
-                    post.getJSONObject("author").getString("avatar"));
-            boolean imagefound = false;
-            try {
-                embed.setImage(post.getJSONObject("embed").getJSONObject("external").getString("thumb"));
-                imagefound = true;
-            } catch (JSONException ignored) {}
-            if (!imagefound) {
+                embed.setTimestamp(postTime);
+                embed.setAuthor(post.getJSONObject("author").getString("displayName"),
+                        "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle"),
+                        post.getJSONObject("author").getString("avatar"));
+                boolean imagefound = false;
                 try {
-                    embed.setImage(post.getJSONObject("embed").getJSONObject("images").getJSONArray("images").getJSONObject(0).getString("fullsize"));
+                    embed.setImage(post.getJSONObject("embed").getJSONObject("external").getString("thumb"));
+                    imagefound = true;
                 } catch (JSONException ignored) {}
+                if (!imagefound) {
+                    try {
+                        embed.setImage(post.getJSONObject("embed").getJSONObject("images").getJSONArray("images").getJSONObject(0).getString("fullsize"));
+                    } catch (JSONException ignored) {}
+                }
+
+                String[] parts = post.getString("uri").split("/");
+                String rKey = parts[parts.length - 1];
+                String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
+                Bot.getBot().sendDeploymentMessage("bsky", urlInTxt, embed.build());
+                Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt, embed.build());
             }
-
-            String[] parts = post.getString("uri").split("/");
-            String rKey = parts[parts.length - 1];
-            String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
-            Bot.getBot().sendDeploymentMessage("bsky", urlInTxt, embed.build());
-
+            bSkyUserLastPost.put(did, postTime);
         } catch (IOException | InterruptedException e) {
             System.err.println("BlueSkyBot: Can not fetch feed for user " + did + "\n" + e);
         }
@@ -120,14 +142,46 @@ public class BlueSkyBot implements NdemicModule {
         return feed.getJSONObject(1).getJSONObject("post");
     }
 
-    private String formatDescription(StringBuilder desc, JSONObject facets) {
-        if (facets == null) {
+    private String formatDescription(StringBuilder desc, JSONObject json) {
+        if (json == null) {
             return desc.toString();
         }
-        JSONArray facetsArray = facets.getJSONArray("facets");
-        for (int i = 0; i < facetsArray.length(); i++) {
+        JSONArray facets = null;
+        try {
+            facets = json.getJSONArray("facets");
+        } catch (JSONException ignored) {}
+        int shiftedDesc = 0;
+        for (int i = 0; facets != null && i < facets.length(); i++) {
+            JSONObject facet = facets.getJSONObject(i);
+            String type = facet.getJSONArray("features").getJSONObject(0).getString("$type");
+            int start = facet.getJSONObject("index").getInt("byteStart") + shiftedDesc;
+            int end = facet.getJSONObject("index").getInt("byteEnd") + shiftedDesc;
+            if (type.equals("app.bsky.richtext.facet#link")) {
+                byte[] descInBytes = desc.toString().getBytes();
 
+                byte[] descByteToLink = Arrays.copyOfRange(descInBytes, 0, start);
+                int sizeofDescByteToLink = descByteToLink.length + 1;
+                byte[] sizeofDescByteToLinkWithBracket = new byte[sizeofDescByteToLink];
+                System.arraycopy(descByteToLink, 0, sizeofDescByteToLinkWithBracket, 0, sizeofDescByteToLink - 1);
+                sizeofDescByteToLinkWithBracket[sizeofDescByteToLink - 1] = (byte) '[';
+                byte[] sizeofDescByteToLinkWithLeftBracketAndContent = new byte[sizeofDescByteToLink + (end - start) + 2];
+                System.arraycopy(sizeofDescByteToLinkWithBracket, 0, sizeofDescByteToLinkWithLeftBracketAndContent, 0, sizeofDescByteToLink);
+                byte[] linkInBytes = Arrays.copyOfRange(descInBytes, start, end);
+                System.arraycopy(linkInBytes, 0, sizeofDescByteToLinkWithLeftBracketAndContent, sizeofDescByteToLink, end - start);
+                sizeofDescByteToLinkWithLeftBracketAndContent[sizeofDescByteToLinkWithLeftBracketAndContent.length - 2] = ']';
+                sizeofDescByteToLinkWithLeftBracketAndContent[sizeofDescByteToLinkWithLeftBracketAndContent.length - 1] = '(';
+                byte[] linkUriInBytes = facet.getJSONArray("features").getJSONObject(0).getString("uri").getBytes();
+                byte[] descWithURI = new byte[sizeofDescByteToLinkWithLeftBracketAndContent.length + linkUriInBytes.length + 1];
+                System.arraycopy(sizeofDescByteToLinkWithLeftBracketAndContent, 0, descWithURI, 0, sizeofDescByteToLinkWithLeftBracketAndContent.length);
+                System.arraycopy(linkUriInBytes, 0, descWithURI, sizeofDescByteToLinkWithLeftBracketAndContent.length, linkUriInBytes.length);
+                descWithURI[descWithURI.length - 1] = ')';
+                byte[] restOfDescInBytes = Arrays.copyOfRange(descInBytes, end, descInBytes.length);
+                desc = new StringBuilder(new String(descWithURI, StandardCharsets.UTF_8));
+                desc.append(new String(restOfDescInBytes, StandardCharsets.UTF_8));
+                shiftedDesc += 4 + facet.getJSONArray("features").getJSONObject(0).getString("uri").getBytes().length;
+            }
         }
+
         return desc.toString();
     }
 

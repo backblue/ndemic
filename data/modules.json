@@ -21,7 +21,7 @@
   },
   "messageScanning": {
     "description": "scans messages for inappropriate content",
-    "enabled": false
+    "enabled": true
   },
   "bSkyTracker": {
     "description": "tracks user posts on BlueSky",
@@ -29,10 +29,6 @@
   },
   "restrictDMs": {
     "description": "Restricts DMs between members in the guild",
-    "enabled": true
-  },
-  "reddit": {
-    "description": "post new posts from reddit to specified channels",
     "enabled": true
   }
 }

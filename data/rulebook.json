@@ -50,5 +50,109 @@
       "title": "Compromised Account",
       "desc": "Your account has been compromised. Secure your account before re-joining the server."
     }
+  ],
+  "keywords": [
+    {
+      "id": 1,
+      "modal": "messages",
+      "title": "Hate Speech",
+      "desc": "Hate speech in messages"
+    },
+    {
+      "id": 1,
+      "modal": "harassment",
+      "title": "Harassment",
+      "desc": "Demeaning, threatening messages"
+    },
+    {
+      "id": 1,
+      "modal": "bigotry",
+      "title": "Bigotry",
+      "desc": "Racist, sexist, homophobic, transphobic, ableist comments"
+    },
+    {
+      "id": 1,
+      "modal": "instigating",
+      "title": "Instigating",
+      "desc": "Encouraging others to harass or discriminate"
+    },
+    {
+      "id": 2,
+      "modal": "nsfw",
+      "title": "NSFW",
+      "desc": "Sexual, gore, porn or illegal content/comments"
+    },
+    {
+      "id": 3,
+      "modal": "spam",
+      "title": "Spam",
+      "desc": "Unsolicited links, invites, and self-promotion"
+    },
+    {
+      "id": 3,
+      "modal": "trolling",
+      "title": "Trolling",
+      "desc": "Deliberately disruptive or off-topic messages"
+    },
+    {
+      "id": 3,
+      "modal": "ragebait",
+      "title": "Ragebait",
+      "desc": "Provocative messages designed to attract attention"
+    },
+    {
+      "id": 3,
+      "modal": "annoying",
+      "title": "Annoying",
+      "desc": "Excessive tagging members or mods"
+    },
+    {
+      "id": 4,
+      "modal": "offtopic",
+      "title": "Off-Topic",
+      "desc": "Derailing discussions"
+    },
+    {
+      "id": 6,
+      "modal": "memes",
+      "title": "Memes",
+      "desc": "Excessive or unwarranted meme posting"
+    },
+    {
+      "id": 5,
+      "modal": "politics",
+      "title": "Ragebait: Politics",
+      "desc": "Bad-faith political arguments meant to rage-bait others"
+    },
+    {
+      "id": 7,
+      "modal": "piracyshare",
+      "title": "Piracy: Links",
+      "desc": "Sending links to pirated software"
+    },
+    {
+      "id": 7,
+      "modal": "piracycontent",
+      "title": "Piracy: Content",
+      "desc": "Posting content of pirated software or instructions"
+    },
+    {
+      "id": 8,
+      "modal": "english",
+      "title": "Non-English",
+      "desc": "Messages in a language other than English"
+    },
+    {
+      "id": 98,
+      "modal": "profile",
+      "title": "Profile",
+      "desc": "Offensive Profile Picture/Banner/Status"
+    },
+    {
+      "id": 99,
+      "modal": "compromise",
+      "title": "Compromised Account",
+      "desc": "Unusual spam activity from account"
+    }
   ]
 }

@@ -5,7 +5,6 @@
   "presence": 2,
   "watermark": "Built by killergotrekt for Ndemic",
   "watermarkLogoLink": "https://cdn.discordapp.com/icons/523349543505362945/9223945b99f10ebaeba2afc7ef1cb872.png",
-  "caching": true,
   "analysis": {
     "guild": "846837318132301904",
     "enforceFan": "1354229171076731111",
@@ -38,13 +37,8 @@
     "basicWordChkList": ["fag", "nigg", "retard", "cunt"],
     "msgScanRemoveWordsList": ["necroa virus", "necroa", "insect blood", "mutation", "fungus", "simian flu"]
   },
-  "reddit": {
-    "_cooldown": "2",
-    "afterinc": "1315578560119050270",
-    "rebelinc": "625682702787412009",
-    "plagueinc": "625682011214053416"
-  },
   "bSky": {
+    "onlyLink": true,
     "did:plc:fnjpvrzkdt74wlgb5b4gtc6e": "1281683524688281704"
   }
 }

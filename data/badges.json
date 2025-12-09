@@ -1,0 +1,34 @@
+{
+  "boosters": true,
+  "boosterRole": "646513220089282586",
+  "content": [
+    {
+      "title": "Insurgent",
+      "id": "insurgent",
+      "code": "<:Insurgency:856581878546169856>",
+      "role": "1353097317305155605",
+      "unlocked": true
+    },
+    {
+      "title": "Pika",
+      "id": "pika",
+      "code": "<:ShockedPika:560271121249992716>",
+      "role": "1353097317305155605",
+      "unlocked": true
+    },
+    {
+      "title": "Mega Brutal",
+      "id": "mb",
+      "code": "<:GoldenBadgeRI:856577608517681172>",
+      "role": "856581978546169857",
+      "unlocked": true
+    },
+    {
+      "title": "ZCom",
+      "id": "zcom",
+      "code": "<:ZCOM:815980861752475708>",
+      "role": "856581978546169857",
+      "unlocked": true
+    }
+  ]
+}

@@ -3,8 +3,8 @@ package org.backblue;
 import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -19,12 +19,11 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
+import org.backblue.utilities.ComponentManager;
 import org.backblue.utilities.NdemicModule;
 import org.backblue.wrappers.BlueSkyBot;
-import org.backblue.tasks.BlueSkyReadTask;
-import org.backblue.tasks.Task;
-import org.backblue.wrappers.RedditBot;
-import org.backblue.wrappers.RestrictDMs;
+import org.backblue.wrappers.MessageHandler;
+import org.backblue.wrappers.ProfileHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -42,13 +41,16 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.backblue.commands.EZPunish.generatePunishEmbed;
+import static org.backblue.commands.EZPunish.logToWarnings;
+
 public class Bot {
-    public static final String VERSION = "0.7.0_2";
+    public static final String VERSION = "0.7.0_4";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
-    private final JSONObject settings;
-    private final JSONObject modules;
-    private final JSONObject tasks;
+    private JSONObject settings;
+    private JSONObject modules;
+    private JSONObject tasks;
     private final ShardManager shardManager;
     private static Bot botStatic;
     private final HashMap<String, String> analysis;
@@ -56,8 +58,6 @@ public class Bot {
 
     private final ContentSafetyClient contentSafetyClient;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final BlockingQueue<Task> taskqueue;
-    private final Stack<Task> completedTasks;
     private final Set<NdemicModule> ndemicModules = new HashSet<>();
 
     public ScheduledExecutorService getScheduler() {
@@ -67,18 +67,22 @@ public class Bot {
         return contentSafetyClient;
     }
 
-    public Bot() throws IOException, InterruptedException {
+    public Bot() {
         botStatic = this;
 
+        try {
+            settings = new JSONObject(new JSONTokener(Files.readString(Path.of("data/settings.json"))));
+            modules = new JSONObject(new JSONTokener(Files.readString(Path.of("data/modules.json"))));
+            tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
+        } catch (IOException e) {
+            System.err.println("Need config files: data/settings.json, data/modules.json, data/tasks.json");
+            System.exit(1);
+        }
         keys = loadKeys();
-        settings = new JSONObject(new JSONTokener(Files.readString(Path.of("data/settings.json"))));
-        modules = new JSONObject(new JSONTokener(Files.readString(Path.of("data/modules.json"))));
         analysis = generateAnalysis();
         deployment = generateDeployment();
-        tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
-        taskqueue = new LinkedBlockingDeque<>();
-        completedTasks = new Stack<>();
-        registerNdemicModule(new RedditBot(getSettings().getJSONObject("reddit")));
+        registerNdemicModule(new ProfileHandler());
+        registerNdemicModule(new MessageHandler());
         registerNdemicModule(new BlueSkyBot(keys.getProperty("BSKY_USER", null),
                 keys.getProperty("BSKY_PASSWORD", null),
                 getSettings().getJSONObject("bSky"),
@@ -90,7 +94,7 @@ public class Bot {
             test.close();
         } catch (SQLException e) {
             System.err.println("\u001B[0mSQL configuration is required!\n" + e);
-            System.exit(1);
+            System.exit(2);
         }
 
         contentSafetyClient = new ContentSafetyClientBuilder()
@@ -114,8 +118,8 @@ public class Bot {
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
 
-        builder.addEventListeners(new CommandList());
-        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new Tasks(), new EZPunish());
+        builder.addEventListeners(new CommandList(), new ComponentManager(), new ModalManager());
+        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate());
         builder.addEventListeners(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
         shardManager = builder.build();
@@ -214,14 +218,17 @@ public class Bot {
         return botStatic;
     }
 
-    public BlockingQueue<Task> getTaskQueue() {
-        return taskqueue;
-    }
-
-    public void sendTextChannelMessage(String id, MessageEmbed message) {
+    public void sendTextChannelMessage(String id, String txt, MessageEmbed message) {
         TextChannel channel = getJDA().getTextChannelById(id);
         if (channel != null) {
-            channel.sendMessageEmbeds(message).queue();
+            channel.sendMessage(txt).setEmbeds(message).queue();
+        }
+    }
+
+    public void sendTextChannelMessage(String id, String txt) {
+        TextChannel channel = getJDA().getTextChannelById(id);
+        if (channel != null) {
+            channel.sendMessage(txt).queue();
         }
     }
 
@@ -287,59 +294,58 @@ public class Bot {
                 .queue(privateChannel -> privateChannel.sendMessageEmbeds(embed).queue());
     }
 
-    public Task searchTask(int id) {
-        if (Bot.getBot().getTasks().getBoolean("saveAfterUse")) {
-            return Task.IDS_TO_TASK.get(id);
-        }
-        return null;
-    }
-
-    public EmbedBuilder taskToEmbed(int id) {
-        Task task = searchTask(id);
-        if (task == null) {
-            return null;
-        }
-        HashMap<String, String> info = task.lookup();
-        EmbedBuilder embed = new EmbedBuilder();
-        embed.setColor(Color.YELLOW);
-        embed.setTitle("Task `" + String.format("%,d", id) + "`");
-        for (String key : info.keySet()) {
-            if (info.get(key) == null) {
-                embed.addField(key, "N/A", true);
-                continue;
-            }
-            embed.addField(key, info.get(key), true);
-        }
-        if (task.getStarted() > 0 && task.getFinished() > 0) {
-            long waited = (task.getStarted() - task.getCreated())/1000;
-            long elapsed = (task.getFinished() - task.getCreated())/1000;
-            embed.setFooter("Waited " + waited + "s to run, Ran for " + elapsed + "s");
-        }
-        return embed;
-    }
-
     public @NotNull Role getMostModerators() {
         return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn")));
     }
 
-    public Stack<Task> getCompletedTasks() {
-        return completedTasks;
-    }
-
-    public Properties getKeys() {
-        return keys;
-    }
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        Bot bot = new Bot();
-        if (bot.getModuleValue("bSkyTracker")) {
-            try {
-                int timeBetween = Integer.parseInt(bot.keys.getProperty("BSKY_REFRESH_MINS", "1"));
-                bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 1, timeBetween, TimeUnit.MINUTES);
-            } catch (NumberFormatException e) {
-                System.err.println("Failed to parse BSky refresh time, defaulting to 2 minute.");
-                bot.getScheduler().scheduleWithFixedDelay(BlueSkyReadTask::new, 2, 2, TimeUnit.MINUTES);
-            }
+    public void additionalReview(Member member, boolean timeout, ComponentManager.ComponentPreset preset, String... evidence) {
+        if (timeout) {
+            member.timeoutFor(28, TimeUnit.DAYS).queue();
         }
+        ComponentManager.ComponentInteractionEvent event = switch (preset) {
+            case MESSAGE -> ComponentManager.message(member, evidence[0]);
+            case PROFILE_PICTURE -> ComponentManager.profilePicture(member, evidence[0], evidence[1]);
+            case CUSTOM_STATUS -> ComponentManager.customStatus(member, evidence[0]);
+            case OTHER -> ComponentManager.other(member, evidence);
+            case BANNER -> ComponentManager.banner(member, evidence[0], evidence[1]);
+        };
+
+        Guild guild = member.getGuild();
+        TextChannel channel = guild.getTextChannelById(getDeployment().get("channels.cmd"));
+        if (event != null && channel != null) {
+            channel.sendMessage(getMostModerators().getAsMention()).queue();
+            channel.sendMessageComponents(event.container).useComponentsV2(true).queue();
+        }
+    }
+
+    public EZPunish.EZPunishResult ezPunish(Member target, Member executor, int ruleId, boolean ban, String evidenceText, Message.Attachment evidenceImage) {
+        if (target == null || executor == null) {
+            return new EZPunish.EZPunishResult(false, "Invalid targets provided.");
+        }
+        if (!executor.hasPermission(Permission.ADMINISTRATOR)) {
+            return new EZPunish.EZPunishResult(false, "Executor lacks Administrator permissions.");
+        }
+        if (evidenceText == null && evidenceImage == null) {
+            return new EZPunish.EZPunishResult(false, "No evidence provided.");
+        }
+        if (EZPunish.search(ruleId) == null) {
+            return new EZPunish.EZPunishResult(false, "The rule ID provided does not exist in the rulebook.");
+        }
+        if (target.hasPermission(Permission.ADMINISTRATOR)) {
+            return new EZPunish.EZPunishResult(false, "Target has Administrator permissions.");
+        }
+        Bot.getBot().sendUserMessage(target.getUser(), generatePunishEmbed(ruleId, target, ban));
+        logToWarnings(ruleId, target, ban, evidenceText, evidenceImage, executor);
+        target.ban(1, TimeUnit.HOURS).reason("Moderator initiated, rule " + ruleId + " (" + executor.getUser().getName() + ")").queue();
+        Bot.getBot().getScheduler().schedule(() -> {
+            if (!ban) {
+                target.getGuild().unban(target).queue();
+            }
+        }, 4, TimeUnit.SECONDS);
+        return new EZPunish.EZPunishResult(true, "User has been " + (ban ? "banned" : "removed") + " and logged.");
+    }
+
+    public static void main(String[] args) {
+        new Bot();
     }
 }

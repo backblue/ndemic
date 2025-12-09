@@ -1,31 +1,23 @@
 {
-  "saveAfterUse": false,
-  "queueItems": false,
   "profileScanning": {
-    "join": true,
-    "userAvatarChange": true,
-    "guildAvatarChange": true,
-    "slash": true,
-    "msg": false,
+    "GUILD_JOIN": true,
+    "PROFILE_UPDATE": true,
+    "SLASH": true,
+    "MESSAGE": false,
     "doBasicTextScan": true,
     "detection": {
-      "pointsThresholdToWarn": 12,
-      "resetPointsAfterSeconds": 86400,
-      "similaritiesPercentageToNotScan": 80,
-      "maxCache": 1000
+      "pointsThresholdToWarn": 8,
+      "resetPointsAfterSeconds": 86400
     }
   },
   "messageScanning": {
     "autoDelete": false,
-    "alert": true,
+    "additionalReview": true,
     "detection": {
       "Hate": 4,
       "Sexual": 8,
       "Violence": 8,
       "SelfHarm": 8
     }
-  },
-  "bSkyTracker": {
-    "silentWhenNoUpdate": true
   }
 }
