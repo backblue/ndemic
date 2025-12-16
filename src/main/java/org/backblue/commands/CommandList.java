@@ -27,6 +27,7 @@ public class CommandList extends ListenerAdapter {
 
         commands.add(Commands.slash("ping", "Ping, pong!"));
         commands.add(Commands.slash("uptime", "About this bot, version, and performance"));
+        commands.add(Commands.slash("badge", "Select a role icon"));
 
         OptionData moduleSelection = new OptionData(OptionType.STRING, "module", "The selected module", true)
                 .addChoice("INFO: Displays status of each module.", "info");

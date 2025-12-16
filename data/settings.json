@@ -10,7 +10,6 @@
     "enforceFan": "1354229171076731111",
     "enforceOP": "1354229171076731111",
     "spy": "1354224979755008191",
-    "tasks": "1356119673405702155",
     "autoMod": "1354224983924019491",
     "imageDump": "1383994500820500522"
   },
@@ -23,14 +22,7 @@
     "channels": {
       "warn": "750352217495699528",
       "log": "558690605698514994",
-      "cmd": "624056396639502336",
-      "bsky": "699373249338802226",
-      "restrict": "1432386234378096752"
-    },
-    "autoModDefaultActionsIds": {
-      "compromisedAccount": "970382590253088878",
-      "slurs": "970379396512899123",
-      "inviteLink": "discord.gg/ndemic"
+      "cmd": "624056396639502336"
     },
     "oneOPFailureMsg": "Hello,\n\nYou can not send messages in guides that aren't yours.\n\nFeel free to discuss the guide in the respective game channel (eg. `#rebel-inc` for Rebel Inc.)",
     "fanRoleFailureMsg": "Hello,\n\nYou must have either `@Plague Inc. Fan`, `@Rebel Inc. Fan` or `@After Inc. Fan` role to be able to chat in **Ndemic Creations**.\n\n[You may pick up a role here:](https://discord.com/channels/523349543505362945/690604818661638144/690620288622133269) <#690604818661638144>",

@@ -17,6 +17,9 @@ public class EnforceMessageScan extends ListenerAdapter {
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (Bot.getBot().getModuleValue("messageScanning")) {
             Message message = event.getMessage();
+            if (!event.isFromGuild()) {
+                return;
+            }
             if (!Arrays.asList(Bot.getBot().getDeployment().get("guild"), Bot.getBot().getAnalysis().get("guild")).contains(message.getGuild().getId())) {
                 return;
             }

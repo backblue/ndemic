@@ -3,32 +3,40 @@
   "boosterRole": "646513220089282586",
   "content": [
     {
-      "title": "Insurgent",
-      "id": "insurgent",
-      "code": "<:Insurgency:856581878546169856>",
-      "role": "1353097317305155605",
-      "unlocked": true
-    },
-    {
       "title": "Pika",
       "id": "pika",
       "code": "<:ShockedPika:560271121249992716>",
-      "role": "1353097317305155605",
-      "unlocked": true
+      "role": "1353925493430423604"
     },
     {
-      "title": "Mega Brutal",
-      "id": "mb",
-      "code": "<:GoldenBadgeRI:856577608517681172>",
-      "role": "856581978546169857",
-      "unlocked": true
+      "title": "Escalation",
+      "id": "ri",
+      "code": "<:RI_Escalation:860680077979942933>",
+      "role": "1449169008355184872"
+    },
+    {
+      "title": "Rebel",
+      "id": "insurgent",
+      "code": "<:Insurgency:856581878546169856>",
+      "role": "1449169287632916652"
+    },
+    {
+      "title": "Plague",
+      "id": "pi",
+      "code": "<:PlagueInc:815981251995238421>",
+      "role": "1450304839476052029"
     },
     {
       "title": "ZCom",
       "id": "zcom",
       "code": "<:ZCOM:815980861752475708>",
-      "role": "856581978546169857",
-      "unlocked": true
+      "role": "1450305065079410948"
+    },
+    {
+      "title": "Nuke",
+      "id": "nuke",
+      "code": "<:Nuke:815980824234557441>",
+      "role": "1450305504784941116"
     }
   ]
 }

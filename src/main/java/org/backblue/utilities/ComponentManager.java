@@ -12,11 +12,14 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.Bot;
+import org.backblue.commands.EZPunish;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ComponentManager extends ListenerAdapter {
 
@@ -219,20 +222,15 @@ public class ComponentManager extends ListenerAdapter {
         return id;
     }
 
-    public static class ComponentInteractionEvent {
-        final int id;
-        public final Container container;
-        final ComponentPreset preset;
-        final Map<String, String> content;
-
-        private ComponentInteractionEvent(ComponentPreset preset, Container container, int id, Map<String, String> content) {
-            this.preset = preset;
-            this.id = id;
-            this.container = container;
-            this.content = content;
-            componentsList.put(id, this);
+    public record ComponentInteractionEvent(ComponentPreset preset, Container container, int id, Map<String, String> content) {
+            public ComponentInteractionEvent(ComponentPreset preset, Container container, int id, Map<String, String> content) {
+                this.preset = preset;
+                this.id = id;
+                this.container = container;
+                this.content = content;
+                componentsList.put(id, this);
+            }
         }
-    }
 
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
@@ -245,7 +243,7 @@ public class ComponentManager extends ListenerAdapter {
         if (cie == null) {
             return;
         }
-        if (event.getGuild() == null) {
+        if (event.getGuild() == null && !EZPunish.enabled()) {
             return;
         }
         Member target = event.getGuild().getMemberById(cie.content.get("id"));
@@ -254,12 +252,8 @@ public class ComponentManager extends ListenerAdapter {
             case "MESSAGE" -> {
                 String offendingMessage = cie.content.get("message");
                 switch (action) {
-                    case "kick" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 1, false, "**Offending Message**:\n" + offendingMessage, null);
-                    }
-                    case "ban" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 1, true, "**Offending Message**:\n" + offendingMessage, null);
-                    }
+                    case "kick" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), false, "**Offending Message**:\n" + offendingMessage, null);
+                    case "ban" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), true, "**Offending Message**:\n" + offendingMessage, null);
                     case "nothing" -> {
                         if (target != null) {
                             target.removeTimeout().queue();
@@ -270,51 +264,35 @@ public class ComponentManager extends ListenerAdapter {
             case "PROFILE_PICTURE", "BANNER" -> {
                 String offendingMessage = cie.content.get("link");
                 switch (action) {
-                    case "kick" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 98, false, offendingMessage, null);
-                    }
-                    case "ban" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 98, true, offendingMessage, null);
-                    }
+                    case "kick" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), false, offendingMessage, null);
+                    case "ban" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), true, offendingMessage, null);
                     case "nothing" -> {
                     }
                 }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# :white_check_mark: Action taken by **" + event.getUser().getName() + "** " + TimeFormat.relativeTime(Instant.now().toEpochMilli()/1000))));
-                event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
             }
             case "CUSTOM_STATUS" -> {
                 String offendingMessage = cie.content.get("link");
                 switch (action) {
-                    case "kick" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 98, false, "**Status**: \n> " + offendingMessage, null);
-                    }
-                    case "ban" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 98, true, "**Status**: \n> " + offendingMessage, null);
-                    }
+                    case "kick" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), false, "**Status**: \n> " + offendingMessage, null);
+                    case "ban" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), true, "**Status**: \n> " + offendingMessage, null);
                     case "nothing" -> {
                     }
                 }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# :white_check_mark: Action taken by **" + event.getUser().getName() + "** " + TimeFormat.relativeTime(Instant.now().toEpochMilli()/1000))));
-                event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
             }
             case "OTHER" -> {
                 switch (action) {
-                    case "kick" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 99, false, cie.content.get("details.0"), null);
-                    }
-                    case "ban" -> {
-                        Bot.getBot().ezPunish(target, event.getMember(), 99, true, cie.content.get("details.0"), null);
-                    }
+                    case "kick" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), false, cie.content.get("details.0"), null);
+                    case "ban" -> Bot.getBot().ezPunish(target, event.getMember(), List.of("ezpunish:profile"), true, cie.content.get("details.0"), null);
                     case "nothing" -> {
                         if (target != null) {
                             target.removeTimeout().queue();
                         }
                     }
                 }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# :white_check_mark: Action taken by **" + event.getUser().getName() + "** " + TimeFormat.relativeTime(Instant.now().toEpochMilli()/1000))));
-                event.editComponents(disableAll.asDisabled()).queue();
             }
             default -> {}
         }
+        MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# Action taken " + TimeFormat.relativeTime(Instant.now().toEpochMilli()/1000) + " by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
+        event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
     }
 }

@@ -5,6 +5,8 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.modals.ModalMapping;
+import org.backblue.Bot;
+import org.backblue.commands.Badge;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -22,11 +24,17 @@ public class ModalManager extends ListenerAdapter {
             String notes = null;
             try {
                 ModalMapping additionalNotes = event.getValue("ezpunish:note");
-                if (additionalNotes != null) {
+                if (additionalNotes != null && !additionalNotes.getAsString().isEmpty()) {
                     notes = additionalNotes.getAsString();
                 }
             } catch (Exception ignored) {}
-            event.reply(user.getEffectiveName()).queue();
+            boolean softban = !type.equals("Softban");
+            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, null, attachment, notes).message()).queue();
+        }
+        if (event.getModalId().equals("modal:badge") && event.getMember() != null) {
+            @NotNull String badge = Objects.requireNonNull(event.getValue("badge:selection")).getAsStringList().getFirst();
+            event.deferReply().setEphemeral(true).queue();
+            event.getHook().sendMessage(Badge.changeBadge(event.getMember(), badge)).setEphemeral(true).queue();
         }
     }
 }

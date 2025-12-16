@@ -30,7 +30,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,13 +38,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 
 import static org.backblue.commands.EZPunish.generatePunishEmbed;
 import static org.backblue.commands.EZPunish.logToWarnings;
 
 public class Bot {
-    public static final String VERSION = "0.7.0_4";
+    public static final String VERSION = "0.7.0_10";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
@@ -88,7 +88,6 @@ public class Bot {
                 getSettings().getJSONObject("bSky"),
                 keys.getProperty("BSKY_FOOTER_TEXT", "BlueSky"),
                 keys.getProperty("BSKY_FOOTER_ICON", "https://i.imgur.com/8iz3PZJ.jpeg")));
-
         try {
             Connection test = DriverManager.getConnection(keys.getProperty("JDBC"));
             test.close();
@@ -119,7 +118,7 @@ public class Bot {
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
 
         builder.addEventListeners(new CommandList(), new ComponentManager(), new ModalManager());
-        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate());
+        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate(), new Badge());
         builder.addEventListeners(new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
         shardManager = builder.build();
@@ -152,7 +151,7 @@ public class Bot {
     private HashMap<String, String> generateAnalysis() {
         HashMap<String, String> map = new HashMap<>();
         for (String key : settings.getJSONObject("analysis").keySet()) {
-            map.put(key, settings.getJSONObject("analysis").getString(key));
+            map.put(key.toLowerCase(), settings.getJSONObject("analysis").getString(key));
         }
         return map;
     }
@@ -165,12 +164,12 @@ public class Bot {
             } else if (key.contains("List")) {
                 JSONArray arr = settings.getJSONObject("deployment").getJSONArray(key);
                 for (int i = 0; i < arr.length(); i++) {
-                    map.put(key + "." + i, arr.getString(i));
+                    map.put(key.toLowerCase() + "." + i, arr.getString(i));
                 }
-                map.put(key + ".size", String.valueOf(arr.length()));
+                map.put(key.toLowerCase() + ".size", String.valueOf(arr.length()));
             } else {
                 for (String anotherKey : settings.getJSONObject("deployment").getJSONObject(key).keySet()) {
-                    map.put(key + "." + anotherKey, settings.getJSONObject("deployment").getJSONObject(key).getString(anotherKey));
+                    map.put(key.toLowerCase() + "." + anotherKey, settings.getJSONObject("deployment").getJSONObject(key).getString(anotherKey));
                 }
             }
         }
@@ -295,7 +294,7 @@ public class Bot {
     }
 
     public @NotNull Role getMostModerators() {
-        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn")));
+        return Objects.requireNonNull(getJDA().getRoleById(getDeployment().get("roles.optIn").toLowerCase()));
     }
 
     public void additionalReview(Member member, boolean timeout, ComponentManager.ComponentPreset preset, String... evidence) {
@@ -314,11 +313,11 @@ public class Bot {
         TextChannel channel = guild.getTextChannelById(getDeployment().get("channels.cmd"));
         if (event != null && channel != null) {
             channel.sendMessage(getMostModerators().getAsMention()).queue();
-            channel.sendMessageComponents(event.container).useComponentsV2(true).queue();
+            channel.sendMessageComponents(event.container()).useComponentsV2(true).queue();
         }
     }
 
-    public EZPunish.EZPunishResult ezPunish(Member target, Member executor, int ruleId, boolean ban, String evidenceText, Message.Attachment evidenceImage) {
+    public EZPunish.EZPunishResult ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, Message.Attachment evidenceImage, String notes) {
         if (target == null || executor == null) {
             return new EZPunish.EZPunishResult(false, "Invalid targets provided.");
         }
@@ -328,21 +327,22 @@ public class Bot {
         if (evidenceText == null && evidenceImage == null) {
             return new EZPunish.EZPunishResult(false, "No evidence provided.");
         }
-        if (EZPunish.search(ruleId) == null) {
-            return new EZPunish.EZPunishResult(false, "The rule ID provided does not exist in the rulebook.");
-        }
         if (target.hasPermission(Permission.ADMINISTRATOR)) {
             return new EZPunish.EZPunishResult(false, "Target has Administrator permissions.");
         }
-        Bot.getBot().sendUserMessage(target.getUser(), generatePunishEmbed(ruleId, target, ban));
-        logToWarnings(ruleId, target, ban, evidenceText, evidenceImage, executor);
-        target.ban(1, TimeUnit.HOURS).reason("Moderator initiated, rule " + ruleId + " (" + executor.getUser().getName() + ")").queue();
+        Bot.getBot().sendUserMessage(target.getUser(), generatePunishEmbed(violations, target, ban, notes, target.getGuild().getIconUrl()));
+        logToWarnings(violations, target, ban, evidenceText, evidenceImage, executor);
+        target.ban(1, TimeUnit.HOURS).reason("Moderator initiated by " + executor.getUser().getName()).queue();
         Bot.getBot().getScheduler().schedule(() -> {
             if (!ban) {
                 target.getGuild().unban(target).queue();
             }
         }, 4, TimeUnit.SECONDS);
         return new EZPunish.EZPunishResult(true, "User has been " + (ban ? "banned" : "removed") + " and logged.");
+    }
+
+    public void ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, Message.Attachment evidenceImage) {
+        ezPunish(target, executor, violations, ban, evidenceText, evidenceImage, null);
     }
 
     public static void main(String[] args) {
