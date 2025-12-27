@@ -8,13 +8,17 @@ import org.json.JSONObject;
 
 import java.sql.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 public final class SQLProfile {
 
     private final String userId;
     private final JSONObject json;
+    private final String table;
+    private final List<String> columns;
 
     @Override
     public String toString() {
@@ -101,12 +105,12 @@ public final class SQLProfile {
         return array;
     }
 
-    public void write(String table) {
-
+    public void write() {
         json.remove("lastRefresh");
         json.remove("cacheUsername");
         json.put("lastRefresh", Instant.now().getEpochSecond());
         json.put("cacheUsername", Objects.requireNonNull(Bot.getBot().getJDA().getUserById(userId)).getName());
+        json.remove("badgeID");
 
         if (exists(userId, table)) {
             update(table);
@@ -117,17 +121,21 @@ public final class SQLProfile {
     }
 
     private SQLProfile(String userId, String table) {
+        SQLReturnPackage pkg = get(userId, table);
         this.userId = userId;
-        this.json = get(userId, table);
+        this.json = pkg.json;
+        this.columns = pkg.columns;
+        this.table = table;
     }
 
-    private static JSONObject get(String userId, String table) {
+    private static SQLReturnPackage get(String userId, String table) {
         return sqlGet(userId, table);
     }
 
-    private static JSONObject sqlGet(String userId, String table) {
+    private static SQLReturnPackage sqlGet(String userId, String table) {
         if (exists(userId, table)) {
             JSONObject json = new JSONObject();
+            List<String> columns = new ArrayList<>();
             String query = "SELECT * FROM " + table + " WHERE id = ?";
             try (Connection conn = openConnection()) {
                 PreparedStatement statement = conn.prepareStatement(query);
@@ -144,9 +152,15 @@ public final class SQLProfile {
                             // Handle NULLs explicitly
                             json.put(columnName, value != null ? value : JSONObject.NULL);
                         }
-                        return json;
+
+                        ResultSet col = conn.getMetaData().getColumns(null, null, table, null);
+                        while (col.next()) {
+                            columns.add(col.getString("COLUMN_NAME"));
+                        }
+
+                        return new SQLReturnPackage(json, columns);
                     } else {
-                        return new JSONObject().put("id", userId).put("lastRefresh", Instant.now().getEpochSecond()).put("cacheUsername", Objects.requireNonNull(Bot.getBot().getJDA().getUserById(userId)).getName());
+                        return new SQLReturnPackage(new JSONObject().put("id", userId).put("lastRefresh", Instant.now().getEpochSecond()).put("cacheUsername", Objects.requireNonNull(Bot.getBot().getJDA().getUserById(userId)).getName()), List.of("id", "cacheUsername", "lastRefresh"));
                     }
                 }
             } catch (SQLException e) {
@@ -154,7 +168,7 @@ public final class SQLProfile {
                 return null;
             }
         } else {
-            return new JSONObject().put("id", userId).put("lastRefresh", Instant.now().getEpochSecond()).put("cacheUsername", Objects.requireNonNull(Bot.getBot().getJDA().getUserById(userId)).getName());
+            return new SQLReturnPackage(new JSONObject().put("id", userId).put("lastRefresh", Instant.now().getEpochSecond()).put("cacheUsername", Objects.requireNonNull(Bot.getBot().getJDA().getUserById(userId)).getName()), List.of("id", "cacheUsername", "lastRefresh"));
         }
     }
 
@@ -258,4 +272,6 @@ public final class SQLProfile {
     private static Connection openConnection() throws SQLException {
         return DriverManager.getConnection(Bot.getBot().getSQL());
     }
+
+    private record SQLReturnPackage(JSONObject json, List<String> columns) {}
 }

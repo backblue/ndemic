@@ -32,6 +32,7 @@ import java.util.HashMap;
 public class ProfileHandler implements NdemicModule {
 
     private static ArrayList<String> DETECTION_TEXT;
+    private boolean forcedOff = false;
 
     public enum Source {
         GUILD_JOIN,
@@ -51,7 +52,7 @@ public class ProfileHandler implements NdemicModule {
     }
 
     private void process(Member member, ProfileHandler.Source source) {
-        if (isEnabled()) {
+        if (isEnabled() && !this.forcedOff) {
             ProfileAnalysisRecord record = ProfileAnalysisRecord.of(member);
 
             SQLProfile profile = SQLProfile.read(record.user.getId(), "userinfo");
@@ -60,7 +61,7 @@ public class ProfileHandler implements NdemicModule {
                     Bot.getBot().additionalReview(member, true, ComponentManager.ComponentPreset.CUSTOM_STATUS, record.customStatus);
                     profile.writeString("lastCustomStatus", record.customStatus)
                             .writeString("lastProfileScan", String.valueOf(Instant.now().getEpochSecond()))
-                            .write("userinfo");
+                            .write();
                     return;
                 }
             }
@@ -114,7 +115,7 @@ public class ProfileHandler implements NdemicModule {
 
             profile.writeString("lastCustomStatus", record.customStatus)
                     .writeInt("profilePoints", currentPoints)
-                    .write("userinfo");
+                    .write();
 
         }
     }
@@ -165,7 +166,12 @@ public class ProfileHandler implements NdemicModule {
         try {
             response = Bot.getBot().getContentSafetyClient().analyzeImage(new AnalyzeImageOptions(image));
         } catch (HttpResponseException e) {
-            Bot.getBot().sendDebugMessage("autoMod", "Failed to analyze image for " + record.user.getName() + " (" + record.user.getId() + ") due to: " + e.getMessage());
+            if (e.getResponse().getStatusCode() == 403) {
+                this.forcedOff = true;
+                Bot.getBot().sendDeploymentMessage("autoMod", "Profile scanning cannot continue due to 403 error: `" + e.getMessage()+" `");
+            } else {
+                Bot.getBot().sendDebugMessage("autoMod", "Failed to analyze image for " + record.user.getName() + " (" + record.user.getId() + ") due to: " + e.getMessage());
+            }
             return null;
         }
         HashMap<String, Integer> results = new HashMap<>();
@@ -180,7 +186,7 @@ public class ProfileHandler implements NdemicModule {
         }
         SQLProfile.read(record.user.getId(), "userinfo").writeString("lastProfileScan", String.valueOf(Instant.now().getEpochSecond()))
                 .writeString("last" + type + "URL", url)
-                .write("userinfo");
+                .write();
         return new ScanResult(points/2, results);
     }
 

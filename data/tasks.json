@@ -14,7 +14,7 @@
     "autoDelete": false,
     "additionalReview": true,
     "detection": {
-      "Hate": 4,
+      "Hate": 8,
       "Sexual": 8,
       "Violence": 8,
       "SelfHarm": 8

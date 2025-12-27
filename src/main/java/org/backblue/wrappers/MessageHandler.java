@@ -13,6 +13,7 @@ import org.backblue.utilities.NdemicModule;
 import java.util.HashMap;
 
 public class MessageHandler implements NdemicModule.Azure {
+    private boolean forcedOff = false;
 
     @Override
     public String name() {
@@ -27,7 +28,7 @@ public class MessageHandler implements NdemicModule.Azure {
     }
 
     private void process(Message message, Member member) {
-        if (isEnabled()) {
+        if (isEnabled() && !this.forcedOff) {
             HashMap<AzureProperty, Integer> analysis = processMessage(member, message.getContentRaw());
             if (analysis == null) {
                 return;
@@ -58,7 +59,12 @@ public class MessageHandler implements NdemicModule.Azure {
 
             response = Bot.getBot().getContentSafetyClient().analyzeText(new AnalyzeTextOptions(content));
         } catch (HttpResponseException e) {
-            Bot.getBot().sendDebugMessage("autoMod", "Failed to analyze msg text for " + user.getUser().getName() + " (" + user.getId() + ") due to: " + e.getMessage());
+            if (e.getResponse().getStatusCode() == 403) {
+                this.forcedOff = true;
+                Bot.getBot().sendDeploymentMessage("autoMod", "Profile scanning cannot continue due to 403 error: `" + e.getMessage()+" `");
+            } else {
+                Bot.getBot().sendDebugMessage("autoMod", "Failed to analyze msg text for " + user.getUser().getName() + " (" + user.getId() + ") due to: " + e.getMessage());
+            }
             return null;
         }
         HashMap<AzureProperty, Integer> results = new HashMap<>();

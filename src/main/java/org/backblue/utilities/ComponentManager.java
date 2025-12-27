@@ -56,7 +56,7 @@ public class ComponentManager extends ListenerAdapter {
                 ).withUniqueId(102),
                 Section.of(
                         Button.primary(id+";message:nothing", "Do nothing"),
-                        TextDisplay.of("**Do nothing**\nLocks all the button options")
+                        TextDisplay.of("**Do nothing**\nUn-timeouts the user.")
                 ).withUniqueId(103),
                 Separator.createDivider(Separator.Spacing.SMALL),
                 TextDisplay.of("-# The offending content has already been removed.").withUniqueId(100)
@@ -90,7 +90,7 @@ public class ComponentManager extends ListenerAdapter {
                 ).withUniqueId(102),
                 Section.of(
                         Button.primary(id+";profile_picture:nothing", "Do nothing"),
-                        TextDisplay.of("**Do nothing**\nLocks all the button options")
+                        TextDisplay.of("**Do nothing**\n")
                 ).withUniqueId(103),
                 Separator.createDivider(Separator.Spacing.SMALL),
                 TextDisplay.of("-# No action has been taken so far.").withUniqueId(100)
@@ -202,7 +202,7 @@ public class ComponentManager extends ListenerAdapter {
                         TextDisplay.of("**Do nothing**\nLocks all the button options")
                 ).withUniqueId(103),
                 Separator.createDivider(Separator.Spacing.SMALL),
-                TextDisplay.of("-# The user is in timeout for 28 days.").withUniqueId(100)
+                TextDisplay.of("-# This user is in timeout.").withUniqueId(100)
 
         ).withUniqueId(id);
         Map<String, String> content = new HashMap<>();
@@ -257,6 +257,7 @@ public class ComponentManager extends ListenerAdapter {
                     case "nothing" -> {
                         if (target != null) {
                             target.removeTimeout().queue();
+                            Bot.getBot().sendUserMessage(target.getUser(), "We have reviewed your recent activity and removed your timeout. Sorry for the inconvenience!");
                         }
                     }
                 }
@@ -286,6 +287,7 @@ public class ComponentManager extends ListenerAdapter {
                     case "nothing" -> {
                         if (target != null) {
                             target.removeTimeout().queue();
+                            Bot.getBot().sendUserMessage(target.getUser(), "We have reviewed your recent activity and removed your timeout. Sorry for the inconvenience!");
                         }
                     }
                 }

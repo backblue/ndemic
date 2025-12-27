@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.Bot;
+import org.backblue.utilities.NdemicModule;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,7 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Badge extends ListenerAdapter {
+public class Badge extends ListenerAdapter implements NdemicModule {
 
     private static Boolean ROLE_NEEDED = null;
     private static String ROLE_ID = null;
@@ -71,14 +72,19 @@ public class Badge extends ListenerAdapter {
                 event.reply(":x: Deployment guild only").setEphemeral(true).queue();
                 return;
             }
+            if (!isEnabled()) {
+                event.reply(":x: Temporarily disabled").setEphemeral(true).queue();
+                return;
+            }
             Role role = event.getGuild().getRoleById(ROLE_ID);
             if (!event.getMember().getRoles().contains(role) && !event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
                 event.reply("You need to have the <@&" + ROLE_ID + "> role to use the badge system.").setEphemeral(true).queue();
+                Bot.getBot().sendDebugMessage("autoMod", "did not allow user `" + event.getMember().getEffectiveName() + "to access badge system due to missing role.");
                 return;
             }
-            Modal modal = Modal.create("modal:badge", "Badge Selection")
+            Modal modal = Modal.create("modal:badge", "Badge Selection (Beta)")
                     .addComponents(
-                            TextDisplay.of("As a <@&" + ROLE_ID + ">, you can have a role icon next to your username in chat. As long as you are a server booster, you will have access to this badge."),
+                            TextDisplay.of("As a <@&" + ROLE_ID + ">, you can have a role icon appearing next to your username in messages.\n-# \\* This feature is unavailable if the boost level is less than 2."),
                             Label.of("Badge", Badge.BADGES)
                     )
                     .build();
@@ -90,6 +96,8 @@ public class Badge extends ListenerAdapter {
     public void onGuildMemberUpdateBoostTime(@NotNull GuildMemberUpdateBoostTimeEvent event) {
         if (event.getOldTimeBoosted() != null && event.getNewTimeBoosted() == null) {
             changeBadge(event.getMember(), "badge:none");
+        } else if (event.getOldTimeBoosted() == null && event.getNewTimeBoosted() != null) {
+            Bot.getBot().sendUserMessage(event.getUser(), "Thanks for boosting " + event.getGuild().getName() + "! You can now set a badge icon using the `/badge` command.");
         }
     }
 
@@ -100,12 +108,19 @@ public class Badge extends ListenerAdapter {
             }
         }
         if (CACHE.get(newBadge) == null) {
+            Bot.getBot().sendDebugMessage("autoMod", "removed badge from user `" + member.getEffectiveName() + "` (" + member.getId() + ")");
             return "Badge removed";
         }
         Role newRole = Bot.getBot().getDeploymentGuild().getRoleById(CACHE.get(newBadge));
         if (newRole != null) {
+            Bot.getBot().sendDebugMessage("autoMod", "added badge to user `" + member.getEffectiveName() + "` (" + member.getId() + ") + `" + newBadge + "`");
             Bot.getBot().getDeploymentGuild().addRoleToMember(member, newRole).queue();
         }
         return "Badge changed";
+    }
+
+    @Override
+    public String name() {
+        return "roleIcons";
     }
 }

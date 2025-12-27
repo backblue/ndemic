@@ -45,7 +45,7 @@ import static org.backblue.commands.EZPunish.generatePunishEmbed;
 import static org.backblue.commands.EZPunish.logToWarnings;
 
 public class Bot {
-    public static final String VERSION = "0.7.0_10";
+    public static final String VERSION = "0.7.0";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
@@ -151,7 +151,7 @@ public class Bot {
     private HashMap<String, String> generateAnalysis() {
         HashMap<String, String> map = new HashMap<>();
         for (String key : settings.getJSONObject("analysis").keySet()) {
-            map.put(key.toLowerCase(), settings.getJSONObject("analysis").getString(key));
+            map.put(key, settings.getJSONObject("analysis").getString(key));
         }
         return map;
     }
@@ -164,12 +164,12 @@ public class Bot {
             } else if (key.contains("List")) {
                 JSONArray arr = settings.getJSONObject("deployment").getJSONArray(key);
                 for (int i = 0; i < arr.length(); i++) {
-                    map.put(key.toLowerCase() + "." + i, arr.getString(i));
+                    map.put(key + "." + i, arr.getString(i));
                 }
-                map.put(key.toLowerCase() + ".size", String.valueOf(arr.length()));
+                map.put(key + ".size", String.valueOf(arr.length()));
             } else {
                 for (String anotherKey : settings.getJSONObject("deployment").getJSONObject(key).keySet()) {
-                    map.put(key.toLowerCase() + "." + anotherKey, settings.getJSONObject("deployment").getJSONObject(key).getString(anotherKey));
+                    map.put(key + "." + anotherKey, settings.getJSONObject("deployment").getJSONObject(key).getString(anotherKey));
                 }
             }
         }
@@ -299,7 +299,8 @@ public class Bot {
 
     public void additionalReview(Member member, boolean timeout, ComponentManager.ComponentPreset preset, String... evidence) {
         if (timeout) {
-            member.timeoutFor(28, TimeUnit.DAYS).queue();
+            Bot.getBot().sendUserMessage(member.getUser(), "Hello, your recent activity has been flagged for additional review by our moderators. You have been temporarily timed out for 6 hours as we review this situation. We apologize for the inconvenience.");
+            member.timeoutFor(6, TimeUnit.HOURS).queue();
         }
         ComponentManager.ComponentInteractionEvent event = switch (preset) {
             case MESSAGE -> ComponentManager.message(member, evidence[0]);

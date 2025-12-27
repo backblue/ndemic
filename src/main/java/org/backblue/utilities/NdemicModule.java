@@ -28,7 +28,7 @@ public interface NdemicModule {
             Hate,
             Sexual,
             SelfHarm,
-            Violence;
+            Violence
         }
     }
 
