@@ -6,6 +6,7 @@ import com.azure.core.credential.AzureKeyCredential;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
@@ -45,7 +46,7 @@ import static org.backblue.commands.EZPunish.generatePunishEmbed;
 import static org.backblue.commands.EZPunish.logToWarnings;
 
 public class Bot {
-    public static final String VERSION = "0.7.0";
+    public static final String VERSION = "0.7.0_pre1";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
@@ -217,18 +218,28 @@ public class Bot {
         return botStatic;
     }
 
-    public void sendTextChannelMessage(String id, String txt, MessageEmbed message) {
-        TextChannel channel = getJDA().getTextChannelById(id);
+    public boolean sendTextChannelMessage(String id, String txt, MessageEmbed message) {
+        Channel channel = getJDA().getGuildChannelById(id);
         if (channel != null) {
-            channel.sendMessage(txt).setEmbeds(message).queue();
+            switch (channel.getType()) {
+                case TEXT -> ((TextChannel) channel).sendMessage(txt).setEmbeds(message).queue();
+                case NEWS -> ((NewsChannel) channel).sendMessage(txt).setEmbeds(message).queue();
+            }
+            return true;
         }
+        return false;
     }
 
-    public void sendTextChannelMessage(String id, String txt) {
-        TextChannel channel = getJDA().getTextChannelById(id);
+    public boolean sendTextChannelMessage(String id, String txt) {
+        Channel channel = getJDA().getGuildChannelById(id);
         if (channel != null) {
-            channel.sendMessage(txt).queue();
+            switch (channel.getType()) {
+                case TEXT -> ((TextChannel) channel).sendMessage(txt).queue();
+                case NEWS -> ((NewsChannel) channel).sendMessage(txt).queue();
+            }
+            return true;
         }
+        return false;
     }
 
     public void sendDebugMessage(String type, String message) {

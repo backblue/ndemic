@@ -79,7 +79,7 @@ public class Badge extends ListenerAdapter implements NdemicModule {
             Role role = event.getGuild().getRoleById(ROLE_ID);
             if (!event.getMember().getRoles().contains(role) && !event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
                 event.reply("You need to have the <@&" + ROLE_ID + "> role to use the badge system.").setEphemeral(true).queue();
-                Bot.getBot().sendDebugMessage("autoMod", "did not allow user `" + event.getMember().getEffectiveName() + "to access badge system due to missing role.");
+                Bot.getBot().sendDebugMessage("autoMod", "did not allow user `" + event.getMember().getEffectiveName() + "` to access badge system due to missing role.");
                 return;
             }
             Modal modal = Modal.create("modal:badge", "Badge Selection (Beta)")
@@ -108,12 +108,12 @@ public class Badge extends ListenerAdapter implements NdemicModule {
             }
         }
         if (CACHE.get(newBadge) == null) {
-            Bot.getBot().sendDebugMessage("autoMod", "removed badge from user `" + member.getEffectiveName() + "` (" + member.getId() + ")");
+            Bot.getBot().sendDebugMessage("autoMod", "removed badge from user `" + member.getEffectiveName() + "` (" + member.getId() + ")`");
             return "Badge removed";
         }
         Role newRole = Bot.getBot().getDeploymentGuild().getRoleById(CACHE.get(newBadge));
         if (newRole != null) {
-            Bot.getBot().sendDebugMessage("autoMod", "added badge to user `" + member.getEffectiveName() + "` (" + member.getId() + ") + `" + newBadge + "`");
+            Bot.getBot().sendDebugMessage("autoMod", "added badge to user `" + member.getEffectiveName() + "` (" + member.getId() + "), " + newBadge + "`");
             Bot.getBot().getDeploymentGuild().addRoleToMember(member, newRole).queue();
         }
         return "Badge changed";

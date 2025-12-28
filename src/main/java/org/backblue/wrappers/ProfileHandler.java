@@ -31,9 +31,8 @@ import java.util.HashMap;
 
 public class ProfileHandler implements NdemicModule {
 
+    private static boolean TEMP_DISABLED = false;
     private static ArrayList<String> DETECTION_TEXT;
-    private boolean forcedOff = false;
-
     public enum Source {
         GUILD_JOIN,
         PROFILE_UPDATE,
@@ -43,7 +42,7 @@ public class ProfileHandler implements NdemicModule {
 
     public ProfileHandler(){}
     public ProfileHandler(Member member, ProfileHandler.Source source) {
-        process(member, source);
+        process(member);
     }
 
     @Override
@@ -51,8 +50,9 @@ public class ProfileHandler implements NdemicModule {
         return "profileScanning";
     }
 
-    private void process(Member member, ProfileHandler.Source source) {
-        if (isEnabled() && !this.forcedOff) {
+    private void process(Member member) {
+        if (!TEMP_DISABLED && isEnabled()) {
+
             ProfileAnalysisRecord record = ProfileAnalysisRecord.of(member);
 
             SQLProfile profile = SQLProfile.read(record.user.getId(), "userinfo");
@@ -167,8 +167,8 @@ public class ProfileHandler implements NdemicModule {
             response = Bot.getBot().getContentSafetyClient().analyzeImage(new AnalyzeImageOptions(image));
         } catch (HttpResponseException e) {
             if (e.getResponse().getStatusCode() == 403) {
-                this.forcedOff = true;
-                Bot.getBot().sendDeploymentMessage("autoMod", "Profile scanning cannot continue due to 403 error: `" + e.getMessage()+" `");
+                ProfileHandler.TEMP_DISABLED = true;
+                Bot.getBot().sendDebugMessage("autoMod", "Profile scanning cannot continue due to 403 error: `" + e.getMessage() +" `");
             } else {
                 Bot.getBot().sendDebugMessage("autoMod", "Failed to analyze image for " + record.user.getName() + " (" + record.user.getId() + ") due to: " + e.getMessage());
             }

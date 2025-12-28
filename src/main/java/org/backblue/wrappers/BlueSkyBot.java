@@ -42,9 +42,9 @@ public class BlueSkyBot implements NdemicModule {
         this.pass = pass;
         this.footer = footer;
         this.footerIcon = footerIcon;
-        this.linkOnly = json.keySet().contains("linkOnly");
+        this.linkOnly = json.keySet().contains("onlyLink");
         for (String key : json.keySet()) {
-            if (!key.equals("linkOnly") && json.get(key) instanceof String) {
+            if (!key.equals("onlyLink") && json.get(key) instanceof String) {
                 bSkyMap.put(key, json.getString(key));
                 bSkyUserLastPost.put(key, Instant.now());
                 System.out.println("BlueSkyBot: Monitoring user " + key + " and posting to channel ID " + json.getString(key));
@@ -73,12 +73,14 @@ public class BlueSkyBot implements NdemicModule {
                 System.out.println("BlueSkyBot: No new posts found for user " + did);
                 return;
             }
+            System.out.println("BlueSkyBot: New post discovered for: " + did);
+            boolean success;
             if (linkOnly) {
                 String[] parts = post.getString("uri").split("/");
                 String rKey = parts[parts.length - 1];
                 String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
                 Bot.getBot().sendDeploymentMessage("bsky", urlInTxt);
-                Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt);
+                success = Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt);
             } else {
                 EmbedBuilder embed = new EmbedBuilder();
                 embed.setColor(Color.CYAN);
@@ -106,9 +108,11 @@ public class BlueSkyBot implements NdemicModule {
                 String rKey = parts[parts.length - 1];
                 String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
                 Bot.getBot().sendDeploymentMessage("bsky", urlInTxt, embed.build());
-                Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt, embed.build());
+                success = Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt, embed.build());
             }
-            bSkyUserLastPost.put(did, postTime);
+            if (success) {
+                bSkyUserLastPost.put(did, postTime);
+            }
         } catch (IOException | InterruptedException e) {
             System.err.println("BlueSkyBot: Can not fetch feed for user " + did + "\n" + e);
         }

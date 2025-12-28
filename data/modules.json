@@ -21,7 +21,7 @@
   },
   "messageScanning": {
     "description": "scans messages for inappropriate content",
-    "enabled": true
+    "enabled": false
   },
   "bSkyTracker": {
     "description": "tracks user posts on BlueSky",
