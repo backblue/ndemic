@@ -46,7 +46,7 @@ import static org.backblue.commands.EZPunish.generatePunishEmbed;
 import static org.backblue.commands.EZPunish.logToWarnings;
 
 public class Bot {
-    public static final String VERSION = "0.7.0_pre1";
+    public static final String VERSION = "0.7.0";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
