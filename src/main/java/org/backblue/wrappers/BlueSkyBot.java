@@ -65,7 +65,6 @@ public class BlueSkyBot implements NdemicModule {
         try {
             JSONObject post = getUserFeed(did);
             if (post == null) {
-                System.out.println("BlueSkyBot: No posts found for user " + did);
                 return;
             }
             Instant postTime = Instant.parse(post.getJSONObject("record").getString("createdAt"));
@@ -79,7 +78,6 @@ public class BlueSkyBot implements NdemicModule {
                 String[] parts = post.getString("uri").split("/");
                 String rKey = parts[parts.length - 1];
                 String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
-                Bot.getBot().sendDeploymentMessage("bsky", urlInTxt);
                 success = Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt);
             } else {
                 EmbedBuilder embed = new EmbedBuilder();
@@ -107,7 +105,6 @@ public class BlueSkyBot implements NdemicModule {
                 String[] parts = post.getString("uri").split("/");
                 String rKey = parts[parts.length - 1];
                 String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
-                Bot.getBot().sendDeploymentMessage("bsky", urlInTxt, embed.build());
                 success = Bot.getBot().sendTextChannelMessage(bSkyMap.get(did), urlInTxt, embed.build());
             }
             if (success) {

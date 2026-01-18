@@ -11,7 +11,7 @@
 - :white_check_mark: Permanently enable Discord Security Action: Pause DM
 ### Utilities
 - :white_check_mark: Get posts from one BlueSky account to a channel
-- :white_check_mark: Get live posts from any subreddit(s) to a channel
+- :white_check_mark: Give server boosters role icons
 
 ## Setup
 Check out the [Wiki](https://github.com/backblue/ndemic/wiki/Setup) for instructions.

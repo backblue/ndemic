@@ -34,5 +34,9 @@
   "roleIcons": {
     "description": "Allow users to select a list of roles to display icons for",
     "enabled": true
+  },
+  "restrictedChannel": {
+    "description": "Ensure that no one can message in a specific channel",
+    "enabled": true
   }
 }

@@ -97,7 +97,7 @@ public class Badge extends ListenerAdapter implements NdemicModule {
         if (event.getOldTimeBoosted() != null && event.getNewTimeBoosted() == null) {
             changeBadge(event.getMember(), "badge:none");
         } else if (event.getOldTimeBoosted() == null && event.getNewTimeBoosted() != null) {
-            Bot.getBot().sendUserMessage(event.getUser(), "Thanks for boosting " + event.getGuild().getName() + "! You can now set a badge icon using the `/badge` command.");
+            Bot.getBot().sendUserMessage(event.getUser(), "Thanks for boosting **" + event.getGuild().getName() + "**\nFor your thanks, server boosters can select a badge to display next to their name!\nAllow " + event.getJDA().getSelfUser().getAsMention() + " to handle the `/badge` command to select one.");
         }
     }
 
