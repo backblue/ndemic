@@ -50,6 +50,9 @@ public class CommandList extends ListenerAdapter {
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("terminate", "Shut down this bot.")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+        commands.add(Commands.slash("purgehour", "Purge an hour of messages")
+                .addOption(OptionType.USER, "user", "User to purge messages from", true)
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         if (event.getGuild().getId().equals(Bot.getBot().getDeployment().get("guild")) || event.getGuild().getId().equals(Bot.getBot().getAnalysis().get("guild"))) {
             event.getGuild().updateCommands().addCommands(commands).queue();
         }

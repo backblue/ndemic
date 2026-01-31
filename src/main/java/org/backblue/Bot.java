@@ -39,15 +39,17 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.backblue.commands.EZPunish.generatePunishEmbed;
 import static org.backblue.commands.EZPunish.logToWarnings;
 
 public class Bot {
-    public static final String VERSION = "0.7.1";
+    public static final String VERSION = "0.7.2";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
@@ -120,7 +122,7 @@ public class Bot {
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
 
         builder.addEventListeners(new CommandList(), new ComponentManager(), new ModalManager());
-        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate(), new Badge());
+        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate(), new Badge(), new Purge());
         builder.addEventListeners(new RestrictedChannel(), new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
         shardManager = builder.build();
@@ -356,6 +358,45 @@ public class Bot {
 
     public void ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, Message.Attachment evidenceImage) {
         ezPunish(target, executor, violations, ban, evidenceText, evidenceImage, null);
+    }
+
+    public void purgeMessages(Member member, int hours) {
+        OffsetDateTime cutoff = OffsetDateTime.now().minusHours(hours);
+        AtomicInteger remaining = new AtomicInteger(100);
+
+        for (TextChannel channel : member.getGuild().getTextChannels()) {
+            if (remaining.get() <= 0)
+                break;
+
+            if (!member.hasPermission(channel, Permission.VIEW_CHANNEL))
+                continue;
+
+            channel.getHistory().retrievePast(100).queue(messages -> {
+
+                List<Message> toDelete = new ArrayList<>();
+
+                for (Message m : messages) {
+                    if (remaining.get() <= 0)
+                        break;
+
+                    if (!m.getAuthor().getId().equals(member.getId()))
+                        continue;
+
+                    if (m.getTimeCreated().isBefore(cutoff))
+                        continue;
+
+                    toDelete.add(m);
+                    remaining.decrementAndGet();
+                }
+
+                if (toDelete.size() >= 2) {
+                    channel.deleteMessages(toDelete).queue();
+                }
+                else if (toDelete.size() == 1) {
+                    toDelete.getFirst().delete().queue();
+                }
+            });
+        }
     }
 
     public static void main(String[] args) {

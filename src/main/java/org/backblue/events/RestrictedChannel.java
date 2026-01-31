@@ -49,12 +49,13 @@ public class RestrictedChannel extends ListenerAdapter {
         embedBuilder.setTitle("Someone posted in the honeypot channel...");
         embedBuilder.setThumbnail(event.getMember().getEffectiveAvatarUrl());
         embedBuilder.setDescription(event.getMessage().getContentStripped());
-        embedBuilder.setFooter(event.getMessage().getAttachments().size() + " attachments included in message");
+        embedBuilder.setFooter(event.getMessage().getAttachments().size() + "  attachment(s), removed 60 mins of messages, 12 hour timeout");
         for (int i = 0; i < event.getMessage().getAttachments().size(); i++) {
             Bot.getBot().sendDebugMessage("attachments", "Attachment " + (i + 1) + " for " + event.getMember().getAsMention() + "\n" + event.getMessage().getAttachments().get(i).getProxyUrl());
             embedBuilder.addField("Attachment " + (i + 1), event.getMessage().getAttachments().get(i).getProxyUrl(), false);
         }
         Bot.getBot().sendDeploymentMessage("cmd", Bot.getBot().getMostModerators().getName() + " - " + event.getMember().getAsMention(), embedBuilder.build());
+        Bot.getBot().purgeMessages(event.getMember(), 1);
     }
 
 }
