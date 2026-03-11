@@ -1,4 +1,4 @@
-package org.backblue.events;
+package org.backblue.utilities;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -29,12 +29,31 @@ public class ModalManager extends ListenerAdapter {
                 }
             } catch (Exception ignored) {}
             boolean softban = !type.equals("Softban");
-            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, null, attachment, notes).message()).queue();
+            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, null, List.of(attachment), notes).message()).queue();
         }
         if (event.getModalId().equals("modal:badge") && event.getMember() != null) {
             @NotNull String badge = Objects.requireNonNull(event.getValue("badge:selection")).getAsStringList().getFirst();
             event.deferReply().setEphemeral(true).queue();
             event.getHook().sendMessage(Badge.changeBadge(event.getMember(), badge)).setEphemeral(true).queue();
+        }
+        if (event.getModalId().equals("modal:quickezpunish")) {
+            @NotNull Member user = Objects.requireNonNull(event.getValue("quickezpunish:target")).getAsMentions().getMembers().getFirst();
+            @NotNull String type = Objects.requireNonNull(event.getValue("quickezpunish:type")).getAsStringList().getFirst();
+            @NotNull List<String> violations = Objects.requireNonNull(event.getValue("ezpunish:violations")).getAsStringList();
+            ContextManager.EZPunishContext context = ContextManager.RetrieveContext(event.getUser().getId());
+            if (context == null) {
+                event.reply(":x: This interaction expired").setEphemeral(true).queue();
+                return;
+            }
+            String notes = null;
+            try {
+                ModalMapping additionalNotes = event.getValue("quickezpunish:note");
+                if (additionalNotes != null && !additionalNotes.getAsString().isEmpty()) {
+                    notes = additionalNotes.getAsString();
+                }
+            } catch (Exception ignored) {}
+            boolean softban = !type.equals("Softban");
+            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, context.text(), context.attachments(), notes).message()).queue();
         }
     }
 }

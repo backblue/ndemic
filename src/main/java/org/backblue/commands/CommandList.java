@@ -1,7 +1,9 @@
 package org.backblue.commands;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
@@ -47,12 +49,20 @@ public class CommandList extends ListenerAdapter {
                         .addOption(OptionType.STRING, "table", "Table to view data from", true))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("ezpunish", "Administrator: Easily punish a user.")
-                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
         commands.add(Commands.slash("terminate", "Shut down this bot.")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("purgehour", "Purge an hour of messages")
                 .addOption(OptionType.USER, "user", "User to purge messages from", true)
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+
+        commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish: Scam")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
+        commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish: Spam")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
+        commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish...")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
+
         if (event.getGuild().getId().equals(Bot.getBot().getDeployment().get("guild")) || event.getGuild().getId().equals(Bot.getBot().getAnalysis().get("guild"))) {
             event.getGuild().updateCommands().addCommands(commands).queue();
         }

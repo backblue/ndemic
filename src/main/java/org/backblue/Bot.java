@@ -10,7 +10,9 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.NewsChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -22,6 +24,8 @@ import org.backblue.commands.*;
 import org.backblue.commands.Module;
 import org.backblue.events.*;
 import org.backblue.utilities.ComponentManager;
+import org.backblue.utilities.ContextManager;
+import org.backblue.utilities.ModalManager;
 import org.backblue.utilities.NdemicModule;
 import org.backblue.wrappers.BlueSkyBot;
 import org.backblue.wrappers.MessageHandler;
@@ -71,7 +75,7 @@ public class Bot {
         return contentSafetyClient;
     }
 
-    public Bot() {
+    private Bot() {
         botStatic = this;
 
         try {
@@ -121,7 +125,7 @@ public class Bot {
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
 
-        builder.addEventListeners(new CommandList(), new ComponentManager(), new ModalManager());
+        builder.addEventListeners(new CommandList(), new ComponentManager(), new ModalManager(), new ContextManager());
         builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate(), new Badge(), new Purge());
         builder.addEventListeners(new RestrictedChannel(), new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
 
@@ -290,7 +294,7 @@ public class Bot {
         }
     }
 
-    public void sendDeploymentMessage(String type, String message, FileUpload attachment) {
+    public void sendDeploymentMessage(String type, String message, FileUpload... attachment) {
         TextChannel analysisChannel = getJDA().getTextChannelById(getDeployment().get("channels." + type));
         if (analysisChannel != null) {
             analysisChannel.sendMessage(message).addFiles(attachment).queue();
@@ -316,7 +320,7 @@ public class Bot {
             Bot.getBot().sendUserMessage(member.getUser(), "Hello, your recent activity has been flagged for additional review by our moderators. You have been temporarily timed out for 6 hours as we review this situation. We apologize for the inconvenience.");
             member.timeoutFor(6, TimeUnit.HOURS).queue();
         }
-        ComponentManager.ComponentInteractionEvent event = switch (preset) {
+        ComponentManager.EZPunishComponentInteractionEvent event = switch (preset) {
             case MESSAGE -> ComponentManager.message(member, evidence[0]);
             case PROFILE_PICTURE -> ComponentManager.profilePicture(member, evidence[0], evidence[1]);
             case CUSTOM_STATUS -> ComponentManager.customStatus(member, evidence[0]);
@@ -332,21 +336,21 @@ public class Bot {
         }
     }
 
-    public EZPunish.EZPunishResult ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, Message.Attachment evidenceImage, String notes) {
+    public EZPunish.EZPunishResult ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, List<Message.Attachment> evidenceImages, String notes) {
         if (target == null || executor == null) {
             return new EZPunish.EZPunishResult(false, "Invalid targets provided.");
         }
-        if (!executor.hasPermission(Permission.ADMINISTRATOR)) {
-            return new EZPunish.EZPunishResult(false, "Executor lacks Administrator permissions.");
+        if (!executor.hasPermission(Permission.BAN_MEMBERS)) {
+            return new EZPunish.EZPunishResult(false, "Executor lacks permissions.");
         }
-        if (evidenceText == null && evidenceImage == null) {
+        if (evidenceText == null && evidenceImages == null) {
             return new EZPunish.EZPunishResult(false, "No evidence provided.");
         }
-        if (target.hasPermission(Permission.ADMINISTRATOR)) {
+        if (target.hasPermission(Permission.BAN_MEMBERS)) {
             return new EZPunish.EZPunishResult(false, "Target has Administrator permissions.");
         }
         Bot.getBot().sendUserMessage(target.getUser(), generatePunishEmbed(violations, target, ban, notes, target.getGuild().getIconUrl()));
-        logToWarnings(violations, target, ban, evidenceText, evidenceImage, executor);
+        logToWarnings(violations, target, ban, evidenceText, evidenceImages, executor);
         target.ban(1, TimeUnit.HOURS).reason("Moderator initiated by " + executor.getUser().getName()).queue();
         Bot.getBot().getScheduler().schedule(() -> {
             if (!ban) {
@@ -356,15 +360,22 @@ public class Bot {
         return new EZPunish.EZPunishResult(true, "User has been " + (ban ? "banned" : "removed") + " and logged.");
     }
 
-    public void ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, Message.Attachment evidenceImage) {
-        ezPunish(target, executor, violations, ban, evidenceText, evidenceImage, null);
+    public EZPunish.EZPunishResult ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, Message.Attachment evidenceImage) {
+        if (evidenceImage == null) {
+            return ezPunish(target, executor, violations, ban, evidenceText, null, null);
+        }
+        return ezPunish(target, executor, violations, ban, evidenceText, List.of(evidenceImage), null);
     }
 
     public void purgeMessages(Member member, int hours) {
         OffsetDateTime cutoff = OffsetDateTime.now().minusHours(hours);
         AtomicInteger remaining = new AtomicInteger(100);
 
-        for (TextChannel channel : member.getGuild().getTextChannels()) {
+        List<GuildMessageChannel> channels = new ArrayList<>();
+        channels.addAll(member.getGuild().getTextChannels());
+        channels.addAll(member.getGuild().getThreadChannels());
+
+        for (GuildMessageChannel channel : channels) {
             if (remaining.get() <= 0)
                 break;
 
@@ -390,7 +401,13 @@ public class Bot {
                 }
 
                 if (toDelete.size() >= 2) {
-                    channel.deleteMessages(toDelete).queue();
+                    if (channel instanceof TextChannel tc) {
+                        tc.deleteMessages(toDelete).queue();
+                    } else if (channel instanceof ThreadChannel thread) {
+                        toDelete.forEach(m -> m.delete().queue());
+                    } else {
+                        toDelete.forEach(m -> m.delete().queue());
+                    }
                 }
                 else if (toDelete.size() == 1) {
                     toDelete.getFirst().delete().queue();

@@ -86,7 +86,31 @@
       "id": 3,
       "modal": "spam",
       "title": "Spam",
-      "desc": "Unsolicited links, invites, and self-promotion"
+      "desc": "Spamming, trolling, heavy tagging"
+    },
+    {
+      "id": 3,
+      "modal": "selfpromo",
+      "title": "Self-Promotion",
+      "desc": "Sharing links to YT, other guilds, etc"
+    },
+    {
+      "id": 3,
+      "modal": "spamlinks",
+      "title": "Unsolicited Links",
+      "desc": "Posting unsolicited links/invites"
+    },
+    {
+      "id": 3,
+      "modal": "fr",
+      "title": "Unsolicited Friend Requests",
+      "desc": "Randomly friend requesting other members"
+    },
+    {
+      "id": 3,
+      "modal": "dmmember",
+      "title": "Unsolicited DMs",
+      "desc": "DMing other members"
     },
     {
       "id": 3,
@@ -112,6 +136,7 @@
       "title": "Off-Topic",
       "desc": "Derailing discussions"
     },
+
     {
       "id": 6,
       "modal": "memes",

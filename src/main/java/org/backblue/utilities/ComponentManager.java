@@ -23,7 +23,7 @@ import java.util.Objects;
 
 public class ComponentManager extends ListenerAdapter {
 
-    private static final Map<Integer, ComponentInteractionEvent> componentsList = new HashMap<>();
+    private static final Map<Integer, EZPunishComponentInteractionEvent> componentsList = new HashMap<>();
 
     public enum ComponentPreset {
         MESSAGE,
@@ -32,7 +32,7 @@ public class ComponentManager extends ListenerAdapter {
         CUSTOM_STATUS,
         OTHER
     }
-    public static ComponentInteractionEvent message(Member member, String messageViolation) {
+    public static EZPunishComponentInteractionEvent message(Member member, String messageViolation) {
         if (member == null) {
             return null;
         }
@@ -65,9 +65,9 @@ public class ComponentManager extends ListenerAdapter {
         Map<String, String> content = new HashMap<>();
         content.put("id", member.getId());
         content.put("message", messageViolation);
-        return new ComponentInteractionEvent(ComponentPreset.MESSAGE, container, id, content);
+        return new EZPunishComponentInteractionEvent(ComponentPreset.MESSAGE, container, id, content);
     }
-    public static ComponentInteractionEvent profilePicture(Member member, String profileLink, String feedback) {
+    public static EZPunishComponentInteractionEvent profilePicture(Member member, String profileLink, String feedback) {
         if (member == null) {
             return null;
         }
@@ -99,9 +99,9 @@ public class ComponentManager extends ListenerAdapter {
         Map<String, String> content = new HashMap<>();
         content.put("id", member.getId());
         content.put("link", profileLink);
-        return new ComponentInteractionEvent(ComponentPreset.PROFILE_PICTURE, container, id, content);
+        return new EZPunishComponentInteractionEvent(ComponentPreset.PROFILE_PICTURE, container, id, content);
     }
-    public static ComponentInteractionEvent banner(Member member, String bannerLink, String feedback) {
+    public static EZPunishComponentInteractionEvent banner(Member member, String bannerLink, String feedback) {
         if (member == null) {
             return null;
         }
@@ -133,9 +133,9 @@ public class ComponentManager extends ListenerAdapter {
         Map<String, String> content = new HashMap<>();
         content.put("id", member.getId());
         content.put("link", bannerLink);
-        return new ComponentInteractionEvent(ComponentPreset.BANNER, container, id, content);
+        return new EZPunishComponentInteractionEvent(ComponentPreset.BANNER, container, id, content);
     }
-    public static ComponentInteractionEvent customStatus(Member member, String violation) {
+    public static EZPunishComponentInteractionEvent customStatus(Member member, String violation) {
         if (member == null) {
             return null;
         }
@@ -167,9 +167,9 @@ public class ComponentManager extends ListenerAdapter {
         Map<String, String> content = new HashMap<>();
         content.put("id", member.getId());
         content.put("link", violation);
-        return new ComponentInteractionEvent(ComponentPreset.MESSAGE, container, id, content);
+        return new EZPunishComponentInteractionEvent(ComponentPreset.MESSAGE, container, id, content);
     }
-    public static ComponentInteractionEvent other(Member member, String... details) {
+    public static EZPunishComponentInteractionEvent other(Member member, String... details) {
         if (details.length < 1 || member == null) {
             return null;
         }
@@ -211,7 +211,7 @@ public class ComponentManager extends ListenerAdapter {
         for (int i = 0; i < details.length; i++) {
             content.put("details." + i, details[i]);
         }
-        return new ComponentInteractionEvent(ComponentPreset.MESSAGE, container, id, content);
+        return new EZPunishComponentInteractionEvent(ComponentPreset.MESSAGE, container, id, content);
     }
 
     private static int generateID() {
@@ -222,8 +222,8 @@ public class ComponentManager extends ListenerAdapter {
         return id;
     }
 
-    public record ComponentInteractionEvent(ComponentPreset preset, Container container, int id, Map<String, String> content) {
-            public ComponentInteractionEvent(ComponentPreset preset, Container container, int id, Map<String, String> content) {
+    public record EZPunishComponentInteractionEvent(ComponentPreset preset, Container container, int id, Map<String, String> content) {
+            public EZPunishComponentInteractionEvent(ComponentPreset preset, Container container, int id, Map<String, String> content) {
                 this.preset = preset;
                 this.id = id;
                 this.container = container;
@@ -239,7 +239,7 @@ public class ComponentManager extends ListenerAdapter {
         }
         int id = Integer.parseInt(event.getButton().getCustomId().split(";")[0]);
         String item = (event.getButton().getCustomId().split(";")[1]);
-        ComponentInteractionEvent cie = componentsList.remove(id);
+        EZPunishComponentInteractionEvent cie = componentsList.remove(id);
         if (cie == null) {
             return;
         }

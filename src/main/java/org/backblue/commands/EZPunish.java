@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 
 public class EZPunish extends ListenerAdapter {
 
@@ -99,7 +100,7 @@ public class EZPunish extends ListenerAdapter {
                             Label.of("Target", menu),
                             Label.of("Punishment", punishment),
                             Label.of("Violations", VIOLATIONS_DROPDOWN),
-                            Label.of("Attachments / Evidence", AttachmentUpload.of("ezpunish:evidence")),
+                            Label.of("Attachments / Evidence", AttachmentUpload.create("ezpunish:evidence").setRequired(false).build()),
                             Label.of("Notes", note)
                     )
                     .build();
@@ -113,6 +114,9 @@ public class EZPunish extends ListenerAdapter {
 
     public static boolean enabled() {
         return ENABLED;
+    }
+    public static StringSelectMenu getViolationsDropdown() {
+        return EZPunish.VIOLATIONS_DROPDOWN;
     }
 
     public static MessageEmbed generatePunishEmbed(List<String> violations, Member user, boolean ban, String notes, String url) {
@@ -154,13 +158,13 @@ public class EZPunish extends ListenerAdapter {
         return embedBuilder;
     }
 
-    public static void logToWarnings(List<String> violations, Member user, boolean ban, String evidenceText, Message.Attachment evidenceImage, Member executor) {
+    public static void logToWarnings(List<String> violations, Member user, boolean ban, String evidenceText, List<Message.Attachment> evidenceImages, Member executor) {
         String status = ban ? "Banned" : "Kicked";
         String reason = EZPunish.MODAL_TO_RULEBOOK.get(violations.getFirst()).getString("title");
         if (reason == null || reason.isEmpty()) {
             reason = "Moderator Action";
         }
-        if (evidenceImage == null) {
+        if (evidenceImages == null || evidenceImages.isEmpty()) {
             Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName()+ "`\n" + evidenceText);
         } else {
             if (evidenceText == null) {
@@ -168,10 +172,19 @@ public class EZPunish extends ListenerAdapter {
             }
             String finalEvidenceText = evidenceText;
             String finalReason = reason;
-            evidenceImage.getProxy().download().thenAccept(inputStream -> {
-                FileUpload fileUpload = FileUpload.fromData(inputStream, evidenceImage.getFileName());
-                Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + finalReason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText, fileUpload);
-            });
+
+            List<CompletableFuture<FileUpload>> futures = evidenceImages.stream()
+                    .map(attachment -> attachment.getProxy().download()
+                            .thenApply(inputStream -> FileUpload.fromData(inputStream, attachment.getFileName())))
+                    .toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .thenAccept(v -> {
+                        FileUpload[] uploads = futures.stream()
+                                .map(CompletableFuture::join)
+                                .toArray(FileUpload[]::new);
+                        Bot.getBot().sendDeploymentMessage("warn", user.getAsMention() + " - " + status + " - " + finalReason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText, uploads);
+                    });
         }
     }
 
