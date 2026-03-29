@@ -59,7 +59,6 @@ public class BlueSkyBot implements NdemicModule {
             }
             Instant postTime = Instant.parse(post.getJSONObject("record").getString("createdAt"));
             if (!postTime.isAfter(bSkyUserLastPost.get(did))) {
-                System.out.println("BlueSkyBot: No new posts found for user " + did);
                 return;
             }
             System.out.println("BlueSkyBot: New post discovered for: " + did);

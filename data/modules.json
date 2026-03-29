@@ -38,5 +38,9 @@
   "restrictedChannel": {
     "description": "Ensure that no one can message in a specific channel",
     "enabled": true
+  },
+  "messageForwarding": {
+    "description": "Forwards messages from one channel to another",
+    "enabled": true
   }
 }

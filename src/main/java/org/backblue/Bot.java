@@ -53,7 +53,7 @@ import static org.backblue.commands.EZPunish.generatePunishEmbed;
 import static org.backblue.commands.EZPunish.logToWarnings;
 
 public class Bot {
-    public static final String VERSION = "0.7.2";
+    public static final String VERSION = "0.7.3";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
@@ -89,6 +89,8 @@ public class Bot {
         keys = loadKeys();
         analysis = generateAnalysis();
         deployment = generateDeployment();
+        MessageForwarder forwarder = new MessageForwarder(settings.getJSONArray("messageForwarding"));
+        registerNdemicModule(forwarder);
         registerNdemicModule(new ProfileHandler());
         registerNdemicModule(new MessageHandler());
         registerNdemicModule(new BlueSkyBot(keys.getProperty("BSKY_USER", null),
@@ -127,7 +129,15 @@ public class Bot {
 
         builder.addEventListeners(new CommandList(), new ComponentManager(), new ModalManager(), new ContextManager());
         builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate(), new Badge(), new Purge());
-        builder.addEventListeners(new RestrictedChannel(), new EnforceProfileScan(), new PrivateMessage(), new EnforceFanRole(), new EnforceOneOP(), new AutoModAlert(), new EnforceMessageScan());
+        builder.addEventListeners(
+                forwarder,
+                new RestrictedChannel(),
+                new EnforceProfileScan(),
+                new PrivateMessage(),
+                new EnforceFanRole(),
+                new EnforceOneOP(),
+                new AutoModAlert(),
+                new EnforceMessageScan());
 
         shardManager = builder.build();
     }

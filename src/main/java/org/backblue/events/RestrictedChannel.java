@@ -54,7 +54,7 @@ public class RestrictedChannel extends ListenerAdapter {
             Bot.getBot().sendDebugMessage("attachments", "Attachment " + (i + 1) + " for " + event.getMember().getAsMention() + "\n" + event.getMessage().getAttachments().get(i).getProxyUrl());
             embedBuilder.addField("Attachment " + (i + 1), event.getMessage().getAttachments().get(i).getProxyUrl(), false);
         }
-        Bot.getBot().sendDeploymentMessage("cmd", Bot.getBot().getMostModerators().getName() + " - " + event.getMember().getAsMention(), embedBuilder.build());
+        Bot.getBot().sendDeploymentMessage("cmd", Bot.getBot().getMostModerators().getAsMention() + " - " + event.getMember().getAsMention(), embedBuilder.build());
         Bot.getBot().purgeMessages(event.getMember(), 1);
     }
 
