@@ -1,0 +1,8 @@
+# Change the extension from .txt to .properties
+DISCORD=
+SAFETY_ENDPOINT=
+SAFETY_KEY=
+JDBC=
+BSKY_USER=
+BSKY_PASSWORD=
+GEMINI_TOKEN=
