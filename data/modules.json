@@ -42,5 +42,9 @@
   "messageForwarding": {
     "description": "Forwards messages from one channel to another",
     "enabled": true
+  },
+  "sentinel": {
+    "description": "Enable tools to counter spam/bots in this guild",
+    "enabled": true
   }
 }

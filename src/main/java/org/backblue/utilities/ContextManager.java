@@ -53,7 +53,7 @@ public class ContextManager extends ListenerAdapter {
                 punishment = StringSelectMenu.create("quickezpunish:type")
                         .addOption("Softban", "softban", "Kicks the user and deletes an hour of messages")
                         .addOption("Ban", "ban", "Bans the user and deletes an hour of messages")
-                        .setDefaultValues("ban")
+                        .setDefaultValues("softban")
                         .build();
 
                 if (event.getName().equals("EZPunish: Scam")) {
@@ -108,7 +108,7 @@ public class ContextManager extends ListenerAdapter {
                 textmsg = "";
             }
             EZPunishContext context = new EZPunishContext(textmsg, event.getTarget().getAttachments());
-            ContextManager.CONTEXT_CACHE.put(event.getTarget().getId(), context);
+            ContextManager.CONTEXT_CACHE.put(event.getTarget().getAuthor().getId(), context);
         }
     }
 

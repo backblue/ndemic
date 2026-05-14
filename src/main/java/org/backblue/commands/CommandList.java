@@ -48,20 +48,20 @@ public class CommandList extends ListenerAdapter {
                 .addSubcommands(new SubcommandData("all", "Administrator: View all data in an JSON file")
                         .addOption(OptionType.STRING, "table", "Table to view data from", true))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
-        commands.add(Commands.slash("ezpunish", "Administrator: Easily punish a user.")
+        commands.add(Commands.slash("ezpunish", "Moderator: Easily punish a user.")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
-        commands.add(Commands.slash("terminate", "Shut down this bot.")
+        commands.add(Commands.slash("terminate", "Administrator: Shut down this bot.")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
-        commands.add(Commands.slash("purgehour", "Purge an hour of messages")
+        commands.add(Commands.slash("purgehour", "Moderator: Purge an hour of messages")
                 .addOption(OptionType.USER, "user", "User to purge messages from", true)
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
 
-        commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish: Scam")
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
-        commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish: Spam")
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
         commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish...")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
+
+        commands.add(Commands.slash("security", Bot.getBot().getSettings().getString("identifier") + " | Sentinel - Security features to spam/scam in this server")
+                .addSubcommands(new SubcommandData("info", "View info about current security features"))
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
 
         if (event.getGuild().getId().equals(Bot.getBot().getDeployment().get("guild")) || event.getGuild().getId().equals(Bot.getBot().getAnalysis().get("guild"))) {
             event.getGuild().updateCommands().addCommands(commands).queue();

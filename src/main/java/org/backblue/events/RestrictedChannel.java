@@ -5,10 +5,16 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.Bot;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class RestrictedChannel extends ListenerAdapter {
 
@@ -46,15 +52,20 @@ public class RestrictedChannel extends ListenerAdapter {
         event.getMember().timeoutFor(12, TimeUnit.HOURS).reason("Posted in Restricted Channel").queue();
         Bot.getBot().sendUserMessage(event.getMember().getUser(), "Hello, your recent activity has been flagged for additional review by our moderators. You have been temporarily timed out as we review this situation. We apologize for the inconvenience.");
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Someone posted in the honeypot channel...");
+        embedBuilder.setTitle("Someone posted in the forbidden channel...");
         embedBuilder.setThumbnail(event.getMember().getEffectiveAvatarUrl());
         embedBuilder.setDescription(event.getMessage().getContentStripped());
-        embedBuilder.setFooter(event.getMessage().getAttachments().size() + "  attachment(s), removed 60 mins of messages, 12 hour timeout");
-        for (int i = 0; i < event.getMessage().getAttachments().size(); i++) {
-            Bot.getBot().sendDebugMessage("attachments", "Attachment " + (i + 1) + " for " + event.getMember().getAsMention() + "\n" + event.getMessage().getAttachments().get(i).getProxyUrl());
-            embedBuilder.addField("Attachment " + (i + 1), event.getMessage().getAttachments().get(i).getProxyUrl(), false);
+        embedBuilder.setFooter(event.getMessage().getAttachments().size() + " attachment(s), removed 60 mins of messages, 12 hour timeout");
+        List<FileUpload> fileUploads = new ArrayList<>();
+        if (!event.getMessage().getAttachments().isEmpty()) {
+            for (Message.Attachment attachment : event.getMessage().getAttachments()) {
+                fileUploads.add(attachment.getProxy().downloadAsFileUpload(attachment.getFileName()));
+            }
         }
-        Bot.getBot().sendDeploymentMessage("cmd", Bot.getBot().getMostModerators().getAsMention() + " - " + event.getMember().getAsMention(), embedBuilder.build());
+
+        Bot.getBot().sendDeploymentMessage("cmd", Bot.getBot().getMostModerators().getAsMention() + " - " + event.getMember().getAsMention(),
+                embedBuilder.build(),
+                fileUploads);
         Bot.getBot().purgeMessages(event.getMember(), 1);
     }
 

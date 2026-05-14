@@ -1,5 +1,5 @@
 {
-  "identifier": "ndemicBot",
+  "identifier": "Facilitator",
   "owner": "387336581775884288",
   "status": "Handing out bribes",
   "presence": 2,
@@ -41,5 +41,19 @@
       "sendToInAnalysisChannel": "1354229171076731111",
       "pingRoleIdInAnalysisChannel": "1355656666422706508"
     }
-  ]
+  ],
+  "sentinel": {
+    "supervised": true,
+    "interestedRoles": ["1458142879334793405", "1462429526083502315"],
+    "requireOnboardCompletion": true,
+    "randomChecks": true,
+    "gatekeeper": true,
+    "offensiveCharacters": ["卐"],
+    "regex": {
+      "action": ["^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$"]
+    }
+  },
+  "gemini": {
+    "priorities": ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite-preview"]
+  }
 }

@@ -1,5 +1,6 @@
 package org.backblue.utilities;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -18,9 +19,14 @@ public class ModalManager extends ListenerAdapter {
     public void onModalInteraction(@NotNull ModalInteractionEvent event) {
         if (event.getModalId().equals("modal:ezpunish")) {
             @NotNull Member user = Objects.requireNonNull(event.getValue("ezpunish:target")).getAsMentions().getMembers().getFirst();
-            @NotNull String type = Objects.requireNonNull(event.getValue("ezpunish:type")).getAsStringList().getFirst();
+            @NotNull String type = Objects.requireNonNull(event.getValue("ezpunish:type")).getAsString();
             @NotNull List<String> violations = Objects.requireNonNull(event.getValue("ezpunish:violations")).getAsStringList();
-            @NotNull Message.Attachment attachment = Objects.requireNonNull(event.getValue("ezpunish:evidence")).getAsAttachmentList().getFirst();
+            List<Message.Attachment> attachments = null;
+            if (event.getMember() == null) return;
+            if (event.getValue("ezpunish:evidence") != null) {
+                attachments = Objects.requireNonNull(event.getValue("ezpunish:evidence")).getAsAttachmentList();
+            }
+
             String notes = null;
             try {
                 ModalMapping additionalNotes = event.getValue("ezpunish:note");
@@ -29,18 +35,23 @@ public class ModalManager extends ListenerAdapter {
                 }
             } catch (Exception ignored) {}
             boolean softban = !type.equals("Softban");
-            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, null, List.of(attachment), notes).message()).queue();
+            if (event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
+                event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, null, attachments, notes).message()).queue();
+                return;
+            }
+            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, null, attachments, notes).message()).setEphemeral(true).queue();
         }
         if (event.getModalId().equals("modal:badge") && event.getMember() != null) {
             @NotNull String badge = Objects.requireNonNull(event.getValue("badge:selection")).getAsStringList().getFirst();
             event.deferReply().setEphemeral(true).queue();
-            event.getHook().sendMessage(Badge.changeBadge(event.getMember(), badge)).setEphemeral(true).queue();
+            event.getHook().sendMessage(Bot.getBot().getBadgeSystem().changeBadge(event.getMember(), badge)).setEphemeral(true).queue();
         }
         if (event.getModalId().equals("modal:quickezpunish")) {
             @NotNull Member user = Objects.requireNonNull(event.getValue("quickezpunish:target")).getAsMentions().getMembers().getFirst();
             @NotNull String type = Objects.requireNonNull(event.getValue("quickezpunish:type")).getAsStringList().getFirst();
             @NotNull List<String> violations = Objects.requireNonNull(event.getValue("ezpunish:violations")).getAsStringList();
-            ContextManager.EZPunishContext context = ContextManager.RetrieveContext(event.getUser().getId());
+            if (event.getMember() == null) return;
+            ContextManager.EZPunishContext context = ContextManager.RetrieveContext(user.getId());
             if (context == null) {
                 event.reply(":x: This interaction expired").setEphemeral(true).queue();
                 return;
@@ -52,8 +63,8 @@ public class ModalManager extends ListenerAdapter {
                     notes = additionalNotes.getAsString();
                 }
             } catch (Exception ignored) {}
-            boolean softban = !type.equals("Softban");
-            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, context.text(), context.attachments(), notes).message()).queue();
+            boolean softban = type.equals("Softban");
+            event.reply(Bot.getBot().ezPunish(user, event.getMember(), violations, softban, context.text(), context.attachments(), notes).message()).setEphemeral(true).queue();
         }
     }
 }

@@ -3,6 +3,9 @@ package org.backblue;
 import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
+import com.google.genai.Client;
+import com.google.genai.types.GenerateContentConfig;
+import com.google.genai.types.GenerateContentResponse;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
@@ -30,6 +33,7 @@ import org.backblue.utilities.NdemicModule;
 import org.backblue.wrappers.BlueSkyBot;
 import org.backblue.wrappers.MessageHandler;
 import org.backblue.wrappers.ProfileHandler;
+import org.backblue.wrappers.SentinelManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -53,7 +57,7 @@ import static org.backblue.commands.EZPunish.generatePunishEmbed;
 import static org.backblue.commands.EZPunish.logToWarnings;
 
 public class Bot {
-    public static final String VERSION = "0.7.3";
+    public static final String VERSION = "0.8.0_c";
     public static final long BOOT = Instant.now().getEpochSecond();
     private final Properties keys;
     private JSONObject settings;
@@ -63,6 +67,8 @@ public class Bot {
     private static Bot botStatic;
     private final HashMap<String, String> analysis;
     private final HashMap<String, String> deployment;
+    private final SentinelManager sentinelManager;
+    private final Badge badges;
 
     private final ContentSafetyClient contentSafetyClient;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -77,20 +83,23 @@ public class Bot {
 
     private Bot() {
         botStatic = this;
-
+        JSONObject badgesData = null;
         try {
             settings = new JSONObject(new JSONTokener(Files.readString(Path.of("data/settings.json"))));
             modules = new JSONObject(new JSONTokener(Files.readString(Path.of("data/modules.json"))));
             tasks = new JSONObject(new JSONTokener(Files.readString(Path.of("data/tasks.json"))));
+            badgesData = new JSONObject(new JSONTokener(Files.readString(Path.of("data/badges.json"))));
         } catch (IOException e) {
-            System.err.println("Need config files: data/settings.json, data/modules.json, data/tasks.json");
+            System.err.println("Need config files: data/settings.json, data/modules.json, data/tasks.json, data/badges.json");
             System.exit(1);
         }
         keys = loadKeys();
         analysis = generateAnalysis();
         deployment = generateDeployment();
         MessageForwarder forwarder = new MessageForwarder(settings.getJSONArray("messageForwarding"));
+        sentinelManager = new SentinelManager(settings.getJSONObject("sentinel"));
         registerNdemicModule(forwarder);
+        registerNdemicModule(sentinelManager);
         registerNdemicModule(new ProfileHandler());
         registerNdemicModule(new MessageHandler());
         registerNdemicModule(new BlueSkyBot(keys.getProperty("BSKY_USER", null),
@@ -127,9 +136,14 @@ public class Bot {
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
 
+        this.badges = new Badge(badgesData);
         builder.addEventListeners(new CommandList(), new ComponentManager(), new ModalManager(), new ContextManager());
-        builder.addEventListeners(new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate(), new Badge(), new Purge());
+        builder.addEventListeners(new Security(), new Ping(), new Uptime(), new Data(), new Module(), new EZPunish(), new Terminate(),
+                this.badges,
+                new Purge());
         builder.addEventListeners(
+                new EnforceSecurityGatekeeper(sentinelManager),
+                new EnforceSecurityOnboardCompletion(),
                 forwarder,
                 new RestrictedChannel(),
                 new EnforceProfileScan(),
@@ -210,6 +224,13 @@ public class Bot {
     public JSONObject getSettings() {
         return settings;
     }
+    public SentinelManager getSentinelManager() {
+        return sentinelManager;
+    }
+    public Badge getBadgeSystem() {
+        return this.badges;
+    }
+
     public boolean getModuleValue(String key) {
         if (modules.has(key)) {
             return modules.getJSONObject(key).getBoolean("enabled");
@@ -295,6 +316,30 @@ public class Bot {
                 case NEWS -> ((NewsChannel) analysisChannel).sendMessage(message).setEmbeds(embed).queue();
             }
         }
+    }
+    public void sendDeploymentMessage(String type, String message, MessageEmbed embed, List<FileUpload> uploads) {
+        String channelId = getDeployment().get("channels." + type);
+        GuildChannel analysisChannel = getJDA().getGuildChannelById(channelId);
+        if (analysisChannel != null) {
+            switch (analysisChannel.getType()) {
+                case TEXT -> ((TextChannel) analysisChannel).sendMessage(message).addFiles(uploads).setEmbeds(embed).queue();
+                case NEWS -> ((NewsChannel) analysisChannel).sendMessage(message).addFiles(uploads).setEmbeds(embed).queue();
+            }
+        }
+    }
+
+    public GenerateContentResponse gemini(String input, GenerateContentConfig config) {
+        JSONArray array = Bot.getBot().getSettings().getJSONObject("gemini").getJSONArray("priorities");
+        for (int i = 0; i < array.length(); i++) {
+            String model = array.getString(i);
+            try (Client client = Client.builder().apiKey(keys.getProperty(model)).build()) {
+                return client.models.generateContent(
+                        keys.getProperty("GEMINI_TOKEN"),
+                        input,
+                        config);
+            } catch (Exception ignored) {}
+        }
+        return null;
     }
 
     public void sendDeploymentMessage(String type, String message) {

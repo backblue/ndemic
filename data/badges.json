@@ -1,48 +1,69 @@
 {
-  "boosters": true,
-  "boosterRole": "646513220089282586",
+  "unlock_if_empty": false,
   "content": [
     {
-      "title": "Pika",
-      "id": "pika",
-      "code": "<:ShockedPika:560271121249992716>",
-      "role": "1353925493430423604"
+      "modal_title": "Pika",
+      "modal_id": "pika",
+      "emoji_code": "<:ShockedPika:560271121249992716>",
+      "emoji_role": "1353925493430423604",
+      "unlock_roles": [],
+      "flags": ["booster"]
     },
     {
-      "title": "Escalation",
-      "id": "ri",
-      "code": "<:RI_Escalation:860680077979942933>",
-      "role": "1449169008355184872"
+      "modal_title": "Escalation",
+      "modal_id": "ri",
+      "emoji_code": "<:RI_Escalation:860680077979942933>",
+      "emoji_role": "1449169008355184872",
+      "unlock_roles": [],
+      "flags": ["booster"]
     },
     {
-      "title": "Rebel",
-      "id": "insurgent",
-      "code": "<:Insurgency:856581878546169856>",
-      "role": "1449169287632916652"
+      "modal_title": "Rebel",
+      "modal_id": "insurgent",
+      "emoji_code": "<:Insurgency:856581878546169856>",
+      "emoji_role": "1449169287632916652",
+      "unlock_roles": [],
+      "flags": ["booster"]
     },
     {
-      "title": "Plague",
-      "id": "pi",
-      "code": "<:PlagueInc:815981251995238421>",
-      "role": "1450304839476052029"
+      "modal_title": "Plague",
+      "modal_id": "pi",
+      "emoji_code": "<:PlagueInc:815981251995238421>",
+      "emoji_role": "1450304839476052029",
+      "unlock_roles": [],
+      "flags": ["booster"]
     },
     {
-      "title": "ZCom",
-      "id": "zcom",
-      "code": "<:ZCOM:815980861752475708>",
-      "role": "1450305065079410948"
+      "modal_title": "ZCom",
+      "modal_id": "zcom",
+      "emoji_code": "<:ZCOM:815980861752475708>",
+      "emoji_role": "1450305065079410948",
+      "unlock_roles": [],
+      "flags": ["booster"]
     },
     {
-      "title": "Nuke",
-      "id": "nuke",
-      "code": "<:Nuke:815980824234557441>",
-      "role": "1450305504784941116"
+      "modal_title": "Nuke",
+      "modal_id": "nuke",
+      "emoji_code": "<:Nuke:815980824234557441>",
+      "emoji_role": "1450305504784941116",
+      "unlock_roles": [],
+      "flags": ["booster"]
     },
     {
-      "title": "Mad Cow",
-      "id": "mcd",
-      "code": "<:MadCowDisease:790345009382948924>",
-      "role": "1454611305125384278"
+      "modal_title": "Mad Cow",
+      "modal_id": "mcd",
+      "emoji_code": "<:MadCowDisease:790345009382948924>",
+      "emoji_role": "1454611305125384278",
+      "unlock_roles": [],
+      "flags": ["booster"]
+    },
+    {
+      "modal_title": "Golden Badge",
+      "modal_id": "gb",
+      "emoji_code": "<:GoldenBadgePI:856417186734538752>",
+      "emoji_role": "1496679104739676222",
+      "unlock_roles": ["780525184720568360"],
+      "flags": ["booster"]
     }
   ]
 }

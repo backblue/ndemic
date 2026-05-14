@@ -3,6 +3,7 @@ package org.backblue.commands;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.components.attachmentupload.AttachmentUpload;
 import net.dv8tion.jda.api.components.label.Label;
+import net.dv8tion.jda.api.components.radiogroup.RadioGroup;
 import net.dv8tion.jda.api.components.selections.EntitySelectMenu;
 import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.components.textinput.TextInput;
@@ -84,10 +85,9 @@ public class EZPunish extends ListenerAdapter {
                 return;
             }
             EntitySelectMenu menu = EntitySelectMenu.create("ezpunish:target", EntitySelectMenu.SelectTarget.USER).build();
-            StringSelectMenu punishment = StringSelectMenu.create("ezpunish:type")
-                    .addOption("Softban", "softban", "Kicks the user and deletes an hour of messages")
-                    .addOption("Ban", "ban", "Bans the user and deletes an hour of messages")
-                    .setDefaultValues("softban")
+            RadioGroup punishment = RadioGroup.create("ezpunish:type")
+                    .addOption("Softban (+1hr removal of messages)", "softban")
+                    .addOption("Ban (+1hr removal of messages)", "ban")
                     .build();
             TextInput note = TextInput.create("ezpunish:note", TextInputStyle.PARAGRAPH)
                     .setPlaceholder("Personalized note to the user regarding their punishment")

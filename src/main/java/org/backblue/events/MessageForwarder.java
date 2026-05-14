@@ -41,7 +41,7 @@ public class MessageForwarder extends ListenerAdapter implements NdemicModule {
         if (isEnabled() && event.isFromGuild() && !event.getAuthor().isBot()) {
             for (String keyWord : keyWordToChannelId.keySet()) {
                 if (event.getMessage().getContentRaw().toLowerCase().contains(keyWord.toLowerCase())) {
-                    event.getJDA().getTextChannelById(keyWordToChannelId.get(keyWord)).sendMessage("<@&"+keyWordToPingId.get(keyWord)+"> Forwarded message: " + event.getMessage().getContentRaw()).queue();
+                    event.getJDA().getTextChannelById(keyWordToChannelId.get(keyWord)).sendMessage("<@&"+keyWordToPingId.get(keyWord)+"> Forwarded message: \n>>> " + event.getMessage().getContentRaw() + "\n<#" + event.getChannel().getId() + ">").queue();
                 }
             }
         }
