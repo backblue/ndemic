@@ -8,12 +8,13 @@
     "debugImageDump": "1383994500820500522",
     "deploymentBotCmds": "624056396639502336",
     "deploymentWarnings": "750352217495699528",
-    "deploymentLogs": "558690605698514994"
+    "deploymentLogs": "558690605698514994",
+    "deploymentHoney": "558690605698514994"
   },
   "self": {
+    "pingAlerts": "1365758943363596388",
     "status": "Handing out bribes",
     "presence": "dnd",
-    "watermark": "Built by killergotrekt for Ndemic",
-    "watermarkLogoLink": "https://cdn.discordapp.com/icons/523349543505362945/9223945b99f10ebaeba2afc7ef1cb872.png"
+    "watermark": "Built by killergotrekt for Ndemic"
   }
 }

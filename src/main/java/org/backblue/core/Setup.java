@@ -36,13 +36,13 @@ public final class Setup extends ListenerAdapter {
         commands.add(Commands.slash("about", "Uptime & bot information"));
         commands.add(Commands.slash("badge", "Select a role icon that appears next to your name"));
 
-        OptionData featuresList = new OptionData(OptionType.STRING, "featuresList", "The selected feature", true);
+        OptionData featuresList = new OptionData(OptionType.STRING, "flag", "The selected feature", true);
         for (FeatureFlag feature : FeatureFlag.values()) {
-            featuresList.addChoice(feature.toString(), feature.ordinal());
+            featuresList.addChoice(feature.toString(), String.valueOf(feature.ordinal()));
         }
         commands.add(Commands.slash("features", "Enable/disable feature flags for this bot (formerly 'modules')")
-                .addSubcommands(new SubcommandData("enable", "Enable a feature").addOptions(featuresList))
-                .addSubcommands(new SubcommandData("disable", "Disable a feature").addOptions(featuresList))
+                .addSubcommands(new SubcommandData("enable", "Enable a feature flag/module").addOptions(featuresList))
+                .addSubcommands(new SubcommandData("disable", "Disable a feature flag/module").addOptions(featuresList))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
 
         commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish...")
