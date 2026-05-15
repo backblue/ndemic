@@ -1,4 +1,19 @@
 {
-  "status": "Handing out bribes",
-  "presence": 2
+  "channels": {
+    "_debug": "846837318132301904",
+    "_deploy": "523349543505362945",
+    "debugDirectMessages": "1354224979755008191",
+    "debugAutoModAlert": "1354224983924019491",
+    "debugEnforcement": "1354229171076731111",
+    "debugImageDump": "1383994500820500522",
+    "deploymentBotCmds": "624056396639502336",
+    "deploymentWarnings": "750352217495699528",
+    "deploymentLogs": "558690605698514994"
+  },
+  "self": {
+    "status": "Handing out bribes",
+    "presence": "dnd",
+    "watermark": "Built by killergotrekt for Ndemic",
+    "watermarkLogoLink": "https://cdn.discordapp.com/icons/523349543505362945/9223945b99f10ebaeba2afc7ef1cb872.png"
+  }
 }

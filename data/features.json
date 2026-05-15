@@ -5,6 +5,5 @@
   "securityActions": true,
   "autoModAlerts": true,
   "roleIcons": true,
-  "msgForward": true,
-  "security": true
+  "msgForward": true
 }
