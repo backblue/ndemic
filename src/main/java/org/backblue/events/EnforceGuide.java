@@ -7,11 +7,11 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
 import org.backblue.core.IO;
 import org.backblue.utilities.FeatureFlag;
-import org.backblue.utilities.MessagePriority;
+import org.backblue.utilities.EventPriority;
 
 import java.util.Objects;
 
-public class EnforceGuide extends MessagePriority {
+public class EnforceGuide extends EventPriority {
 
     public EnforceGuide(int priority, Bot bot) {
         super(priority, bot);

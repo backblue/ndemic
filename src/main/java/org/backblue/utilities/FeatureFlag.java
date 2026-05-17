@@ -4,7 +4,7 @@ public enum FeatureFlag {
     EnforceOneGuideAccess,
     BlueSky,
     Honeypot,
-    SecurityActions,
+    DisableDMs,
     AutoModAlerts,
     RoleIcons,
     MessageForwarding,

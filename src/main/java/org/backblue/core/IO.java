@@ -9,8 +9,9 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.events.EnforceGuide;
+import org.backblue.events.Forwarding;
 import org.backblue.events.Honeypot;
-import org.backblue.utilities.MessagePriority;
+import org.backblue.utilities.EventPriority;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
 
@@ -23,7 +24,7 @@ public final class IO extends ListenerAdapter {
 
     private ShardManager JDA;
     private final Map<DefinedChannel, String> mapping;
-    private final PriorityQueue<MessagePriority> queue = new PriorityQueue<>();
+    private final PriorityQueue<EventPriority> queue = new PriorityQueue<>();
 
     public enum DefinedChannel {
         DebugDirectMessages,
@@ -51,9 +52,24 @@ public final class IO extends ListenerAdapter {
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).setEmbeds(embed).queue();
     }
 
+    public void send(DefinedChannel dest, String text, FileUpload[] fileUploads) {
+        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).queue();
+    }
+
     public void send(User user, String text) {
         user.openPrivateChannel().queue(privateChannel -> privateChannel.sendMessage(text).queue());
     }
+
+    public void send(User user, String text, MessageEmbed embed) {
+        user.openPrivateChannel().queue(privateChannel -> privateChannel.sendMessage(text).setEmbeds(embed).queue());
+    }
+
+    public void send(String textChannelID, String text) {
+        GuildChannel targetChannel = this.JDA.getGuildChannelById(textChannelID);
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
+    }
+
 
     public GuildChannel getChannel(DefinedChannel dest) {
         return this.JDA.getTextChannelById(mapping.get(dest));
@@ -65,31 +81,27 @@ public final class IO extends ListenerAdapter {
 
     public IO(JSONObject settings, Bot bot) {
         this.mapping = new HashMap<>();
-        if (settings == null) {
+        JSONObject settingsChannel = settings.optJSONObject("channels", null);
+        if (settingsChannel == null) {
             System.err.println("Missing \"channels\" key in config. No non-interaction responses will be sent.");
             return;
         }
-        mapping.put(DefinedChannel.DebugDirectMessages, settings.optString("debugDirectMessages", null));
-        mapping.put(DefinedChannel.DebugAutoModAlert, settings.optString("debugAutoModAlert", null));
-        mapping.put(DefinedChannel.DebugEnforcement, settings.optString("debugEnforcement", null));
-        mapping.put(DefinedChannel.DebugImageDump, settings.optString("debugImageDump", null));
-        mapping.put(DefinedChannel.DeploymentBotCommands, settings.optString("deploymentBotCmds", null));
-        mapping.put(DefinedChannel.DeploymentWarnings, settings.optString("deploymentWarnings", null));
-        mapping.put(DefinedChannel.DeploymentLogs, settings.optString("deploymentLogs", null));
-        mapping.put(DefinedChannel.DeploymentHoney, settings.optString("deploymentHoney", null));
+        mapping.put(DefinedChannel.DebugDirectMessages, settingsChannel.optString("debugDirectMessages", null));
+        mapping.put(DefinedChannel.DebugAutoModAlert, settingsChannel.optString("debugAutoModAlert", null));
+        mapping.put(DefinedChannel.DebugEnforcement, settingsChannel.optString("debugEnforcement", null));
+        mapping.put(DefinedChannel.DebugImageDump, settingsChannel.optString("debugImageDump", null));
+        mapping.put(DefinedChannel.DeploymentBotCommands, settingsChannel.optString("deploymentBotCmds", null));
+        mapping.put(DefinedChannel.DeploymentWarnings, settingsChannel.optString("deploymentWarnings", null));
+        mapping.put(DefinedChannel.DeploymentLogs, settingsChannel.optString("deploymentLogs", null));
+        mapping.put(DefinedChannel.DeploymentHoney, settingsChannel.optString("deploymentHoney", null));
 
         queue.add(new EnforceGuide(50, bot));
         queue.add(new Honeypot(10, bot, bot.pingRoleID));
+        queue.add(new Forwarding(15, bot, settings.getJSONArray("messageForwarding")));
     }
 
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
-        if (event.isFromGuild()) {
-            for (MessagePriority listener : queue) {
-                if (listener.run(event)) {
-                    break;
-                }
-            }
-        }
+        if (event.isFromGuild()) for (EventPriority listener : queue) if (listener.run(event)) break;
     }
 }

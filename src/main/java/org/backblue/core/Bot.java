@@ -9,14 +9,9 @@ import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.backblue.commands.About;
-import org.backblue.commands.Badge;
-import org.backblue.commands.Features;
-import org.backblue.commands.Ping;
-import org.backblue.events.AutoMod;
-import org.backblue.events.DM;
-import org.backblue.events.Modal;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.commands.*;
+import org.backblue.events.*;
+import org.backblue.utilities.*;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -25,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public final class Bot {
 
@@ -33,6 +30,7 @@ public final class Bot {
     public final int patch = 1;
 
     private final ShardManager JDA;
+    public final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final IO io;
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
@@ -44,6 +42,7 @@ public final class Bot {
         Properties keys = new Properties();
         keys.load(new StringReader(Files.readString(Path.of("data/bot.properties"))));
         JSONObject settings = new JSONObject(Files.readString(Path.of("data/settings.json")));
+        JSONObject rulebook = new JSONObject(Files.readString(Path.of("data/rulebook.json")));
         JSONObject badges = new JSONObject(Files.readString(Path.of("data/badges.json")));
         JSONObject featuresList = new JSONObject(Files.readString(Path.of("data/features.json")));
         JSONObject settingSelf = settings.optJSONObject("self", null);
@@ -63,18 +62,24 @@ public final class Bot {
 
         io = new IO(settings.optJSONObject("channels", null), this);
         Badge badge = new Badge(this, badges);
+        EZPunish ez = new EZPunish(this, rulebook);
         builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
         builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this, settingSelf.optString("pingAlerts", null)));
-        builder.addEventListeners(new DM(this), badge, new Modal(badge), new About(this, pingRoleID));
+        builder.addEventListeners(new DM(this), new Component(this), new Context(this), ez, badge, new Modal(badge, ez), new About(this, pingRoleID));
 
-        if (featuresList.optBoolean("enforceGuideAccess", false)) features.add(FeatureFlag.EnforceOneGuideAccess);
-        if (featuresList.optBoolean("blueSky", false)) features.add(FeatureFlag.BlueSky);
-        if (featuresList.optBoolean("honeypot", false)) features.add(FeatureFlag.Honeypot);
-        if (featuresList.optBoolean("securityActions", false)) features.add(FeatureFlag.SecurityActions);
-        if (featuresList.optBoolean("autoModAlerts", false)) features.add(FeatureFlag.AutoModAlerts);
-        if (featuresList.optBoolean("roleIcons", false)) features.add(FeatureFlag.RoleIcons);
-        if (featuresList.optBoolean("msgForward", false)) features.add(FeatureFlag.MessageForwarding);
+        if (featuresList.optBoolean("enforceGuideAccess", false)) this.enableFeature(FeatureFlag.EnforceOneGuideAccess);
+        if (featuresList.optBoolean("blueSky", false)) this.enableFeature(FeatureFlag.BlueSky);
+        if (featuresList.optBoolean("honeypot", false)) this.enableFeature(FeatureFlag.Honeypot);
+        if (featuresList.optBoolean("disableDMs", false)) this.enableFeature(FeatureFlag.DisableDMs);
+        if (featuresList.optBoolean("autoModAlerts", false)) this.enableFeature(FeatureFlag.AutoModAlerts);
+        if (featuresList.optBoolean("roleIcons", false)) this.enableFeature(FeatureFlag.RoleIcons);
+        if (featuresList.optBoolean("msgForward", false)) this.enableFeature(FeatureFlag.MessageForwarding);
 
+        new BlueSky(keys.getProperty("BSKY_USER", null),
+                keys.getProperty("BSKY_PASSWORD", null),
+                settings.getJSONObject("blueSky"),
+                this);
+        new SecurityActions(this);
         this.JDA = builder.build();
     }
 

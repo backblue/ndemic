@@ -2,7 +2,7 @@
   "enforceGuideAccess": true,
   "blueSky": true,
   "honeypot": true,
-  "securityActions": true,
+  "disableDMs": true,
   "autoModAlerts": true,
   "roleIcons": true,
   "msgForward": true

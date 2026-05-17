@@ -2,19 +2,25 @@ package org.backblue.events;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
 import org.backblue.core.IO;
 import org.backblue.utilities.FeatureFlag;
-import org.backblue.utilities.MessagePriority;
+import org.backblue.utilities.EventPriority;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class Honeypot extends MessagePriority {
+public class Honeypot extends EventPriority {
     final String pingRole;
 
     public Honeypot(int priority, Bot bot, String pingRole) {
@@ -56,11 +62,58 @@ public class Honeypot extends MessagePriority {
             bot.getIO().send(IO.DefinedChannel.DeploymentBotCommands, "<@" + pingRole + "> - " + event.getMember().getAsMention(),
                     embedBuilder.build(),
                     fileUploads);
-
-            //todo: purge old messages
-
+            purge(event.getMember());
             return true;
         }
         return false;
+    }
+
+    private void purge(Member member) {
+        OffsetDateTime cutoff = OffsetDateTime.now().minusMinutes(10);
+        AtomicInteger remaining = new AtomicInteger(100);
+
+        List<GuildMessageChannel> channels = new ArrayList<>();
+        channels.addAll(member.getGuild().getTextChannels());
+        channels.addAll(member.getGuild().getThreadChannels());
+
+        for (GuildMessageChannel channel : channels) {
+            if (remaining.get() <= 0)
+                break;
+
+            if (!member.hasPermission(channel, Permission.VIEW_CHANNEL))
+                continue;
+
+            channel.getHistory().retrievePast(100).queue(messages -> {
+
+                List<Message> toDelete = new ArrayList<>();
+
+                for (Message m : messages) {
+                    if (remaining.get() <= 0)
+                        break;
+
+                    if (!m.getAuthor().getId().equals(member.getId()))
+                        continue;
+
+                    if (m.getTimeCreated().isBefore(cutoff))
+                        continue;
+
+                    toDelete.add(m);
+                    remaining.decrementAndGet();
+                }
+
+                if (toDelete.size() >= 2) {
+                    if (channel instanceof TextChannel tc) {
+                        tc.deleteMessages(toDelete).queue();
+                    } else if (channel instanceof ThreadChannel thread) {
+                        toDelete.forEach(m -> m.delete().queue());
+                    } else {
+                        toDelete.forEach(m -> m.delete().queue());
+                    }
+                }
+                else if (toDelete.size() == 1) {
+                    toDelete.getFirst().delete().queue();
+                }
+            });
+        }
     }
 }

@@ -16,5 +16,15 @@
     "status": "Handing out bribes",
     "presence": "dnd",
     "watermark": "Built by killergotrekt for Ndemic"
-  }
+  },
+  "blueSky": {
+    "did:plc:fnjpvrzkdt74wlgb5b4gtc6e": "699373249338802226"
+  },
+  "messageForwarding": [
+    {
+      "match": "<@&523351538937233426>",
+      "sendToInAnalysisChannel": "1354229171076731111",
+      "pingRoleIdInAnalysisChannel": "1355656666422706508"
+    }
+  ]
 }

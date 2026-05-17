@@ -4,18 +4,18 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
 import org.jspecify.annotations.NonNull;
 
-public abstract class MessagePriority implements Comparable<MessagePriority> {
+public abstract class EventPriority implements Comparable<EventPriority> {
 
     private final int priority;
     protected final Bot bot;
 
-    protected MessagePriority(int priority, Bot bot) {
+    protected EventPriority(int priority, Bot bot) {
         this.bot = bot;
         this.priority = priority;
     }
 
     @Override
-    public int compareTo(@NonNull MessagePriority o) {
+    public int compareTo(@NonNull EventPriority o) {
         return Integer.compare(this.priority, o.priority);
     }
 
