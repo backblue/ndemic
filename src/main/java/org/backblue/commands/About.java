@@ -7,7 +7,6 @@ import org.backblue.core.Bot;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.lang.management.ManagementFactory;
 
 public class About extends ListenerAdapter {
 
@@ -22,12 +21,9 @@ public class About extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("about")) {
-            long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Color.CYAN)
-                    .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch)
-                    .addField("Memory", "`" + used / 1000000 + " MB / " + Runtime.getRuntime().totalMemory() / 1000000 + " MB`", true)
-                    .addField("Uptime", Bot.formatTimeShort(ManagementFactory.getRuntimeMXBean().getUptime()), true);
+                    .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch);
             if (!watermark.isEmpty()) {
                 embed.setFooter(this.watermark);
             }

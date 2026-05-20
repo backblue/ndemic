@@ -3,6 +3,7 @@ package org.backblue.core;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -12,7 +13,11 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.events.*;
 import org.backblue.utilities.*;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -27,28 +32,50 @@ public final class Bot {
 
     public final int major = 0;
     public final int minor = 9;
-    public final int patch = 1;
+    public final int patch = 2;
+
+    private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
     private final ShardManager JDA;
-    public final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final IO io;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final MessageIO io;
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
-    private final String debugGuildID;
-    public final String pingRoleID;
+    private final String pingRoleID;
 
     public Bot() throws IOException {
-        features = EnumSet.noneOf(FeatureFlag.class);
         Properties keys = new Properties();
-        keys.load(new StringReader(Files.readString(Path.of("data/bot.properties"))));
-        JSONObject settings = new JSONObject(Files.readString(Path.of("data/settings.json")));
-        JSONObject rulebook = new JSONObject(Files.readString(Path.of("data/rulebook.json")));
-        JSONObject badges = new JSONObject(Files.readString(Path.of("data/badges.json")));
-        JSONObject featuresList = new JSONObject(Files.readString(Path.of("data/features.json")));
-        JSONObject settingSelf = settings.optJSONObject("self", null);
+        JSONObject settings = null;
+        JSONObject rulebook = null;
+        JSONObject badges = null;
+        JSONObject featuresList = null;
+        JSONObject settingSelf = null;
+        try {
+            keys.load(new StringReader(Files.readString(Path.of("data/bot.properties"))));
+            settings = new JSONObject(Files.readString(Path.of("data/settings.json")));
+            rulebook = new JSONObject(Files.readString(Path.of("data/rulebook.json")));
+            badges = new JSONObject(Files.readString(Path.of("data/badges.json")));
+            featuresList = new JSONObject(Files.readString(Path.of("data/features.json")));
+            settingSelf = settings.getJSONObject("self");
+            settings.getJSONObject("channels").getString("_deploy");
+
+        } catch (IOException e) {
+            Log.error("Cannot read files: data/bot.properties, data/settings.json, data/rulebook.json, data/badges.json, data/features.json");
+            Log.error("settings.json also requires JSON objects attached to keys 'self', 'channels");
+            System.exit(1);
+        }
         this.deploymentGuildID = settings.getJSONObject("channels").getString("_deploy");
-        this.debugGuildID = settings.getJSONObject("channels").getString("_debug");
         this.pingRoleID = settingSelf.optString("pingAlerts", null);
+
+        features = EnumSet.noneOf(FeatureFlag.class);
+        for (FeatureFlag flag : FeatureFlag.values()) {
+            try {
+                if (featuresList.getBoolean(flag.getConfigKey())) this.features.add(flag);
+            } catch (JSONException e) {
+                Log.warn("No setting found for '{}', turning off {}", flag.getConfigKey(), flag);
+            }
+        }
+        Log.info("{} features successfully enabled", features.size());
 
         DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.create(keys.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class));
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
@@ -60,26 +87,22 @@ public final class Bot {
             builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("presence")));
         }
 
-        io = new IO(settings.optJSONObject("channels", null), this);
+        io = new MessageIO(settings, this);
         Badge badge = new Badge(this, badges);
         EZPunish ez = new EZPunish(this, rulebook);
         builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
-        builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this, settingSelf.optString("pingAlerts", null)));
-        builder.addEventListeners(new DM(this), new Component(this), new Context(this), ez, badge, new Modal(badge, ez), new About(this, pingRoleID));
-
-        if (featuresList.optBoolean("enforceGuideAccess", false)) this.enableFeature(FeatureFlag.EnforceOneGuideAccess);
-        if (featuresList.optBoolean("blueSky", false)) this.enableFeature(FeatureFlag.BlueSky);
-        if (featuresList.optBoolean("honeypot", false)) this.enableFeature(FeatureFlag.Honeypot);
-        if (featuresList.optBoolean("disableDMs", false)) this.enableFeature(FeatureFlag.DisableDMs);
-        if (featuresList.optBoolean("autoModAlerts", false)) this.enableFeature(FeatureFlag.AutoModAlerts);
-        if (featuresList.optBoolean("roleIcons", false)) this.enableFeature(FeatureFlag.RoleIcons);
-        if (featuresList.optBoolean("msgForward", false)) this.enableFeature(FeatureFlag.MessageForwarding);
+        builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
+        builder.addEventListeners(new DM(this),
+                new DisableDM(this),
+                ez,
+                badge,
+                new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
                 keys.getProperty("BSKY_PASSWORD", null),
                 settings.getJSONObject("blueSky"),
                 this);
-        new SecurityActions(this);
+
         this.JDA = builder.build();
     }
 
@@ -98,38 +121,32 @@ public final class Bot {
         }
         return null;
     }
-    public IO getIO() {
+    public MessageIO getIO() {
         return this.io;
     }
     public ShardManager getJDA() {
         return this.JDA;
     }
-    public static String formatTimeShort(Long seconds) {
-        if (seconds <= 0) {
-            return "now";
-        }
-
-        String returnString = null;
-
+    public static @NonNull String formatSec(long seconds) {
+        if (seconds <= 0) return "now";
+        StringBuilder str = new StringBuilder();
         long days = seconds / 86400;
-        long hours = (seconds % 86400) / 3600;
-        long minutes = (seconds % 3600) / 60;
-        long secs = seconds % 60;
-        if (days > 0) {
-            returnString = days + "d " + hours + "h " + minutes + "m " + secs + "s";
-        } else if (hours > 0) {
-            returnString = hours + "h " + minutes + "m " + secs + "s";
-        } else if (minutes > 0) {
-            returnString = minutes + "m " + secs + "s";
-        } else if (secs > 0) {
-            returnString = secs + "s";
-        }
-        return returnString;
+        long hours = seconds % 86400 / 3600;
+        long minutes = seconds % 3600 / 60;
+        long second = seconds % 60;
+        if (days > 0) str.append(days).append("d ");
+        if (hours > 0) str.append(hours).append("h ");
+        if (minutes > 0) str.append(minutes).append("m ");
+        if (second > 0 || str.isEmpty()) str.append(second).append("s");
+        return str.toString().trim();
     }
     public Guild getDeploymentGuild() {
         return JDA.getGuildById(this.deploymentGuildID);
     }
-    public Guild getDebugGuild() {
-        return JDA.getGuildById(this.debugGuildID);
+    public Role getPingRole() {
+        return this.getJDA().getRoleById(this.pingRoleID);
+    }
+    public ScheduledExecutorService getScheduler() {
+        return this.scheduler;
     }
 }

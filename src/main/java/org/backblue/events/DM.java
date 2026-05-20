@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.core.IO;
+import org.backblue.utilities.DefinedChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -26,9 +26,9 @@ public class DM extends ListenerAdapter {
                     .setColor(Color.CYAN)
                     .setTitle("DM Received")
                     .addField("Message", event.getMessage().getContentRaw(), false)
-                    .addField("Author", event.getAuthor().getName(), false)
+                    .addField("Author", event.getAuthor().getName() + "/" + event.getAuthor().getId(), false)
                     .build();
-            bot.getIO().send(IO.DefinedChannel.DebugDirectMessages, "", message);
+            bot.getIO().send(DefinedChannel.DebugDirectMessages, "", message);
         }
     }
 

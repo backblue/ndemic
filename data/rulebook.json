@@ -43,139 +43,103 @@
     {
       "id": 98,
       "title": "Inappropriate Profile",
-      "desc": "Your profile has been reviewed by the moderators and found to have content deemed too explicit for this community."
+      "desc": "Your profile has been reviewed by the moderators and found to have content deemed too explicit."
     },
     {
       "id": 99,
       "title": "Compromised Account",
-      "desc": "Your account has been compromised. Secure your account before re-joining the server."
+      "desc": "Secure your account before re-joining the server."
     }
   ],
   "keywords": [
     {
       "id": 1,
-      "modal": "messages",
       "title": "Hate Speech",
-      "desc": "Hate speech in messages"
+      "desc": "Hateful messages"
     },
     {
       "id": 1,
-      "modal": "harassment",
       "title": "Harassment",
-      "desc": "Demeaning and threatening messages"
+      "desc": "Demeaning/threatening messages"
     },
     {
       "id": 1,
-      "modal": "bigotry",
       "title": "Bigotry",
       "desc": "Racist, sexist, homophobic, transphobic, ableist comments"
     },
     {
       "id": 1,
-      "modal": "instigating",
       "title": "Instigating",
-      "desc": "Encouraging others to harass or discriminate"
+      "desc": "Encouraging others to harass/break rules"
     },
     {
       "id": 2,
-      "modal": "nsfw",
       "title": "NSFW",
       "desc": "Sexual, gore, porn or illegal content/comments"
     },
     {
       "id": 3,
-      "modal": "spam",
       "title": "Spam",
       "desc": "Spamming, trolling, heavy tagging"
     },
     {
       "id": 3,
-      "modal": "selfpromo",
       "title": "Self-Promotion",
       "desc": "Sharing links to YT, other guilds, etc"
     },
     {
       "id": 3,
-      "modal": "spamlinks",
       "title": "Unsolicited Links",
       "desc": "Posting unsolicited links/invites"
     },
     {
       "id": 3,
-      "modal": "fr",
       "title": "Unsolicited Friend Requests",
       "desc": "Randomly friend requesting other members"
     },
     {
       "id": 3,
-      "modal": "dmmember",
-      "title": "Unsolicited DMs",
-      "desc": "DMing other members"
-    },
-    {
-      "id": 3,
-      "modal": "trolling",
       "title": "Trolling",
-      "desc": "Deliberately disruptive or off-topic messages"
+      "desc": "Deliberately disruptive messages"
     },
     {
       "id": 3,
-      "modal": "ragebait",
       "title": "Ragebait",
-      "desc": "Provocative messages designed to attract attention"
-    },
-    {
-      "id": 3,
-      "modal": "annoying",
-      "title": "Annoying",
-      "desc": "Excessive tagging members or mods"
+      "desc": "Provocative messages"
     },
     {
       "id": 4,
       "modal": "offtopic",
       "title": "Off-Topic",
-      "desc": "Derailing discussions"
+      "desc": "Derailing conversations"
     },
-
     {
       "id": 6,
-      "modal": "memes",
       "title": "Memes",
-      "desc": "Excessive or unwarranted meme posting"
+      "desc": "Unwarranted meme posting"
     },
     {
       "id": 5,
-      "modal": "politics",
-      "title": "Ragebait: Politics",
-      "desc": "Bad-faith political arguments meant to rage-bait others"
+      "title": "Politics",
+      "desc": "Bad-faith arguments related to politics"
     },
     {
       "id": 7,
-      "modal": "piracyshare",
-      "title": "Piracy: Links",
-      "desc": "Sending links to pirated software"
-    },
-    {
-      "id": 7,
-      "modal": "piracycontent",
-      "title": "Piracy: Content",
-      "desc": "Posting content of pirated software or instructions"
+      "title": "Piracy",
+      "desc": "Posting content/links of pirated software or cheats"
     },
     {
       "id": 8,
-      "modal": "english",
       "title": "Non-English",
-      "desc": "Messages in a language other than English"
+      "desc": "Messages that aren't english"
     },
     {
       "id": 98,
-      "modal": "profile",
       "title": "Profile",
       "desc": "Offensive Profile Picture/Banner/Status"
     },
     {
       "id": 99,
-      "modal": "compromise",
       "title": "Compromised Account",
       "desc": "Unusual spam activity from account"
     }

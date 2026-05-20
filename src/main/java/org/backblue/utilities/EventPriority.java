@@ -19,5 +19,11 @@ public abstract class EventPriority implements Comparable<EventPriority> {
         return Integer.compare(this.priority, o.priority);
     }
 
-    public abstract boolean run(MessageReceivedEvent event);
+    /**
+     * In order, determined by priority, to see what events should be fired first.
+     *
+     * @param event {@code MessageReceivedEvent} event.
+     * @return {@code true} if event is 'canceled', then no other listener that has priority above the current will receive this event.
+     */
+    public abstract boolean cancelled(MessageReceivedEvent event);
 }

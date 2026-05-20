@@ -3,6 +3,8 @@ package org.backblue.utilities;
 import org.backblue.core.Bot;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.IOException;
@@ -24,12 +26,15 @@ public class BlueSky {
     private String accessJwt = null;
     private Instant tokenExpiry = Instant.EPOCH;
 
+    private static final Logger Log = LoggerFactory.getLogger(BlueSky.class);
+
     public BlueSky(String user, String pass, JSONObject json, Bot bot) {
         this.bot = bot;
         if (user == null || pass == null || json == null ) {
-            System.err.println("BlueSkyBot: No BlueSky credentials or users configured!");
             this.user = null;
             this.pass = null;
+            Log.warn("No BlueSky credentials or users configured");
+            Log.warn("BlueSky feature will not work until next startup");
             return;
         }
         this.user = user;
@@ -38,8 +43,8 @@ public class BlueSky {
             if (!key.equals("onlyLink") && json.get(key) instanceof String) {
                 bSkyMap.put(key, json.getString(key));
                 bSkyUserLastPost.put(key, Instant.now());
-                System.out.println("BlueSkyBot: Monitoring user " + key + " and posting to channel ID " + json.getString(key));
-                bot.scheduler.scheduleWithFixedDelay(() -> {
+                Log.info("Monitoring {} and posting to {}", key, json.get(key));
+                bot.getScheduler().scheduleWithFixedDelay(() -> {
                     try {
                         checkAccount(key);
                     } catch (Exception ignored) {
@@ -62,14 +67,14 @@ public class BlueSky {
             if (!postTime.isAfter(bSkyUserLastPost.get(did))) {
                 return;
             }
-            System.out.println("BlueSkyBot: New post discovered for: " + did);
+            Log.info("New post found for: {}", did);
             String[] parts = post.getString("uri").split("/");
             String rKey = parts[parts.length - 1];
             String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
             bot.getIO().send(bSkyMap.get(did), urlInTxt);
             bSkyUserLastPost.put(did, postTime);
         } catch (IOException | InterruptedException e) {
-            System.err.println("BlueSkyBot: Can not fetch feed for user " + did + "\n" + e);
+            Log.warn("Can not fetch feed for user {}: {}", did, e.getMessage());
         }
     }
 

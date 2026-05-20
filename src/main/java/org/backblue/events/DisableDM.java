@@ -8,13 +8,13 @@ import org.backblue.utilities.FeatureFlag;
 import java.time.OffsetDateTime;
 import java.util.concurrent.TimeUnit;
 
-public class SecurityActions extends ListenerAdapter {
+public class DisableDM extends ListenerAdapter {
 
     final Bot bot;
 
-    public SecurityActions(Bot bot) {
+    public DisableDM(Bot bot) {
         this.bot = bot;
-        bot.scheduler.scheduleWithFixedDelay(this::check, 0, 1, TimeUnit.MINUTES);
+        bot.getScheduler().scheduleWithFixedDelay(this::check, 0, 1, TimeUnit.MINUTES);
     }
 
     private void check() {

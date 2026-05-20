@@ -20,7 +20,7 @@ import java.util.List;
 
 public final class Setup extends ListenerAdapter {
 
-    private final IO io;
+    private final MessageIO io;
     private final JSONObject settings;
 
     @Override
@@ -34,17 +34,18 @@ public final class Setup extends ListenerAdapter {
 
         commands.add(Commands.slash("ping", "Ping, pong!"));
         commands.add(Commands.slash("about", "Uptime & bot information"));
-        commands.add(Commands.slash("badge", "Select a role icon that appears next to your name"));
+        commands.add(Commands.slash("badge", "Select a role icon that appears next to your username"));
 
         OptionData featuresList = new OptionData(OptionType.STRING, "flag", "The selected feature", true);
         for (FeatureFlag feature : FeatureFlag.values()) {
             featuresList.addChoice(feature.toString(), String.valueOf(feature.ordinal()));
         }
-        commands.add(Commands.slash("features", "Enable/disable feature flags for this bot (formerly 'modules')")
-                .addSubcommands(new SubcommandData("enable", "Enable a feature flag/module").addOptions(featuresList))
-                .addSubcommands(new SubcommandData("disable", "Disable a feature flag/module").addOptions(featuresList))
+        commands.add(Commands.slash("features", "Feature flag management")
+                .addSubcommands(new SubcommandData("enable", "Temporarily enable a feature flag/module").addOptions(featuresList))
+                .addSubcommands(new SubcommandData("disable", "Temporarily disable a feature flag/module").addOptions(featuresList))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
-
+        commands.add(Commands.slash("ezpunish", "Easily punish a member.")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
         commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish...")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
 
@@ -53,7 +54,7 @@ public final class Setup extends ListenerAdapter {
         }
     }
 
-    public Setup(IO messageIO, JSONObject settings) {
+    public Setup(MessageIO messageIO, JSONObject settings) {
         this.io = messageIO;
         this.settings = settings;
     }

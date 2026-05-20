@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
-import org.backblue.core.IO;
+import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.backblue.utilities.EventPriority;
 
@@ -21,20 +21,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Honeypot extends EventPriority {
-    final String pingRole;
 
-    public Honeypot(int priority, Bot bot, String pingRole) {
+    public Honeypot(int priority, Bot bot) {
         super(priority, bot);
-        this.pingRole = pingRole;
     }
 
     @Override
-    public boolean run(MessageReceivedEvent event) {
+    public boolean cancelled(MessageReceivedEvent event) {
         if (bot.isFeatureEnabled(FeatureFlag.Honeypot)) {
             if (!event.isFromGuild() && !bot.getDeploymentGuild().getId().equals(event.getGuild().getId())) {
                 return false;
             }
-            if (!event.getMessage().getChannel().getId().equals(bot.getIO().getChannel(IO.DefinedChannel.DeploymentHoney).getId()) ) {
+            if (!event.getMessage().getChannel().getId().equals(bot.getIO().getChannel(DefinedChannel.DeploymentHoney).getId()) ) {
                 return false;
             }
             if (event.getMember() == null) {
@@ -59,7 +57,7 @@ public class Honeypot extends EventPriority {
                 }
             }
 
-            bot.getIO().send(IO.DefinedChannel.DeploymentBotCommands, "<@" + pingRole + "> - " + event.getMember().getAsMention(),
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getPingRole().getAsMention() + " - " + event.getMember().getAsMention(),
                     embedBuilder.build(),
                     fileUploads);
             purge(event.getMember());
@@ -69,7 +67,7 @@ public class Honeypot extends EventPriority {
     }
 
     private void purge(Member member) {
-        OffsetDateTime cutoff = OffsetDateTime.now().minusMinutes(10);
+        OffsetDateTime cutoff = OffsetDateTime.now().minusMinutes(60);
         AtomicInteger remaining = new AtomicInteger(100);
 
         List<GuildMessageChannel> channels = new ArrayList<>();
@@ -104,7 +102,7 @@ public class Honeypot extends EventPriority {
                 if (toDelete.size() >= 2) {
                     if (channel instanceof TextChannel tc) {
                         tc.deleteMessages(toDelete).queue();
-                    } else if (channel instanceof ThreadChannel thread) {
+                    } else if (channel instanceof ThreadChannel) {
                         toDelete.forEach(m -> m.delete().queue());
                     } else {
                         toDelete.forEach(m -> m.delete().queue());
