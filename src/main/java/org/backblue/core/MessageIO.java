@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.FileUpload;
-import org.backblue.events.EnforceGuide;
+import org.backblue.events.OneGuideOneAuthor;
 import org.backblue.events.Forwarding;
 import org.backblue.events.Honeypot;
 import org.backblue.utilities.DefinedChannel;
@@ -65,7 +65,7 @@ public final class MessageIO extends ListenerAdapter {
 
     public void send(DefinedChannel dest, String text, Container container) {
         GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
-        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addComponents(container).queue();
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addComponents(container).useComponentsV2(true).queue();
     }
 
     public GuildChannel getChannel(DefinedChannel dest) {
@@ -91,7 +91,7 @@ public final class MessageIO extends ListenerAdapter {
                 Log.error("Key '{}' unable to be read. Messages to that channel will not be sent", channel.getConfig());
             }
         }
-        queue.add(new EnforceGuide(50, bot));
+        queue.add(new OneGuideOneAuthor(50, bot));
         queue.add(new Honeypot(10, bot));
         queue.add(new Forwarding(15, bot, settings.optJSONArray("messageForwarding")));
     }

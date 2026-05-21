@@ -44,10 +44,12 @@ public class ProfileScanner extends ListenerAdapter {
     final ContentSafetyClient safetyClient;
     final int cooldownBetweenScans;
     final int hateMinToAlert;
+    final EZPunishProfileScan hook;
     final Map<String, OffsetTime> lastScan = new HashMap<>();
 
-    public ProfileScanner(Bot bot, String endpoint, String key, JSONObject config) {
+    public ProfileScanner(Bot bot, EZPunishProfileScan hook, String endpoint, String key, JSONObject config) {
         this.bot = bot;
+        this.hook = hook;
         if (key == null || endpoint == null) {
             Log.error("Cannot read Azure endpoint/key values, disabling");
             safetyClient = null;
@@ -79,8 +81,7 @@ public class ProfileScanner extends ListenerAdapter {
         }
         ScanResult avatar = scan(member.getId(), member.getEffectiveAvatarUrl());
         if (avatar != null && avatar.points >= this.hateMinToAlert) {
-            // todo: build ComponentV2
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention() + " might have inappropriate profile (placeholder)");
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.create(member, "picture", avatar.points));
         }
         member.getUser().retrieveProfile().queue(profile -> {
             String bannerUrl = profile.getBannerUrl();
@@ -88,8 +89,7 @@ public class ProfileScanner extends ListenerAdapter {
             if (bannerUrl != null) {
                 ScanResult banner = scan(member.getId(), bannerUrl);
                 if (banner != null && banner.points() >= hateMinToAlert) {
-                    // todo: build ComponentV2
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention() + " might have inappropriate profile  (placeholder)");
+                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.create(member, "banner", banner.points));
                 }
             }
         });

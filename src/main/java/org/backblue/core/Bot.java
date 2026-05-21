@@ -14,6 +14,7 @@ import org.backblue.commands.*;
 import org.backblue.events.*;
 import org.backblue.utilities.*;
 import org.backblue.wrappers.BlueSky;
+import org.backblue.wrappers.EZPunishProfileScan;
 import org.backblue.wrappers.ProfileScanner;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -93,6 +94,7 @@ public final class Bot {
         io = new MessageIO(settings, this);
         Badge badge = new Badge(this, badges);
         EZPunish ez = new EZPunish(this, rulebook);
+        EZPunishProfileScan hook = new  EZPunishProfileScan(this, ez);
         builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
         builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
         builder.addEventListeners(new DM(this),
@@ -100,7 +102,8 @@ public final class Bot {
                 ez,
                 badge,
                 new RaidProtect(this),
-                new ProfileScanner(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", ""), keys.getProperty("AZURE_SAFETY_KEY", ""), settings.optJSONObject("profileScan")),
+                hook,
+                new ProfileScanner(this, hook, keys.getProperty("AZURE_SAFETY_ENDPOINT", ""), keys.getProperty("AZURE_SAFETY_KEY", ""), settings.optJSONObject("profileScan")),
                 new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
