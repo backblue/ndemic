@@ -13,6 +13,8 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.events.*;
 import org.backblue.utilities.*;
+import org.backblue.wrappers.BlueSky;
+import org.backblue.wrappers.ProfileScanner;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
@@ -32,13 +34,14 @@ public final class Bot {
 
     public final int major = 0;
     public final int minor = 9;
-    public final int patch = 2;
+    public final int patch = 3;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
     private final ShardManager JDA;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final MessageIO io;
+
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
     private final String pingRoleID;
@@ -84,7 +87,7 @@ public final class Bot {
         builder.setAutoReconnect(true);
         builder.setStatus(OnlineStatus.fromKey(settings.getJSONObject("self").optString("presence", "online")));
         if (settings.getJSONObject("self").optString("presence", null) != null) {
-            builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("presence")));
+            builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("status")));
         }
 
         io = new MessageIO(settings, this);
@@ -96,13 +99,14 @@ public final class Bot {
                 new DisableDM(this),
                 ez,
                 badge,
+                new RaidProtect(this),
+                new ProfileScanner(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", ""), keys.getProperty("AZURE_SAFETY_KEY", ""), settings.optJSONObject("profileScan")),
                 new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
                 keys.getProperty("BSKY_PASSWORD", null),
                 settings.getJSONObject("blueSky"),
                 this);
-
         this.JDA = builder.build();
     }
 
@@ -143,10 +147,13 @@ public final class Bot {
     public Guild getDeploymentGuild() {
         return JDA.getGuildById(this.deploymentGuildID);
     }
-    public Role getPingRole() {
+    public Role getMostModerators() {
         return this.getJDA().getRoleById(this.pingRoleID);
     }
     public ScheduledExecutorService getScheduler() {
         return this.scheduler;
+    }
+    public EnumSet<FeatureFlag> getFeatures() {
+        return features;
     }
 }

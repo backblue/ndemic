@@ -17,7 +17,10 @@ import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -28,25 +31,38 @@ public class Badge extends ListenerAdapter {
     private final Set<IconProperties> loadedBadges = new HashSet<>();
     private final HashMap<String, IconProperties> codeToBadges = new HashMap<>();
     private final String randomOut = UUID.randomUUID().toString().substring(0, 6);
+    private static final Logger Log = LoggerFactory.getLogger(Badge.class);
 
     public Badge(Bot bot, JSONObject json) {
         this.bot = bot;
         defaultUnlock = json.optBoolean("default", false);
         JSONArray array = json.optJSONArray("content");
-        if (array != null) {
+        if (array == null) {
+            Log.error("Missing badge content");
+            bot.disableFeature(FeatureFlag.RoleIcons);
+        } else {
             for (int i = 0; i < array.length(); i++) {
-                JSONObject item = array.getJSONObject(i);
-                String modalTitle = item.getString("modalTitle");
-                String modalID =  item.getString("modalID");
-                String emojiCode = item.getString("emojiCode");
-                String emojiRole = item.getString("emojiRoleID");
+                JSONObject item;
+                String modalTitle = null;
+                String modalID = null;
+                String emojiCode = null;
+                String emojiRole = null;
                 Set<String> requiredRoles = new HashSet<>();
-                for (int j = 0; j < item.getJSONArray("eligibleRoles").length(); j++) {
-                    requiredRoles.add(item.getJSONArray("eligibleRoles").getString(j));
-                }
                 Set<String> flags = new HashSet<>();
-                for (int j = 0; j < item.getJSONArray("flags").length(); j++) {
-                    flags.add(item.getJSONArray("flags").getString(j));
+                try {
+                    item = array.getJSONObject(i);
+                    modalTitle = item.getString("modalTitle");
+                    modalID =  item.getString("modalID");
+                    emojiCode = item.getString("emojiCode");
+                    emojiRole = item.getString("emojiRoleID");
+                    for (int j = 0; j < item.getJSONArray("eligibleRoles").length(); j++) {
+                        requiredRoles.add(item.getJSONArray("eligibleRoles").getString(j));
+                    }
+                    for (int j = 0; j < item.getJSONArray("flags").length(); j++) {
+                        flags.add(item.getJSONArray("flags").getString(j));
+                    }
+                } catch (JSONException e) {
+                    Log.error("Skipping importing entry {}, error reading data: {}", i, e.getMessage());
                 }
                 IconProperties iconProperties = new IconProperties(modalTitle, modalID, emojiCode, emojiRole, requiredRoles, flags);
                 this.loadedBadges.add(iconProperties);

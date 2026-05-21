@@ -1,12 +1,12 @@
-package org.backblue.utilities;
+package org.backblue.wrappers;
 
 import org.backblue.core.Bot;
+import org.backblue.utilities.FeatureFlag;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -16,7 +16,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
-public class BlueSky {
+public final class BlueSky {
 
     private final Bot bot;
     private final String user;
@@ -34,7 +34,7 @@ public class BlueSky {
             this.user = null;
             this.pass = null;
             Log.warn("No BlueSky credentials or users configured");
-            Log.warn("BlueSky feature will not work until next startup");
+            bot.disableFeature(FeatureFlag.BlueSky);
             return;
         }
         this.user = user;

@@ -20,6 +20,10 @@
   "blueSky": {
     "did:plc:fnjpvrzkdt74wlgb5b4gtc6e": "699373249338802226"
   },
+  "profileScan": {
+    "cooldownAfterScan": 10,
+    "hate": 2
+  },
   "messageForwarding": [
     {
       "match": "<@&523351538937233426>",

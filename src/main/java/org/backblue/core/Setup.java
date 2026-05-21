@@ -41,6 +41,7 @@ public final class Setup extends ListenerAdapter {
             featuresList.addChoice(feature.toString(), String.valueOf(feature.ordinal()));
         }
         commands.add(Commands.slash("features", "Feature flag management")
+                .addSubcommands(new SubcommandData("list", "List enabled/disabled status of feature flags/modules"))
                 .addSubcommands(new SubcommandData("enable", "Temporarily enable a feature flag/module").addOptions(featuresList))
                 .addSubcommands(new SubcommandData("disable", "Temporarily disable a feature flag/module").addOptions(featuresList))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));

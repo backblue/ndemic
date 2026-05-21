@@ -5,5 +5,7 @@
   "disableDMs": true,
   "autoModAlerts": true,
   "roleIcons": true,
-  "msgForward": true
+  "msgForward": true,
+  "raidPauseInvites": true,
+  "scanProfiles": true
 }

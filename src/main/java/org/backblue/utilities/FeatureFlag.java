@@ -7,7 +7,9 @@ public enum FeatureFlag {
     DisableDMs("disableDMs", false),
     AutoModAlerts("autoModAlerts", false),
     RoleIcons("roleIcons",  true),
-    MessageForwarding("msgForward", true);
+    MessageForwarding("msgForward", true),
+    RaidPauseInvites("raidPauseInvites", false),
+    ScanProfiles("scanProfiles", true);
 
     private final String config;
     private final boolean restrict;

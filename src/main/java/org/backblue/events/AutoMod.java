@@ -21,7 +21,7 @@ public class AutoMod extends ListenerAdapter {
             if (event.getChannel() == null || event.getAlertMessageId() == null) {
                 return;
             }
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getPingRole().getAsMention());
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention());
             bot.getIO().send(DefinedChannel.DebugAutoModAlert, "AutoMod @ Mods pinged for violation: " +
             "https://discord.com/channels/" +  event.getGuild().getId() + "/" + event.getChannel().getId() + "/" + event.getAlertMessageId());
         }

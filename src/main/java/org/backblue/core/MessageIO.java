@@ -1,5 +1,6 @@
 package org.backblue.core;
 
+import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
@@ -12,7 +13,7 @@ import org.backblue.events.EnforceGuide;
 import org.backblue.events.Forwarding;
 import org.backblue.events.Honeypot;
 import org.backblue.utilities.DefinedChannel;
-import org.backblue.utilities.EventPriority;
+import org.backblue.utilities.MessagePriority;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
@@ -27,7 +28,7 @@ public final class MessageIO extends ListenerAdapter {
 
     private ShardManager JDA;
     private final Map<DefinedChannel, String> mapping;
-    private final PriorityQueue<EventPriority> queue = new PriorityQueue<>();
+    private final PriorityQueue<MessagePriority> queue = new PriorityQueue<>();
 
     public void send(DefinedChannel dest, String text) {
         GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
@@ -62,6 +63,10 @@ public final class MessageIO extends ListenerAdapter {
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
     }
 
+    public void send(DefinedChannel dest, String text, Container container) {
+        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addComponents(container).queue();
+    }
 
     public GuildChannel getChannel(DefinedChannel dest) {
         return this.JDA.getTextChannelById(mapping.get(dest));
@@ -93,6 +98,6 @@ public final class MessageIO extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
-        if (event.isFromGuild()) for (EventPriority listener : queue) if (listener.cancelled(event)) break;
+        if (event.isFromGuild()) for (MessagePriority listener : queue) if (listener.cancelled(event)) break;
     }
 }

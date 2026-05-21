@@ -3,7 +3,7 @@ package org.backblue.events;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
 import org.backblue.utilities.FeatureFlag;
-import org.backblue.utilities.EventPriority;
+import org.backblue.utilities.MessagePriority;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class Forwarding extends EventPriority {
+public class Forwarding extends MessagePriority {
 
     private static final Logger Log = LoggerFactory.getLogger(Forwarding.class);
 
@@ -24,6 +24,7 @@ public class Forwarding extends EventPriority {
         super(priority, bot);
         if (json == null) {
             Log.error("Missing/Unknown key-object in config. Messages will not be forwarded");
+            bot.disableFeature(FeatureFlag.MessageForwarding);
             return;
         }
         for (int i =0;i< json.length();i++) {

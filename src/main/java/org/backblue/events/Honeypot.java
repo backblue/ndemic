@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
 import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
-import org.backblue.utilities.EventPriority;
+import org.backblue.utilities.MessagePriority;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Honeypot extends EventPriority {
+public class Honeypot extends MessagePriority {
 
     public Honeypot(int priority, Bot bot) {
         super(priority, bot);
@@ -42,10 +42,10 @@ public class Honeypot extends EventPriority {
                 return false;
             }
             event.getMessage().delete().queue();
-            event.getMember().timeoutFor(12, TimeUnit.HOURS).reason("Posted in Restricted Channel").queue();
-            bot.getIO().send(event.getMember().getUser(), "Hello, your recent activity has been flagged for additional review by our moderators. You have been temporarily timed out as we review this situation. We apologize for the inconvenience.");
+            event.getMember().timeoutFor(12, TimeUnit.HOURS).reason("Posted in Honeypot Channel").queue();
+            bot.getIO().send(event.getMember().getUser(), "Hello, your recent activity has been flagged for additional review by our moderators. You have been temporarily timed out as we review this situation.");
             EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Someone posted in the forbidden channel...");
+            embedBuilder.setTitle("Someone posted in the honeypot channel...");
             embedBuilder.setThumbnail(event.getMember().getEffectiveAvatarUrl());
             embedBuilder.setDescription(event.getMessage().getContentStripped());
             embedBuilder.setFooter(event.getMessage().getAttachments().size() + " attachment(s), removed 60 mins of messages, 12 hour timeout");
@@ -57,7 +57,7 @@ public class Honeypot extends EventPriority {
                 }
             }
 
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getPingRole().getAsMention() + " - " + event.getMember().getAsMention(),
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention() + " - " + event.getMember().getAsMention(),
                     embedBuilder.build(),
                     fileUploads);
             purge(event.getMember());
