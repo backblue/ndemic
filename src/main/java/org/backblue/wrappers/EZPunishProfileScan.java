@@ -36,19 +36,19 @@ public class EZPunishProfileScan extends ListenerAdapter {
     public Container create(Member member, String type, int points) {
         int id = this.generate();
         Container container = Container.of(
-                TextDisplay.of("# :warning: Moderator Action Recommended"),
+                TextDisplay.of("# :triangular_flag_on_post: Moderator Review Recommended"),
                 Section.of(
                         Thumbnail.fromUrl(member.getEffectiveAvatarUrl()),
                         TextDisplay.of(member.getUser().getAsMention() + "'s profile " + type + " is flagged for further review."),
-                        TextDisplay.of("**Details**: Point value is " + points )
+                        TextDisplay.of("## Details: " + member.getUser().getAsMention() +"\n> Severity value is " + points )
                 ),
                 ActionRow.of(
                         Button.danger(id+";kick", "Softban"),
                         Button.danger(id+";ban", "Ban"),
-                        Button.primary(id+";nothing", "Do nothing")
+                        Button.secondary(id+";nothing", "Do nothing")
                 ).withUniqueId(101),
                 Separator.createDivider(Separator.Spacing.SMALL),
-                TextDisplay.of("-# No action has been taken so far.").withUniqueId(100)
+                TextDisplay.of("-# Punishment actions will notify the user (and logged).").withUniqueId(100)
 
         ).withUniqueId(id);
         map.put(id, new EZPunishInfo(member.getId(), type));
@@ -56,8 +56,8 @@ public class EZPunishProfileScan extends ListenerAdapter {
     }
 
     private int generate() {
-        int i = 0;
-        while (map.containsKey(i)) {
+        int i = 1;
+        while (i < 1 || map.containsKey(i)) {
             i = (int) (Math.random() * Short.MAX_VALUE);
         }
         return i;

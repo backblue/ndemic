@@ -94,16 +94,17 @@ public final class Bot {
         io = new MessageIO(settings, this);
         Badge badge = new Badge(this, badges);
         EZPunish ez = new EZPunish(this, rulebook);
-        EZPunishProfileScan hook = new  EZPunishProfileScan(this, ez);
+        EZPunishProfileScan hook = new EZPunishProfileScan(this, ez);
+        ProfileScanner profileScanner = new ProfileScanner(this, hook, keys.getProperty("AZURE_SAFETY_ENDPOINT", ""), keys.getProperty("AZURE_SAFETY_KEY", ""), settings.optJSONObject("profileScan"));
         builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
-        builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
+        builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this), new Scan(this, profileScanner));
         builder.addEventListeners(new DM(this),
                 new DisableDM(this),
                 ez,
                 badge,
                 new RaidProtect(this),
                 hook,
-                new ProfileScanner(this, hook, keys.getProperty("AZURE_SAFETY_ENDPOINT", ""), keys.getProperty("AZURE_SAFETY_KEY", ""), settings.optJSONObject("profileScan")),
+                profileScanner,
                 new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),

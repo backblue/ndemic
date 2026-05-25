@@ -45,6 +45,12 @@ public final class Setup extends ListenerAdapter {
                 .addSubcommands(new SubcommandData("enable", "Temporarily enable a feature flag/module").addOptions(featuresList))
                 .addSubcommands(new SubcommandData("disable", "Temporarily disable a feature flag/module").addOptions(featuresList))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+        commands.add(Commands.slash("scan", "Azure Safety Wrapper")
+                .addSubcommands(new SubcommandData("profile", "Manually initiate a profile scan for an user")
+                        .addOption(OptionType.USER, "user", "Select a user", true))
+                .addSubcommands(new SubcommandData("link", "Manually initiate a link scan")
+                        .addOption(OptionType.STRING, "link", "Input valid link", true))
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("ezpunish", "Easily punish a member.")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
         commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish...")

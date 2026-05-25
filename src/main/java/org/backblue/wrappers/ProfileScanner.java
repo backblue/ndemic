@@ -109,7 +109,7 @@ public class ProfileScanner extends ListenerAdapter {
     public void onGuildMemberUpdateAvatar(@NotNull GuildMemberUpdateAvatarEvent event) {
         scan(event.getMember());
     }
-    private ScanResult scan(String id, String url) {
+    public ScanResult scan(String id, String url) {
         byte[] downloadedImage = downloadUrl(url);
         if (downloadedImage.length == 0) {
             return null;
@@ -174,5 +174,5 @@ public class ProfileScanner extends ListenerAdapter {
         }
         return outputStream.toByteArray();
     }
-    private record ScanResult(int points) {}
+    public record ScanResult(int points) {}
 }

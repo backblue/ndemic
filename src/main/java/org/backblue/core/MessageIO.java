@@ -65,7 +65,8 @@ public final class MessageIO extends ListenerAdapter {
 
     public void send(DefinedChannel dest, String text, Container container) {
         GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
-        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addComponents(container).useComponentsV2(true).queue();
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessageComponents(container).useComponentsV2(true).queue();
     }
 
     public GuildChannel getChannel(DefinedChannel dest) {
