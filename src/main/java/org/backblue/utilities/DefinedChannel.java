@@ -16,7 +16,7 @@ public enum DefinedChannel {
         this.config = config;
     }
 
-    public String getConfig() {
+    public String configKey() {
         return config;
     }
 }

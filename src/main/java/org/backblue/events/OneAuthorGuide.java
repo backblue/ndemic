@@ -11,9 +11,9 @@ import org.backblue.utilities.MessagePriority;
 
 import java.util.Objects;
 
-public class OneGuideOneAuthor extends MessagePriority {
+public class OneAuthorGuide extends MessagePriority {
 
-    public OneGuideOneAuthor(int priority, Bot bot) {
+    public OneAuthorGuide(int priority, Bot bot) {
         super(priority, bot);
     }
 

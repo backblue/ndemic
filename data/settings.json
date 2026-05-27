@@ -30,5 +30,14 @@
       "sendToInAnalysisChannel": "1354229171076731111",
       "pingRoleIdInAnalysisChannel": "1355656666422706508"
     }
-  ]
+  ],
+  "gemini": {
+    "priorities": ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite-preview"]
+  },
+  "antibot": {
+    "supervised": true,
+    "interestedRoles": ["1458142879334793405", "1462429526083502315"],
+    "commonFlagTerms": ["卐"],
+    "commonSpamUsernames": ["^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$"]
+  }
 }

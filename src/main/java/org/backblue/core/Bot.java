@@ -15,10 +15,10 @@ import org.backblue.events.*;
 import org.backblue.utilities.*;
 import org.backblue.wrappers.BlueSky;
 import org.backblue.wrappers.EZPunishProfileScan;
+import org.backblue.wrappers.Gemini;
 import org.backblue.wrappers.ProfileScanner;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,13 +35,14 @@ public final class Bot {
 
     public final int major = 0;
     public final int minor = 9;
-    public final int patch = 3;
+    public final int patch = 4;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
     private final ShardManager JDA;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final MessageIO io;
+    private final Gemini gemini;
 
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
@@ -74,9 +75,9 @@ public final class Bot {
         features = EnumSet.noneOf(FeatureFlag.class);
         for (FeatureFlag flag : FeatureFlag.values()) {
             try {
-                if (featuresList.getBoolean(flag.getConfigKey())) this.features.add(flag);
+                if (featuresList.getBoolean(flag.configKey())) this.features.add(flag);
             } catch (JSONException e) {
-                Log.warn("No setting found for '{}', turning off {}", flag.getConfigKey(), flag);
+                Log.warn("No setting found for '{}', turning off {}", flag.configKey(), flag);
             }
         }
         Log.info("{} features successfully enabled", features.size());
@@ -92,6 +93,7 @@ public final class Bot {
         }
 
         io = new MessageIO(settings, this);
+        gemini = new Gemini(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         Badge badge = new Badge(this, badges);
         EZPunish ez = new EZPunish(this, rulebook);
         EZPunishProfileScan hook = new EZPunishProfileScan(this, ez);
@@ -135,19 +137,6 @@ public final class Bot {
     public ShardManager getJDA() {
         return this.JDA;
     }
-    public static @NonNull String formatSec(long seconds) {
-        if (seconds <= 0) return "now";
-        StringBuilder str = new StringBuilder();
-        long days = seconds / 86400;
-        long hours = seconds % 86400 / 3600;
-        long minutes = seconds % 3600 / 60;
-        long second = seconds % 60;
-        if (days > 0) str.append(days).append("d ");
-        if (hours > 0) str.append(hours).append("h ");
-        if (minutes > 0) str.append(minutes).append("m ");
-        if (second > 0 || str.isEmpty()) str.append(second).append("s");
-        return str.toString().trim();
-    }
     public Guild getDeploymentGuild() {
         return JDA.getGuildById(this.deploymentGuildID);
     }
@@ -159,5 +148,8 @@ public final class Bot {
     }
     public EnumSet<FeatureFlag> getFeatures() {
         return features;
+    }
+    public Gemini getGemini() {
+        return gemini;
     }
 }

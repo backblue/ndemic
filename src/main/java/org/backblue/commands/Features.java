@@ -7,7 +7,6 @@ import org.backblue.core.Bot;
 import org.backblue.utilities.DefinedChannel;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
 import java.util.EnumSet;
 import java.util.Objects;
 
@@ -32,9 +31,12 @@ public class Features extends ListenerAdapter {
             }
             String feature = Objects.requireNonNull(event.getOption("flag")).getAsString();
             if (event.getSubcommandName().equals("enable")) {
-                if (bot.getFeature(feature) == null) return;
-                if (Objects.requireNonNull(bot.getFeature(feature)).isRestricted()) {
-                    event.reply("This feature can only be re-enabled with a restart.").queue();
+                if (bot.getFeature(feature) == null) {
+                    event.reply("Failure to retrieve feature flag").setEphemeral(true).queue();
+                    return;
+                }
+                if (Objects.requireNonNull(bot.getFeature(feature)).restricted()) {
+                    event.reply("This feature can only be re-enabled with a restart.").setEphemeral(true).queue();
                     return;
                 }
                 bot.enableFeature(bot.getFeature(feature));
