@@ -9,7 +9,7 @@
     "deploymentBotCmds": "624056396639502336",
     "deploymentWarnings": "750352217495699528",
     "deploymentLogs": "558690605698514994",
-    "deploymentHoney": "558690605698514994"
+    "deploymentHoney": "1458037140771569750"
   },
   "self": {
     "pingAlerts": "1365758943363596388",
@@ -20,10 +20,6 @@
   "blueSky": {
     "did:plc:fnjpvrzkdt74wlgb5b4gtc6e": "699373249338802226"
   },
-  "profileScan": {
-    "cooldownAfterScan": 10,
-    "hate": 2
-  },
   "messageForwarding": [
     {
       "match": "<@&523351538937233426>",
@@ -33,11 +29,5 @@
   ],
   "gemini": {
     "priorities": ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite-preview"]
-  },
-  "antibot": {
-    "supervised": true,
-    "interestedRoles": ["1458142879334793405", "1462429526083502315"],
-    "commonFlagTerms": ["卐"],
-    "commonSpamUsernames": ["^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$"]
   }
 }
