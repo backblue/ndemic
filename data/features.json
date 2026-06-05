@@ -7,6 +7,5 @@
   "roleIcons": true,
   "msgForward": true,
   "raidPauseInvites": true,
-  "scanProfiles": true,
   "gemini": true
 }

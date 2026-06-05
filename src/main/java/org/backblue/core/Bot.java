@@ -14,9 +14,7 @@ import org.backblue.commands.*;
 import org.backblue.events.*;
 import org.backblue.utilities.*;
 import org.backblue.wrappers.BlueSky;
-import org.backblue.wrappers.EZPunishProfileScan;
 import org.backblue.wrappers.Gemini;
-import org.backblue.wrappers.ProfileScanner;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -51,21 +49,19 @@ public final class Bot {
     public Bot() throws IOException {
         Properties keys = new Properties();
         JSONObject settings = null;
-        JSONObject rulebook = null;
         JSONObject badges = null;
         JSONObject featuresList = null;
         JSONObject settingSelf = null;
         try {
             keys.load(new StringReader(Files.readString(Path.of("data/bot.properties"))));
             settings = new JSONObject(Files.readString(Path.of("data/settings.json")));
-            rulebook = new JSONObject(Files.readString(Path.of("data/rulebook.json")));
             badges = new JSONObject(Files.readString(Path.of("data/badges.json")));
             featuresList = new JSONObject(Files.readString(Path.of("data/features.json")));
             settingSelf = settings.getJSONObject("self");
             settings.getJSONObject("channels").getString("_deploy");
 
         } catch (IOException e) {
-            Log.error("Cannot read files: data/bot.properties, data/settings.json, data/rulebook.json, data/badges.json, data/features.json");
+            Log.error("Cannot read files: data/bot.properties, data/settings.json, data/punish.json, data/badges.json, data/features.json");
             Log.error("settings.json also requires JSON objects attached to keys 'self', 'channels");
             System.exit(1);
         }
@@ -95,18 +91,12 @@ public final class Bot {
         io = new MessageIO(settings, this);
         gemini = new Gemini(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         Badge badge = new Badge(this, badges);
-        EZPunish ez = new EZPunish(this, rulebook);
-        EZPunishProfileScan hook = new EZPunishProfileScan(this, ez);
-        ProfileScanner profileScanner = new ProfileScanner(this, hook, keys.getProperty("AZURE_SAFETY_ENDPOINT", ""), keys.getProperty("AZURE_SAFETY_KEY", ""), settings.optJSONObject("profileScan"));
         builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
-        builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this), new Scan(this, profileScanner));
+        builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
         builder.addEventListeners(new DM(this),
                 new DisableDM(this),
-                ez,
                 badge,
                 new RaidProtect(this),
-                hook,
-                profileScanner,
                 new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),

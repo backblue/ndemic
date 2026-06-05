@@ -1,10 +1,8 @@
 package org.backblue.core;
 
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
@@ -51,10 +49,6 @@ public final class Setup extends ListenerAdapter {
                 .addSubcommands(new SubcommandData("link", "Manually initiate a link scan")
                         .addOption(OptionType.STRING, "link", "Input valid link", true))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
-        commands.add(Commands.slash("ezpunish", "Easily punish a member.")
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
-        commands.add(Commands.context(Command.Type.MESSAGE, "EZPunish...")
-                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
 
         if (event.getGuild().getId().equals(settings.optString("_deploy", "")) || event.getGuild().getId().equals(settings.optString("_debug", ""))) {
             event.getGuild().updateCommands().addCommands(commands).queue();

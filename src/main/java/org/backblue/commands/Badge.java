@@ -118,7 +118,7 @@ public class Badge extends ListenerAdapter {
                 }
             }
         } else if (event.getOldTimeBoosted() == null && event.getNewTimeBoosted() != null) {
-            bot.getIO().send(event.getUser(), "Thanks for boosting **" + event.getGuild().getName() + "**\nFor your thanks, server boosters can select a badge to display next to their name!\nAllow " + event.getJDA().getSelfUser().getAsMention() + " to handle the `/badge` command to select one.");
+            bot.getIO().send(event.getUser(), "Thanks for boosting **" + event.getGuild().getName() + "**\nFor your thanks, server boosters can select a badge to display next to their name!\nAllow " + event.getJDA().getSelfUser().getAsMention() + " to handle the `/badge` command in <#796358850735243264>");
         }
     }
 
