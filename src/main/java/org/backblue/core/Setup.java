@@ -49,6 +49,10 @@ public final class Setup extends ListenerAdapter {
                 .addSubcommands(new SubcommandData("link", "Manually initiate a link scan")
                         .addOption(OptionType.STRING, "link", "Input valid link", true))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+        commands.add(Commands.slash("ezpunish", "Remove an user with the 3 steps: kick/ban, notify and log")
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+        commands.add(Commands.message("EZPunish...")
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
 
         if (event.getGuild().getId().equals(settings.optString("_deploy", "")) || event.getGuild().getId().equals(settings.optString("_debug", ""))) {
             event.getGuild().updateCommands().addCommands(commands).queue();

@@ -37,12 +37,11 @@ public class EZPunish extends ListenerAdapter {
     private HashMap<Integer, JSONObject> rulebook = new HashMap<>();
     private final HashMap<String, JSONObject> modalToRuleBook = new HashMap<>();
     private StringSelectMenu violationsDropdown = null;
-    private final Map<String, String> ezPunishCache;
+    private final Map<Integer, PunishCacheBundle> contextMemory = new HashMap<>();
 
     public EZPunish(Bot bot, JSONObject json) {
         this.bot = bot;
         buildRulebook(json);
-        ezPunishCache = new HashMap<>();
     }
 
     public String ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, List<Message.Attachment> evidenceImages) {
@@ -52,11 +51,11 @@ public class EZPunish extends ListenerAdapter {
         if (!executor.hasPermission(Permission.BAN_MEMBERS)) {
             return "Executor lacks permissions.";
         }
-        if (evidenceText == null && evidenceImages == null) {
-            return "No evidence provided.";
-        }
         if (target.hasPermission(Permission.BAN_MEMBERS)) {
             return"Target has Administrator permissions.";
+        }
+        if (evidenceText == null || evidenceText.isEmpty()) {
+            evidenceText = "";
         }
         bot.getIO().send(target.getUser(), "", generatePunishEmbed(violations, target, ban, target.getGuild().getIconUrl()));
         logToWarnings(violations, target, ban, evidenceText, evidenceImages, executor);
@@ -180,7 +179,7 @@ public class EZPunish extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if ("ezpunish".equals(event.getName())) {
-            if (this.rulebook == null) {
+            if (this.rulebook == null || this.violationsDropdown == null) {
                 event.reply(":x: The rulebook is not configured!").setEphemeral(true).queue();
                 return;
             }
@@ -208,7 +207,7 @@ public class EZPunish extends ListenerAdapter {
                 event.reply(":x: No user in server.").setEphemeral(true).queue();
                 return;
             }
-            if (this.rulebook == null) {
+            if (this.rulebook == null || this.violationsDropdown == null) {
                 event.reply(":x: The rulebook is not configured!").setEphemeral(true).queue();
                 return;
             }
@@ -223,15 +222,14 @@ public class EZPunish extends ListenerAdapter {
             if (event.getTarget().getType().equals(MessageType.AUTO_MODERATION_ACTION)) {
                 text = event.getTarget().getJumpUrl();
             }
-            EntitySelectMenu menu = EntitySelectMenu.create("ezpunish:target", EntitySelectMenu.SelectTarget.USER)
-                    .setDefaultValues(EntitySelectMenu.DefaultValue.user(event.getTarget().getAuthor().getId())).build();
             RadioGroup punishment = RadioGroup.create("ezpunish:type")
                     .addOption("Softban (+1hr removal of messages)", "softban")
                     .addOption("Ban (+1hr removal of messages)", "ban")
                     .build();
-            Modal modal = Modal.create("modal:ezpunishQuick", "Moderation Action")
+            int a = this.generateUniqueId();
+            Modal modal = Modal.create("modal:ezpunishQuick:"+a, "Moderation Action")
                     .addComponents(
-                            Label.of("Target", menu),
+                            TextDisplay.of("### Target\n" + event.getTarget().getAuthor().getAsMention()),
                             Label.of("Punishment", punishment),
                             Label.of("Violations", violationsDropdown),
                             TextDisplay.of("### Evidence (+" + event.getTarget().getAttachments().size() + " attachments)\n" + text)
@@ -240,7 +238,7 @@ public class EZPunish extends ListenerAdapter {
             if (text.equals("*No text is included in this message.*")) {
                 text = "";
             }
-            this.ezPunishCache.put(event.getTarget().getAuthor().getId(), text);
+            this.contextMemory.put(a, new PunishCacheBundle(event.getTarget().getAuthor().getId(), text, event.getTarget().getAttachments()));
         }
     }
 
@@ -259,10 +257,24 @@ public class EZPunish extends ListenerAdapter {
             boolean softban = type.equalsIgnoreCase("softban");
             String textEvidence = null;
             if (event.getModalId().equals("modal:ezpunishQuick")) {
-                textEvidence = this.ezPunishCache.remove(user.getId());
+                int id = Integer.parseInt(event.getModalId().split(":")[1]);
+                PunishCacheBundle bundle = this.contextMemory.remove(id);
+                textEvidence = bundle.textEvidence;
+                attachments = bundle.attachmentEvidence;
+                user = Objects.requireNonNull(bot.getDeploymentGuild().getMemberById(bundle.userId));
             }
 
             event.reply(this.ezPunish(user, event.getMember(), violations, !softban, textEvidence, attachments)).setEphemeral(true).queue();
         }
     }
+
+    private int generateUniqueId() {
+        int id = 1;
+        while (id < 1 || contextMemory.containsKey(id)) {
+            id = (int) (Math.random() * Short.MAX_VALUE);
+        }
+        return id;
+    }
+
+    private record PunishCacheBundle(String userId, String textEvidence, List<Message.Attachment> attachmentEvidence) {}
 }

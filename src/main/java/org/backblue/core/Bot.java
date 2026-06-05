@@ -50,18 +50,20 @@ public final class Bot {
         Properties keys = new Properties();
         JSONObject settings = null;
         JSONObject badges = null;
+        JSONObject rulebook = null;
         JSONObject featuresList = null;
         JSONObject settingSelf = null;
         try {
             keys.load(new StringReader(Files.readString(Path.of("data/bot.properties"))));
             settings = new JSONObject(Files.readString(Path.of("data/settings.json")));
+            rulebook = new JSONObject(Files.readString(Path.of("data/rulebook.json")));
             badges = new JSONObject(Files.readString(Path.of("data/badges.json")));
             featuresList = new JSONObject(Files.readString(Path.of("data/features.json")));
             settingSelf = settings.getJSONObject("self");
             settings.getJSONObject("channels").getString("_deploy");
 
         } catch (IOException e) {
-            Log.error("Cannot read files: data/bot.properties, data/settings.json, data/punish.json, data/badges.json, data/features.json");
+            Log.error("Cannot read files: data/bot.properties, data/settings.json, data/rulebook.json, data/badges.json, data/features.json");
             Log.error("settings.json also requires JSON objects attached to keys 'self', 'channels");
             System.exit(1);
         }
@@ -94,6 +96,7 @@ public final class Bot {
         builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
         builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
         builder.addEventListeners(new DM(this),
+                new EZPunish(this, rulebook),
                 new DisableDM(this),
                 badge,
                 new RaidProtect(this),
