@@ -74,8 +74,8 @@ public class EZPunishProfileScan extends ListenerAdapter {
             String action = event.getButton().getCustomId().split(";")[1];
             Member member = bot.getDeploymentGuild().getMemberById(info.memberID());
             if (member == null) return;
-            if (action.equals("kick")) ezpunish.ezPunish(member, event.getMember(), List.of("ezpunish:compromisedaccount"), false, member.getEffectiveAvatarUrl(), null, null);
-            if (action.equals("ban")) ezpunish.ezPunish(member, event.getMember(), List.of("ezpunish:compromisedaccount"), true, member.getEffectiveAvatarUrl(), null, null);
+            if (action.equals("kick")) ezpunish.ezPunish(member, event.getMember(), List.of("ezpunish:compromisedaccount"), false, member.getEffectiveAvatarUrl(), null);
+            if (action.equals("ban")) ezpunish.ezPunish(member, event.getMember(), List.of("ezpunish:compromisedaccount"), true, member.getEffectiveAvatarUrl(), null);
             MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
             event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
         }

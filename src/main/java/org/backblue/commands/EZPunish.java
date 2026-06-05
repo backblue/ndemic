@@ -8,8 +8,6 @@ import net.dv8tion.jda.api.components.radiogroup.RadioGroup;
 import net.dv8tion.jda.api.components.selections.EntitySelectMenu;
 import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
-import net.dv8tion.jda.api.components.textinput.TextInput;
-import net.dv8tion.jda.api.components.textinput.TextInputStyle;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -18,7 +16,6 @@ import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.modals.ModalMapping;
 import net.dv8tion.jda.api.modals.Modal;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
@@ -48,7 +45,7 @@ public class EZPunish extends ListenerAdapter {
         ezPunishCache = new HashMap<>();
     }
 
-    public String ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, List<Message.Attachment> evidenceImages, String notes) {
+    public String ezPunish(Member target, Member executor, List<String> violations, boolean ban, String evidenceText, List<Message.Attachment> evidenceImages) {
         if (target == null || executor == null) {
             return "Invalid targets provided.";
         }
@@ -61,7 +58,7 @@ public class EZPunish extends ListenerAdapter {
         if (target.hasPermission(Permission.BAN_MEMBERS)) {
             return"Target has Administrator permissions.";
         }
-        bot.getIO().send(target.getUser(), "", generatePunishEmbed(violations, target, ban, notes, target.getGuild().getIconUrl()));
+        bot.getIO().send(target.getUser(), "", generatePunishEmbed(violations, target, ban, target.getGuild().getIconUrl()));
         logToWarnings(violations, target, ban, evidenceText, evidenceImages, executor);
         target.ban(1, TimeUnit.HOURS).reason("Moderator initiated by " + executor.getUser().getName()).queue();
         bot.getScheduler().schedule(() -> {
@@ -106,7 +103,7 @@ public class EZPunish extends ListenerAdapter {
         }
     }
 
-    private MessageEmbed generatePunishEmbed(List<String> violations, Member target, boolean ban, String notes, String iconUrl) {
+    private MessageEmbed generatePunishEmbed(List<String> violations, Member target, boolean ban, String iconUrl) {
         EmbedBuilder embedBuilder = this.getEmbedBuilder(target, ban);
         embedBuilder.setThumbnail(iconUrl);
         SortedMap<Integer, String> ruleViolationsMap = new TreeMap<>();
@@ -123,9 +120,6 @@ public class EZPunish extends ListenerAdapter {
         }
         for (Integer ruleId : ruleViolationsMap.keySet()) {
             embedBuilder.addField(search(ruleId).getString("title"), ruleViolationsMap.get(ruleId), false);
-        }
-        if (notes != null) {
-            embedBuilder.addField("Moderator's Note", notes, false);
         }
         return embedBuilder.build();
     }
@@ -167,8 +161,14 @@ public class EZPunish extends ListenerAdapter {
         }
         if (json.getJSONArray("keywords") != null) {
             StringSelectMenu.Builder builder = StringSelectMenu.create("ezpunish:violations");
+
+            List<JSONObject> sortedKeywords = new ArrayList<>();
             for (int i = 0; i < json.getJSONArray("keywords").length(); i++) {
-                JSONObject rule = json.getJSONArray("keywords").getJSONObject(i);
+                sortedKeywords.add(json.getJSONArray("keywords").getJSONObject(i));
+            }
+            sortedKeywords.sort((a, b) -> a.getString("title").compareToIgnoreCase(b.getString("title")));
+
+            for (JSONObject rule : sortedKeywords) {
                 builder.addOption(rule.getString("title"), "ezpunish:"+rule.getString("title").replace("-", "").toLowerCase().replace(":", "").replace(" ", "").trim(), rule.getString("desc"));
             }
             builder.setMinValues(1);
@@ -189,19 +189,12 @@ public class EZPunish extends ListenerAdapter {
                     .addOption("Softban (+1hr removal of messages)", "softban")
                     .addOption("Ban (+1hr removal of messages)", "ban")
                     .build();
-            TextInput note = TextInput.create("ezpunish:note", TextInputStyle.PARAGRAPH)
-                    .setPlaceholder("Personalized note to the user regarding their punishment")
-                    .setMinLength(0)
-                    .setMaxLength(1000)
-                    .setRequired(false)
-                    .build();
             Modal modal = Modal.create("modal:ezpunish", "Moderation Action")
                     .addComponents(
                             Label.of("Target", menu),
                             Label.of("Punishment", punishment),
                             Label.of("Violations", violationsDropdown),
-                            Label.of("Attachments / Evidence", AttachmentUpload.create("ezpunish:evidence").setRequired(false).build()),
-                            Label.of("Notes", note)
+                            Label.of("Attachments / Evidence", AttachmentUpload.create("ezpunish:evidence").setRequired(false).build())
                     )
                     .build();
             event.replyModal(modal).queue();
@@ -263,20 +256,13 @@ public class EZPunish extends ListenerAdapter {
                 attachments = Objects.requireNonNull(event.getValue("ezpunish:evidence")).getAsAttachmentList();
             }
 
-            String notes = null;
-            try {
-                ModalMapping additionalNotes = event.getValue("ezpunish:note");
-                if (additionalNotes != null && !additionalNotes.getAsString().isEmpty()) {
-                    notes = additionalNotes.getAsString();
-                }
-            } catch (Exception ignored) {}
             boolean softban = type.equalsIgnoreCase("softban");
             String textEvidence = null;
             if (event.getModalId().equals("modal:ezpunishQuick")) {
                 textEvidence = this.ezPunishCache.remove(user.getId());
             }
 
-            event.reply(this.ezPunish(user, event.getMember(), violations, !softban, textEvidence, attachments, notes)).setEphemeral(true).queue();
+            event.reply(this.ezPunish(user, event.getMember(), violations, !softban, textEvidence, attachments)).setEphemeral(true).queue();
         }
     }
 }

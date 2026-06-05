@@ -10,9 +10,8 @@ public enum FeatureFlag {
     MessageForwarding("msgForward", true),
     RaidPauseInvites("raidPauseInvites", false),
     ScanProfiles("scanProfiles", true),
-    Gemini("gemini", true),
-    AntiBot_Usernames("antiBotUsernames", false);
-
+    Gemini("gemini", true);
+    
     private final String config;
     private final boolean restrict;
 
