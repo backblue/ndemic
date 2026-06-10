@@ -3,18 +3,20 @@ package org.backblue.core;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.events.*;
 import org.backblue.utilities.*;
 import org.backblue.wrappers.BlueSky;
-import org.backblue.wrappers.Gemini;
+import org.backblue.wrappers.LLM;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -24,7 +26,9 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +44,7 @@ public final class Bot {
     private final ShardManager JDA;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final MessageIO io;
-    private final Gemini gemini;
+    private final LLM LLM;
 
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
@@ -75,7 +79,7 @@ public final class Bot {
             try {
                 if (featuresList.getBoolean(flag.configKey())) this.features.add(flag);
             } catch (JSONException e) {
-                Log.warn("No setting found for '{}', turning off {}", flag.configKey(), flag);
+                Log.warn("No setting found for '{}', turning off feature {}", flag.configKey(), flag);
             }
         }
         Log.info("{} features successfully enabled", features.size());
@@ -91,7 +95,7 @@ public final class Bot {
         }
 
         io = new MessageIO(settings, this);
-        gemini = new Gemini(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
+        LLM = new LLM(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         Badge badge = new Badge(this, badges);
         builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
         builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
@@ -100,6 +104,7 @@ public final class Bot {
                 new DisableDM(this),
                 badge,
                 new RaidProtect(this),
+                new Gatekeeper(this),
                 new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
@@ -142,7 +147,16 @@ public final class Bot {
     public EnumSet<FeatureFlag> getFeatures() {
         return features;
     }
-    public Gemini getGemini() {
-        return gemini;
+    public LLM getAI() {
+        return LLM;
+    }
+    public List<FileUpload> toUploads(List<Message.Attachment> attachmentList) {
+        List<FileUpload> fileUploads = new ArrayList<>();
+        if (!attachmentList.isEmpty()) {
+            for (Message.Attachment attachment : attachmentList) {
+                fileUploads.add(attachment.getProxy().downloadAsFileUpload(attachment.getFileName()));
+            }
+        }
+        return fileUploads;
     }
 }

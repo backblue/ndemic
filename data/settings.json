@@ -2,6 +2,7 @@
   "channels": {
     "_debug": "846837318132301904",
     "_deploy": "523349543505362945",
+    "_track": 16,
     "debugDirectMessages": "1354224979755008191",
     "debugAutoModAlert": "1354224983924019491",
     "debugEnforcement": "1354229171076731111",
@@ -27,6 +28,28 @@
       "pingRoleIdInAnalysisChannel": "1355656666422706508"
     }
   ],
+  "detectCrypto": {
+    "threshold": 7.5,
+    "keywords": {
+      "cryptocurrency": 0.5,
+      "cryptocurrencies": 0.5,
+      "crypto": 1,
+      "casino": 1,
+      "giving away": 1.5,
+      "promotion": 0.7,
+      "bonus": 1,
+      "bet": 1,
+      "launch": 0.5,
+      "promo": 0.3,
+      "gift": 1,
+      "withdrawal": 1,
+      "delete": 0.5,
+      "hour": 0.25,
+      "last": 0.25,
+      "chance": 0.25,
+      "earn": 0.15
+    }
+  },
   "gemini": {
     "priorities": ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite-preview"]
   }

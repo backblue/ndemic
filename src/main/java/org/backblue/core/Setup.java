@@ -1,5 +1,6 @@
 package org.backblue.core;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -50,9 +51,9 @@ public final class Setup extends ListenerAdapter {
                         .addOption(OptionType.STRING, "link", "Input valid link", true))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
         commands.add(Commands.slash("ezpunish", "Remove an user with the 3 steps: kick/ban, notify and log")
-                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
         commands.add(Commands.message("EZPunish...")
-                .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
 
         if (event.getGuild().getId().equals(settings.optString("_deploy", "")) || event.getGuild().getId().equals(settings.optString("_debug", ""))) {
             event.getGuild().updateCommands().addCommands(commands).queue();

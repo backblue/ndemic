@@ -10,7 +10,9 @@ public enum FeatureFlag {
     MessageForwarding("msgForward", true),
     RaidPauseInvites("raidPauseInvites", false),
     ScanProfiles("scanProfiles", true),
-    Gemini("gemini", true);
+    AI("ai", true),
+    DetectCrypto("detectCryptoImages", true),
+    Gatekeeper("gatekeeper", true),;
     
     private final String config;
     private final boolean restrict;

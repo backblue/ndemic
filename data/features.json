@@ -7,5 +7,7 @@
   "roleIcons": true,
   "msgForward": true,
   "raidPauseInvites": true,
-  "scanProfiles": true
+  "scanProfiles": true,
+  "ai": true,
+  "detectCryptoImages": true
 }

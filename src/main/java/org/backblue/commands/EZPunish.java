@@ -17,7 +17,6 @@ import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionE
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.modals.Modal;
-import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
 import org.backblue.utilities.DefinedChannel;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +27,6 @@ import org.jspecify.annotations.NonNull;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class EZPunish extends ListenerAdapter {
@@ -85,20 +83,9 @@ public class EZPunish extends ListenerAdapter {
                 evidenceText = "";
             }
             String finalEvidenceText = evidenceText;
-            String finalReason = reason;
 
-            List<CompletableFuture<FileUpload>> futures = evidenceImages.stream()
-                    .map(attachment -> attachment.getProxy().download()
-                            .thenApply(inputStream -> FileUpload.fromData(inputStream, attachment.getFileName())))
-                    .toList();
-
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .thenAccept(v -> {
-                        FileUpload[] uploads = futures.stream()
-                                .map(CompletableFuture::join)
-                                .toArray(FileUpload[]::new);
-                        bot.getIO().send(DefinedChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + finalReason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText, uploads);
-                    });
+            bot.getIO().send(DefinedChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
+                    null, bot.toUploads(evidenceImages));
         }
     }
 
@@ -234,18 +221,22 @@ public class EZPunish extends ListenerAdapter {
                             Label.of("Violations", violationsDropdown),
                             TextDisplay.of("### Evidence (+" + event.getTarget().getAttachments().size() + " attachments)\n" + text)
                     ).build();
-            event.replyModal(modal).queue();
             if (text.equals("*No text is included in this message.*")) {
                 text = "";
             }
             this.contextMemory.put(a, new PunishCacheBundle(event.getTarget().getAuthor().getId(), text, event.getTarget().getAttachments()));
+            event.replyModal(modal).queue();
+
         }
     }
 
     @Override
     public void onModalInteraction(@NotNull ModalInteractionEvent event) {
         if (event.getModalId().contains("modal:ezpunish")) {
-            @NotNull Member user = Objects.requireNonNull(event.getValue("ezpunish:target")).getAsMentions().getMembers().getFirst();
+            event.deferReply(true).queue();
+
+            Member user = null;
+            if (!event.getModalId().contains("modal:ezpunishQuick")) user = Objects.requireNonNull(event.getValue("ezpunish:target")).getAsMentions().getMembers().getFirst();
             @NotNull String type = Objects.requireNonNull(event.getValue("ezpunish:type")).getAsString();
             @NotNull List<String> violations = Objects.requireNonNull(event.getValue("ezpunish:violations")).getAsStringList();
             List<Message.Attachment> attachments = null;
@@ -256,15 +247,15 @@ public class EZPunish extends ListenerAdapter {
 
             boolean softban = type.equalsIgnoreCase("softban");
             String textEvidence = null;
-            if (event.getModalId().equals("modal:ezpunishQuick")) {
-                int id = Integer.parseInt(event.getModalId().split(":")[1]);
+            if (event.getModalId().contains("modal:ezpunishQuick")) {
+                int id = Integer.parseInt(event.getModalId().split(":")[2]);
                 PunishCacheBundle bundle = this.contextMemory.remove(id);
                 textEvidence = bundle.textEvidence;
                 attachments = bundle.attachmentEvidence;
                 user = Objects.requireNonNull(bot.getDeploymentGuild().getMemberById(bundle.userId));
             }
 
-            event.reply(this.ezPunish(user, event.getMember(), violations, !softban, textEvidence, attachments)).setEphemeral(true).queue();
+            event.getHook().editOriginal(this.ezPunish(user, event.getMember(), violations, !softban, textEvidence, attachments)).queue();
         }
     }
 

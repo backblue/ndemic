@@ -33,6 +33,7 @@ import java.net.URI;
 import java.net.URL;
 import java.time.OffsetTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ProfileScanner extends ListenerAdapter {
@@ -114,12 +115,16 @@ public class ProfileScanner extends ListenerAdapter {
             return null;
         }
         FileUpload imageFile = FileUpload.fromData(downloadedImage, id + ".png");
-        this.bot.getIO().send(DefinedChannel.DebugImageDump, id, new FileUpload[]{imageFile});
+        this.bot.getIO().send(DefinedChannel.DebugImageDump, id, null, List.of(imageFile));
 
         ByteArrayInputStream bais = new ByteArrayInputStream(downloadedImage);
         BufferedImage img;
         try {
             img = ImageIO.read(bais);
+            if (img == null) {
+                Log.info("Unable to decode image format for scan of {}", id);
+                return null;
+            }
             int width = img.getWidth();
             int height = img.getHeight();
             if (width < 50 || height < 50) {

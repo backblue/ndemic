@@ -2,23 +2,15 @@ package org.backblue.events;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
 import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.backblue.utilities.MessagePriority;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Honeypot extends MessagePriority {
 
@@ -41,77 +33,30 @@ public class Honeypot extends MessagePriority {
             if (event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
                 return false;
             }
-            event.getMessage().delete().queue();
-            event.getMember().timeoutFor(12, TimeUnit.HOURS).reason("Posted in Honeypot Channel").queue();
-            bot.getIO().send(event.getMember().getUser(), "Hello, your recent activity has been flagged for additional review by our moderators. You have been temporarily timed out as we review this situation.");
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Someone posted in the honeypot channel...");
-            embedBuilder.setThumbnail(event.getMember().getEffectiveAvatarUrl());
-            embedBuilder.setDescription(event.getMessage().getContentStripped());
-            embedBuilder.setFooter(event.getMessage().getAttachments().size() + " attachment(s), removed 60 mins of messages, 12 hour timeout");
 
-            List<FileUpload> fileUploads = new ArrayList<>();
-            if (!event.getMessage().getAttachments().isEmpty()) {
-                for (Message.Attachment attachment : event.getMessage().getAttachments()) {
-                    fileUploads.add(attachment.getProxy().downloadAsFileUpload(attachment.getFileName()));
-                }
+
+            event.getMember().timeoutFor(12, TimeUnit.HOURS).reason("Posted in Honeypot Channel").queue();
+
+            GuildChannel c = bot.getIO().getChannel(DefinedChannel.DeploymentHoney);
+            if (!(c instanceof GuildMessageChannel messageChannel)) {
+                EmbedBuilder embedBuilder = new EmbedBuilder()
+                        .setTitle("Someone posted in the honeypot channel...")
+                        .setThumbnail(event.getMember().getEffectiveAvatarUrl())
+                        .setDescription(event.getMessage().getContentStripped())
+                        .setFooter(event.getMessage().getAttachments().size() + " attachment(s), applied 12 hour timeout");
+
+                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getName() + " - " + event.getMember().getAsMention(),
+                        embedBuilder.build(),
+                        bot.toUploads(event.getMessage().getAttachments()));
+            } else {
+                event.getMessage().forwardTo(messageChannel).queue();
+                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getName() + " - " + event.getMember().getAsMention() + " posted in honeypot");
             }
 
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention() + " - " + event.getMember().getAsMention(),
-                    embedBuilder.build(),
-                    fileUploads);
-            purge(event.getMember());
+            event.getMessage().delete().queue();
+            bot.getIO().clean(event.getMember());
             return true;
         }
         return false;
-    }
-
-    private void purge(Member member) {
-        OffsetDateTime cutoff = OffsetDateTime.now().minusMinutes(60);
-        AtomicInteger remaining = new AtomicInteger(100);
-
-        List<GuildMessageChannel> channels = new ArrayList<>();
-        channels.addAll(member.getGuild().getTextChannels());
-        channels.addAll(member.getGuild().getThreadChannels());
-
-        for (GuildMessageChannel channel : channels) {
-            if (remaining.get() <= 0)
-                break;
-
-            if (!member.hasPermission(channel, Permission.VIEW_CHANNEL))
-                continue;
-
-            channel.getHistory().retrievePast(100).queue(messages -> {
-
-                List<Message> toDelete = new ArrayList<>();
-
-                for (Message m : messages) {
-                    if (remaining.get() <= 0)
-                        break;
-
-                    if (!m.getAuthor().getId().equals(member.getId()))
-                        continue;
-
-                    if (m.getTimeCreated().isBefore(cutoff))
-                        continue;
-
-                    toDelete.add(m);
-                    remaining.decrementAndGet();
-                }
-
-                if (toDelete.size() >= 2) {
-                    if (channel instanceof TextChannel tc) {
-                        tc.deleteMessages(toDelete).queue();
-                    } else if (channel instanceof ThreadChannel) {
-                        toDelete.forEach(m -> m.delete().queue());
-                    } else {
-                        toDelete.forEach(m -> m.delete().queue());
-                    }
-                }
-                else if (toDelete.size() == 1) {
-                    toDelete.getFirst().delete().queue();
-                }
-            });
-        }
     }
 }
