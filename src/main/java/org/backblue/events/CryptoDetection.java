@@ -42,8 +42,7 @@ public class CryptoDetection extends MessagePriority {
         super(priority, bot);
         keywords = new ConcurrentHashMap<>();
         spammedChannels = new ConcurrentHashMap<>();
-        tesseract.setDatapath("src/main/resources/tessdata");
-        
+        tesseract.setDatapath("data/tessdata");
         tesseract.setLanguage("eng");
         tesseract.setOcrEngineMode(1);
         bot.getScheduler().scheduleAtFixedRate(this::sendAll, 1, 1, TimeUnit.MINUTES);
