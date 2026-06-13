@@ -16,7 +16,9 @@ import org.backblue.commands.*;
 import org.backblue.events.*;
 import org.backblue.utilities.*;
 import org.backblue.wrappers.BlueSky;
-import org.backblue.wrappers.LLM;
+import org.backblue.wrappers.EZPunishProfileScan;
+import org.backblue.wrappers.GenAI;
+import org.backblue.wrappers.ProfileScan;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -44,13 +46,13 @@ public final class Bot {
     private final ShardManager JDA;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final MessageIO io;
-    private final LLM LLM;
+    private final GenAI ai;
 
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
     private final String pingRoleID;
 
-    public Bot() throws IOException {
+    public Bot() {
         Properties keys = new Properties();
         JSONObject settings = null;
         JSONObject badges = null;
@@ -88,6 +90,11 @@ public final class Bot {
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
+        builder.disableCache(CacheFlag.ONLINE_STATUS);
+        builder.disableCache(CacheFlag.ACTIVITY);
+        builder.disableCache(CacheFlag.CLIENT_STATUS);
+        builder.enableIntents(EnumSet.allOf(GatewayIntent.class));
+        builder.disableIntents(GatewayIntent.GUILD_PRESENCES);
         builder.setAutoReconnect(true);
         builder.setStatus(OnlineStatus.fromKey(settings.getJSONObject("self").optString("presence", "online")));
         if (settings.getJSONObject("self").optString("presence", null) != null) {
@@ -95,16 +102,22 @@ public final class Bot {
         }
 
         io = new MessageIO(settings, this);
-        LLM = new LLM(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
+        ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         Badge badge = new Badge(this, badges);
-        builder.addEventListeners(io, new Setup(io, settings.optJSONObject("channels", null)));
+        EZPunish ezp = new EZPunish(this, rulebook);
+        EZPunishProfileScan hook = new EZPunishProfileScan(this, ezp);
+        ProfileScan profileScan = new ProfileScan(this, hook, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
+        builder.addEventListeners(io, new Deployment(io, settings.optJSONObject("channels", null)));
         builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
         builder.addEventListeners(new DM(this),
-                new EZPunish(this, rulebook),
+                ezp,
+                hook,
+                profileScan,
                 new DisableDM(this),
+                new Scan(this, profileScan),
                 badge,
                 new RaidProtect(this),
-                new Gatekeeper(this),
+                new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
                 new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
@@ -147,8 +160,8 @@ public final class Bot {
     public EnumSet<FeatureFlag> getFeatures() {
         return features;
     }
-    public LLM getAI() {
-        return LLM;
+    public GenAI getAI() {
+        return ai;
     }
     public List<FileUpload> toUploads(List<Message.Attachment> attachmentList) {
         List<FileUpload> fileUploads = new ArrayList<>();

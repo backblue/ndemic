@@ -35,7 +35,7 @@ public final class MessageIO extends ListenerAdapter {
     private final Map<DefinedChannel, String> mapping;
     private final PriorityQueue<MessagePriority> messageQueue = new PriorityQueue<>();
     private final Map<String, Deque<Message>> recentMessages = new ConcurrentHashMap<>();
-    private int track;
+    private int prevMessagesLoggingLimit;
 
     public void send(DefinedChannel dest, String text) {
         GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
@@ -49,8 +49,12 @@ public final class MessageIO extends ListenerAdapter {
 
     public void send(DefinedChannel dest, String text, MessageEmbed embed, List<FileUpload> fileUploads) {
         GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
-        if (embed == null) if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).queue();
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).setEmbeds(embed).queue();
+    }
+
+    public void send(DefinedChannel dest, String text, List<FileUpload> fileUploads) {
+        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).queue();
     }
 
     public void send(User user, String text) {
@@ -68,7 +72,7 @@ public final class MessageIO extends ListenerAdapter {
 
     public void send(DefinedChannel dest, String text, Container container) {
         GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
-        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
+        if (!text.isEmpty() && targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessageComponents(container).useComponentsV2(true).queue();
     }
 
@@ -104,9 +108,9 @@ public final class MessageIO extends ListenerAdapter {
             }
         }
         try {
-            track = settingsChannel.getInt("_track");
+            prevMessagesLoggingLimit = settingsChannel.getInt("_track");
         } catch (Exception e) {
-            track = 16;
+            prevMessagesLoggingLimit = 16;
         }
         messageQueue.add(new OneAuthorGuide(50, bot));
         messageQueue.add(new Honeypot(5, bot));
@@ -120,10 +124,9 @@ public final class MessageIO extends ListenerAdapter {
             for (MessagePriority listener : messageQueue) if (listener.cancelled(event)) break;
             Deque<Message> messages = this.recentMessages.computeIfAbsent(
                     event.getAuthor().getId(),
-                    id -> new ConcurrentLinkedDeque<>()
-            );
+                    id -> new ConcurrentLinkedDeque<>());
             messages.addLast(event.getMessage());
-            if (messages.size() >= this.track) {
+            if (messages.size() >= this.prevMessagesLoggingLimit) {
                 messages.removeFirst();
             }
         }

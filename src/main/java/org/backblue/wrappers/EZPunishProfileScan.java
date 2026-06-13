@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class EZPunishProfileScan extends ListenerAdapter {
+public final class EZPunishProfileScan extends ListenerAdapter {
 
     private final Map<Integer, EZPunishInfo> map = new HashMap<>();
     Bot bot;

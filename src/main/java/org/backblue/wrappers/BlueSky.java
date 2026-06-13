@@ -81,8 +81,7 @@ public final class BlueSky {
     private JSONObject getUserFeed(String did) throws IOException, InterruptedException {
         login();
 
-        String endpoint =
-                "https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + did;
+        String endpoint = "https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + did;
 
         HttpRequest feedRequest = HttpRequest.newBuilder()
                 .uri(URI.create(endpoint))

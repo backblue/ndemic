@@ -3,10 +3,12 @@ package org.backblue.commands;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.io.File;
 
 public class About extends ListenerAdapter {
 
@@ -28,6 +30,11 @@ public class About extends ListenerAdapter {
                 embed.setFooter(this.watermark);
             }
             event.replyEmbeds(embed.build()).queue();
+        }
+        if (event.getName().equals("privacy")) {
+            event.deferReply(true).queue();
+            FileUpload upload = FileUpload.fromData(new File("data/privacypolicy.txt"));
+            event.getHook().sendFiles(upload).queue();
         }
     }
 

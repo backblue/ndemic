@@ -1,9 +1,14 @@
 package org.backblue.events;
 
-import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.mediagallery.MediaGallery;
+import net.dv8tion.jda.api.components.mediagallery.MediaGalleryItem;
+import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.separator.Separator;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
+import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.sourceforge.tess4j.ITesseract;
@@ -26,7 +31,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 public class CryptoDetection extends MessagePriority {
@@ -35,16 +42,19 @@ public class CryptoDetection extends MessagePriority {
 
     final double threshold;
     final Map<String, Double> keywords;
-    final Map<String, List<CryptoDetection.Bundle>> spammedChannels;
+    final Map<String, ConcurrentLinkedQueue<CryptoDetection.Bundle>> spammedChannels;
+    final Set<String> flaggedUsers;
     final ITesseract tesseract = new Tesseract();
 
     public CryptoDetection(int priority, Bot bot, JSONObject json) {
         super(priority, bot);
         keywords = new ConcurrentHashMap<>();
         spammedChannels = new ConcurrentHashMap<>();
+        flaggedUsers = ConcurrentHashMap.newKeySet();
         tesseract.setDatapath("data/tessdata");
         tesseract.setLanguage("eng");
         tesseract.setOcrEngineMode(1);
+        tesseract.setPageSegMode(11);
         bot.getScheduler().scheduleAtFixedRate(this::sendAll, 1, 1, TimeUnit.MINUTES);
         if (!bot.isFeatureEnabled(FeatureFlag.DetectCrypto)) {
             threshold = 0;
@@ -75,55 +85,83 @@ public class CryptoDetection extends MessagePriority {
             return false;
         }
         List<Message.Attachment> attachmentList = event.getMessage().getAttachments();
+        List<File> files = new ArrayList<>();
         double points = 0.0;
+        boolean userAlreadyFlagged = this.flaggedUsers.contains(event.getAuthor().getId());
+
         for (Message.Attachment attachment : attachmentList) {
+            if (!attachment.isImage()) continue;
+
             File file = attachment.getProxy()
                     .downloadToFile(new File("data/temp/" + attachment.getId() + "_" + attachment.getFileName()))
                     .join();
             if (!file.isFile()) continue;
+            files.add(file);
+
+            if (userAlreadyFlagged) {
+                continue;
+            }
+
             try {
                 points += this.processImage(file);
+                if (points >= threshold) break;
             } catch (TesseractException | IOException e) {
                 Log.error("Error processing image for crypto detection", e);
-            } finally {
-                if (!file.delete()) {
-                    Log.warn("Failed to delete temp file: {}", file.getAbsolutePath());
-                }
             }
         }
-        if (points >= threshold) {
-            List<Message.Attachment> a = event.getMessage().getAttachments();
-            List<FileUpload> fileUploadList = bot.toUploads(a);
-            spammedChannels.computeIfAbsent(event.getAuthor().getId(), id -> new ArrayList<>())
-                    .add(new Bundle(points, fileUploadList));
+        if (userAlreadyFlagged || points >= threshold) {
+            spammedChannels.computeIfAbsent(event.getAuthor().getId(), id -> new ConcurrentLinkedQueue<>())
+                    .add(new Bundle(points, files));
+            flaggedUsers.add(event.getAuthor().getId());
             event.getMessage().delete().queue();
             return true;
-        }
+        } else for (File file : files) if (!file.delete()) Log.warn("Unable to delete safe file: {}", file.getAbsolutePath());
+
         return false;
     }
 
     public void sendAll() {
-        int count = 0;
+        if (spammedChannels.isEmpty()) return;
         for (String id : spammedChannels.keySet()) {
-            count++;
-            User user = bot.getJDA().getUserById(id);
-            if (user == null) continue;
-            List<Bundle> bundles = spammedChannels.remove(id);
-            if (bundles == null) continue;
-            MessageEmbed embed = new EmbedBuilder()
-                    .setThumbnail(user.getEffectiveAvatarUrl())
-                    .setTitle(":warning: Messages Blocked")
-                    .setDescription(user.getAsMention() + " spammed **" + bundles.size() + "** messages with a high probability of being crypto scam.")
-                    .setColor(Color.RED)
-                    .setFooter("Points achieved: " + bundles.getFirst().points)
-                    .build();
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "",  embed, bundles.getFirst().attachments());
-        }
-        if (count > 0) bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getName());
+            Member member = bot.getDeploymentGuild().getMemberById(id);
+            ConcurrentLinkedQueue<Bundle> bundles = spammedChannels.remove(id);
+            if (member == null || bundles == null) continue;
+            member.timeoutFor(6, TimeUnit.HOURS).reason("Posted suspected crypto content").queue();
 
+            List<File> files = bundles.stream()
+                    .flatMap(bundle -> bundle.attachments().stream())
+                    .toList();
+
+            Container container = Container.of(
+                    TextDisplay.of("# :warning: Messages Blocked").withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
+                    Section.of(
+                            Thumbnail.fromUrl(member.getEffectiveAvatarUrl()),
+                            TextDisplay.of(member.getUser().getAsMention() + "'s messages have been flagged for spam."),
+                            TextDisplay.of("## Details:\n> Sent **" + bundles.size() + "** messages containing crypto scam images.")
+                    ).withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
+
+                    MediaGallery.of(
+                            files.stream()
+                                    .map(file -> MediaGalleryItem.fromFile(FileUpload.fromData(file)))
+                                    .toList()
+                    ).withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
+
+                    Separator.createDivider(Separator.Spacing.SMALL).withUniqueId(5),
+                    TextDisplay.of("-# These messages have already been deleted by " + bot.getDeploymentGuild().getSelfMember().getAsMention() + ".").withUniqueId(4)
+
+            ).withUniqueId((int) (Math.random() * Short.MAX_VALUE));
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", container);
+            for (Bundle bundle : bundles) {
+                for (File file : bundle.attachments()) {
+                    if (!file.delete()) Log.warn("Unable to delete file: {}", file.getAbsolutePath());
+                }
+            }
+        }
+        this.flaggedUsers.clear();
     }
 
     private double processImage(File file) throws TesseractException, IOException {
+        long start = System.currentTimeMillis();
         double result = 0.0;
         String name = file.getName().toLowerCase();
         if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp")) {
@@ -132,9 +170,12 @@ public class CryptoDetection extends MessagePriority {
             for (String key : this.keywords.keySet()) {
                 if (text.contains(key)) {
                     result += this.keywords.get(key);
+                    if (result >= threshold) return result;
                 }
             }
         }
+        long end = System.currentTimeMillis();
+        Log.info("Processed image {} in {}ms with score {}", file.getName(), (end - start), result);
         return result;
     }
     public String extractText(File file) throws TesseractException, IOException {
@@ -142,12 +183,8 @@ public class CryptoDetection extends MessagePriority {
         if (image == null) {
             throw new RuntimeException("Unable to decode image in message");
         }
-        tesseract.setPageSegMode(6);
-        String mode6 = tesseract.doOCR(image);
-        tesseract.setPageSegMode(11);
-        String mode11 = tesseract.doOCR(image);
-        return (mode6.length() > mode11.length()) ? mode6 : mode11;
+        return tesseract.doOCR(image).strip();
     }
 
-    record Bundle(double points, List<FileUpload> attachments) {}
+    record Bundle(double points, List<File> attachments) {}
 }

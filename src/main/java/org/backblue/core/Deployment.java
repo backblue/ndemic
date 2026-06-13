@@ -17,7 +17,7 @@ import org.jspecify.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class Setup extends ListenerAdapter {
+public final class Deployment extends ListenerAdapter {
 
     private final MessageIO io;
     private final JSONObject settings;
@@ -54,13 +54,14 @@ public final class Setup extends ListenerAdapter {
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
         commands.add(Commands.message("EZPunish...")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
+        if (settings.optBoolean("$enablePrivacyPolicyCommand")) commands.add(Commands.slash("privacy", "View the bot's privacy policy"));
 
         if (event.getGuild().getId().equals(settings.optString("_deploy", "")) || event.getGuild().getId().equals(settings.optString("_debug", ""))) {
             event.getGuild().updateCommands().addCommands(commands).queue();
         }
     }
 
-    public Setup(MessageIO messageIO, JSONObject settings) {
+    public Deployment(MessageIO messageIO, JSONObject settings) {
         this.io = messageIO;
         this.settings = settings;
     }

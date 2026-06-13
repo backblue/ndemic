@@ -12,16 +12,16 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class LLM {
+public final class GenAI {
 
-    private static final Logger Log = LoggerFactory.getLogger(LLM.class);
+    private static final Logger Log = LoggerFactory.getLogger(GenAI.class);
 
     final Bot bot;
     final String key;
     final String[] models;
     final Client client;
 
-    public LLM(@NotNull Bot bot, String key, JSONObject config) {
+    public GenAI(@NotNull Bot bot, String key, JSONObject config) {
         this.bot = bot;
         if (key == null || config == null) {
             this.key = null;
@@ -33,18 +33,18 @@ public final class LLM {
         }
         this.key = key;
         this.client = Client.builder().apiKey(key).build();
-        if (config.optJSONObject("models") == null) {
+        if (config.optJSONArray("priorities") == null) {
             models = null;
         } else {
-            models = new String[config.getJSONArray("models").length()];
+            models = new String[config.getJSONArray("priorities").length()];
             for (int i = 0; i < models.length; i++) {
-                models[i] = config.getJSONArray("models").getString(i);
+                models[i] = config.getJSONArray("priorities").getString(i);
             }
         }
         try {
             client.models.list(ListModelsConfig.builder().build());
         } catch (Exception e) {
-            Log.error("Failed to validate Gemini API key, disabling AI features");
+            Log.error("Gemini key invalid! Disabling AI features: " + e.getMessage());
             bot.disableFeature(FeatureFlag.AI);
         }
     }

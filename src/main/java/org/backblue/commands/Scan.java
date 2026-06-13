@@ -5,18 +5,17 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
 import org.backblue.utilities.FeatureFlag;
-import org.backblue.wrappers.ProfileScanner;
+import org.backblue.wrappers.ProfileScan;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
 import java.util.Objects;
 
 public class Scan extends ListenerAdapter {
 
     Bot bot;
-    ProfileScanner scanner;
+    ProfileScan scanner;
 
-    public Scan(Bot bot, ProfileScanner scanner) {
+    public Scan(Bot bot, ProfileScan scanner) {
         this.bot = bot;
         this.scanner = scanner;
     }
@@ -33,7 +32,7 @@ public class Scan extends ListenerAdapter {
                 if ("link".equals(event.getSubcommandName())) {
                     event.deferReply().setEphemeral(true).queue();
                     String link = Objects.requireNonNull(event.getOption("link")).getAsString();
-                    ProfileScanner.ScanResult result = this.scanner.scan("Manual Scan", link);
+                    ProfileScan.ScanResult result = this.scanner.scan("Manual Scan", link);
                     if (result != null) {
                         event.getHook().sendMessage("Profile Points: " + result.points()).setEphemeral(true).queue();
                     } else {

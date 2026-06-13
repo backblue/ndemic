@@ -9,5 +9,6 @@
   "raidPauseInvites": true,
   "scanProfiles": true,
   "ai": true,
-  "detectCryptoImages": true
+  "detectCryptoImages": true,
+  "gatekeeper": true
 }

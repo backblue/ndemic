@@ -36,24 +36,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ProfileScanner extends ListenerAdapter {
+public final class ProfileScan extends ListenerAdapter {
 
-    private static final Logger Log = LoggerFactory.getLogger(ProfileScanner.class);
+    private static final Logger Log = LoggerFactory.getLogger(ProfileScan.class);
 
     final Bot bot;
     final ContentSafetyClient safetyClient;
-    final int cooldownBetweenScans;
+    final int scanCooldownAfterFlagging;
     final int hateMinToAlert;
     final EZPunishProfileScan hook;
     final Map<String, OffsetTime> lastScan = new HashMap<>();
 
-    public ProfileScanner(Bot bot, EZPunishProfileScan hook, String endpoint, String key, JSONObject config) {
+    public ProfileScan(Bot bot, EZPunishProfileScan hook, String endpoint, String key, JSONObject config) {
         this.bot = bot;
         this.hook = hook;
         if (key == null || endpoint == null) {
             Log.error("Cannot read Azure endpoint/key values, disabling");
             safetyClient = null;
-            cooldownBetweenScans = 0;
+            scanCooldownAfterFlagging = 0;
             hateMinToAlert = 0;
             this.bot.disableFeature(FeatureFlag.ScanProfiles);
             return;
@@ -64,10 +64,10 @@ public class ProfileScanner extends ListenerAdapter {
                 .buildClient();
         if (config == null) {
             Log.info("Missing configurations, set default values");
-            cooldownBetweenScans = 10;
+            scanCooldownAfterFlagging = 10;
             hateMinToAlert = 2;
         } else {
-            cooldownBetweenScans = config.optInt("cooldownBetweenScans", 10);
+            scanCooldownAfterFlagging = config.optInt("cooldownBetweenScans", 10);
             hateMinToAlert = config.optInt("hateMinToAlert", 2);
         }
     }
@@ -76,12 +76,13 @@ public class ProfileScanner extends ListenerAdapter {
         if (!bot.isFeatureEnabled(FeatureFlag.ScanProfiles)
                 || member == null
                 || member.hasPermission(Permission.ADMINISTRATOR)
-                || !OffsetTime.now().isAfter(lastScan.getOrDefault(member.getId(), OffsetTime.MIN).plusMinutes(cooldownBetweenScans))) {
+                || !OffsetTime.now().isAfter(lastScan.getOrDefault(member.getId(), OffsetTime.MIN).plusMinutes(scanCooldownAfterFlagging))) {
             return;
         }
         ScanResult avatar = scan(member.getId(), member.getEffectiveAvatarUrl());
         if (avatar != null && avatar.points >= this.hateMinToAlert) {
             bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.create(member, "picture", avatar.points));
+            lastScan.put(member.getId(), OffsetTime.now());
         }
         member.getUser().retrieveProfile().queue(profile -> {
             String bannerUrl = profile.getBannerUrl();
@@ -90,10 +91,10 @@ public class ProfileScanner extends ListenerAdapter {
                 ScanResult banner = scan(member.getId(), bannerUrl);
                 if (banner != null && banner.points() >= hateMinToAlert) {
                     bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.create(member, "banner", banner.points));
+                    lastScan.put(member.getId(), OffsetTime.now());
                 }
             }
         });
-        lastScan.put(member.getId(), OffsetTime.now());
     }
 
     @Override
@@ -109,22 +110,19 @@ public class ProfileScanner extends ListenerAdapter {
     public void onGuildMemberUpdateAvatar(@NotNull GuildMemberUpdateAvatarEvent event) {
         scan(event.getMember());
     }
+
     public ScanResult scan(String id, String url) {
         byte[] downloadedImage = downloadUrl(url);
         if (downloadedImage.length == 0) {
             return null;
         }
         FileUpload imageFile = FileUpload.fromData(downloadedImage, id + ".png");
-        this.bot.getIO().send(DefinedChannel.DebugImageDump, id, null, List.of(imageFile));
+        this.bot.getIO().send(DefinedChannel.DebugImageDump, id, List.of(imageFile));
 
         ByteArrayInputStream bais = new ByteArrayInputStream(downloadedImage);
         BufferedImage img;
         try {
             img = ImageIO.read(bais);
-            if (img == null) {
-                Log.info("Unable to decode image format for scan of {}", id);
-                return null;
-            }
             int width = img.getWidth();
             int height = img.getHeight();
             if (width < 50 || height < 50) {

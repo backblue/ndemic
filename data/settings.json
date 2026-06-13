@@ -10,7 +10,8 @@
     "deploymentBotCmds": "624056396639502336",
     "deploymentWarnings": "750352217495699528",
     "deploymentLogs": "558690605698514994",
-    "deploymentHoney": "1458037140771569750"
+    "deploymentHoney": "1458037140771569750",
+    "$enablePrivacyPolicyCommand": true
   },
   "self": {
     "pingAlerts": "1365758943363596388",
@@ -21,6 +22,10 @@
   "blueSky": {
     "did:plc:fnjpvrzkdt74wlgb5b4gtc6e": "699373249338802226"
   },
+  "profileScanner": {
+    "cooldownBetweenScans": 10,
+    "hateMinToAlert": 2
+  },
   "messageForwarding": [
     {
       "match": "<@&523351538937233426>",
@@ -29,8 +34,14 @@
     }
   ],
   "detectCrypto": {
-    "threshold": 7.5,
+    "threshold": 7,
     "keywords": {
+      "tasowin": 3,
+      "kogwin": 3,
+      "hoahux": 3,
+      "huyetnguyet": 3,
+      "gogamb": 3,
+      "zorewin": 3,
       "cryptocurrency": 0.5,
       "cryptocurrencies": 0.5,
       "crypto": 1,
@@ -51,6 +62,12 @@
     }
   },
   "gemini": {
-    "priorities": ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite-preview"]
+    "priorities": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite"]
+  },
+  "gatekeeper": {
+    "untrustedRoles": ["1458142879334793405", "1462429526083502315"],
+    "regex": ["^[A-Za-z]+[_.][0-9]+$", "^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$", "^_[A-Za-z0-9]+_[A-Za-z0-9]+$", "^_[A-Za-z0-9]+_[A-Za-z0-9]+_$"],
+    "susAccountRange": 172,
+    "untrustedDurationCutoff": 720
   }
 }
