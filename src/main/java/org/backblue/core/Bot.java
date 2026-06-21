@@ -15,23 +15,23 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
 import org.backblue.events.*;
 import org.backblue.utilities.*;
-import org.backblue.wrappers.BlueSky;
-import org.backblue.wrappers.EZPunishProfileScan;
-import org.backblue.wrappers.GenAI;
-import org.backblue.wrappers.ProfileScan;
+import org.backblue.utilities.BlueSky;
+import org.backblue.scanners.ProfileScanExtension;
+import org.backblue.utilities.GenAI;
+import org.backblue.scanners.ProfileScan;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -39,7 +39,7 @@ public final class Bot {
 
     public final int major = 0;
     public final int minor = 9;
-    public final int patch = 4;
+    public final int patch = 6;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
@@ -51,8 +51,9 @@ public final class Bot {
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
     private final String pingRoleID;
+    private final String debugPingRoleID;
 
-    public Bot() {
+    public Bot(String... args) {
         Properties keys = new Properties();
         JSONObject settings = null;
         JSONObject badges = null;
@@ -75,6 +76,7 @@ public final class Bot {
         }
         this.deploymentGuildID = settings.getJSONObject("channels").getString("_deploy");
         this.pingRoleID = settingSelf.optString("pingAlerts", null);
+        this.debugPingRoleID = settingSelf.optString("debugPingAlerts", null);
 
         features = EnumSet.noneOf(FeatureFlag.class);
         for (FeatureFlag flag : FeatureFlag.values()) {
@@ -85,6 +87,7 @@ public final class Bot {
             }
         }
         Log.info("{} features successfully enabled", features.size());
+        new Debug(this, Set.of(args));
 
         DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.create(keys.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class));
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
@@ -103,19 +106,18 @@ public final class Bot {
 
         io = new MessageIO(settings, this);
         ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
-        Badge badge = new Badge(this, badges);
         EZPunish ezp = new EZPunish(this, rulebook);
-        EZPunishProfileScan hook = new EZPunishProfileScan(this, ezp);
+        ProfileScanExtension hook = new ProfileScanExtension(this, ezp);
         ProfileScan profileScan = new ProfileScan(this, hook, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
-        builder.addEventListeners(io, new Deployment(io, settings.optJSONObject("channels", null)));
-        builder.addEventListeners(new Ping(), new Features(this), new AutoMod(this));
         builder.addEventListeners(new DM(this),
+                new Ping(), new Features(this), new AutoMod(this),
+                io, new Deployment(io, settings.optJSONObject("channels", null)),
                 ezp,
                 hook,
                 profileScan,
                 new DisableDM(this),
                 new Scan(this, profileScan),
-                badge,
+                new Badge(this, badges),
                 new RaidProtect(this),
                 new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
                 new About(this, settingSelf.optString("watermark", "")));
@@ -154,6 +156,9 @@ public final class Bot {
     public Role getMostModerators() {
         return this.getJDA().getRoleById(this.pingRoleID);
     }
+    public Role getDebugPing() {
+        return this.getJDA().getRoleById(this.debugPingRoleID);
+    }
     public ScheduledExecutorService getScheduler() {
         return this.scheduler;
     }
@@ -164,12 +169,33 @@ public final class Bot {
         return ai;
     }
     public List<FileUpload> toUploads(List<Message.Attachment> attachmentList) {
-        List<FileUpload> fileUploads = new ArrayList<>();
-        if (!attachmentList.isEmpty()) {
-            for (Message.Attachment attachment : attachmentList) {
-                fileUploads.add(attachment.getProxy().downloadAsFileUpload(attachment.getFileName()));
-            }
+        List<CompletableFuture<FileUpload>> futures = attachmentList.stream()
+                .map(attachment ->
+                        attachment.getProxy()
+                                .download()
+                                .thenApply(file ->
+                                        FileUpload.fromData(file, attachment.getFileName())
+                                )
+                                .exceptionally(e -> {
+                                    Log.error("Failed to download attachment: ", e);
+                                    return null;
+                                })
+                )
+                .toList();
+
+        return futures.stream()
+                .filter(Objects::nonNull)
+                .map(CompletableFuture::join)
+                .toList();
+
+    }
+    public String readResource(String path) {
+        try (InputStream stream = getClass().getClassLoader().getResourceAsStream(path)) {
+            if (stream == null) throw new FileNotFoundException(path);
+            return new String(stream.readAllBytes());
+        } catch (IOException e) {
+            Log.error("Error reading prompt: {}", e.getMessage());
+            return null;
         }
-        return fileUploads;
     }
 }

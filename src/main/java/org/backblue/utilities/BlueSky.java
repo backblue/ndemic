@@ -1,7 +1,6 @@
-package org.backblue.wrappers;
+package org.backblue.utilities;
 
 import org.backblue.core.Bot;
-import org.backblue.utilities.FeatureFlag;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ public final class BlueSky {
     private final HashMap<String, Instant> bSkyUserLastPost = new HashMap<>();
     private String accessJwt = null;
     private Instant tokenExpiry = Instant.EPOCH;
-
+    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final Logger Log = LoggerFactory.getLogger(BlueSky.class);
 
     public BlueSky(String user, String pass, JSONObject json, Bot bot) {
@@ -89,11 +88,10 @@ public final class BlueSky {
                 .GET()
                 .build();
 
-        HttpResponse<String> feedResponse =
-                HttpClient.newHttpClient().send(
-                        feedRequest,
-                        HttpResponse.BodyHandlers.ofString()
-                );
+        HttpResponse<String> feedResponse = HTTP_CLIENT.send(
+                feedRequest,
+                HttpResponse.BodyHandlers.ofString()
+        );
 
         JSONObject data = new JSONObject(feedResponse.body());
         JSONArray feed = data.getJSONArray("feed");
@@ -112,7 +110,6 @@ public final class BlueSky {
             return;
         }
 
-        HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://bsky.social/xrpc/com.atproto.server.createSession"))
                 .header("Content-Type", "application/json")
@@ -124,8 +121,7 @@ public final class BlueSky {
                 ))
                 .build();
 
-        HttpResponse<String> response =
-                client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
         JSONObject json = new JSONObject(response.body());
         accessJwt = json.getString("accessJwt");

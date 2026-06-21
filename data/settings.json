@@ -14,6 +14,7 @@
     "$enablePrivacyPolicyCommand": true
   },
   "self": {
+    "debugPingAlerts": "1355656666422706508",
     "pingAlerts": "1365758943363596388",
     "status": "Handing out bribes",
     "presence": "dnd",
@@ -63,11 +64,5 @@
   },
   "gemini": {
     "priorities": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite"]
-  },
-  "gatekeeper": {
-    "untrustedRoles": ["1458142879334793405", "1462429526083502315"],
-    "regex": ["^[A-Za-z]+[_.][0-9]+$", "^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$", "^_[A-Za-z0-9]+_[A-Za-z0-9]+$", "^_[A-Za-z0-9]+_[A-Za-z0-9]+_$"],
-    "susAccountRange": 172,
-    "untrustedDurationCutoff": 720
   }
 }

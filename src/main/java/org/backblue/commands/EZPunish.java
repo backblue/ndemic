@@ -35,10 +35,17 @@ public class EZPunish extends ListenerAdapter {
     private HashMap<Integer, JSONObject> rulebook = new HashMap<>();
     private final HashMap<String, JSONObject> modalToRuleBook = new HashMap<>();
     private StringSelectMenu violationsDropdown = null;
-    private final Map<Integer, PunishCacheBundle> contextMemory = new HashMap<>();
+    private final Map<Integer, PunishCacheBundle> contextMemory;
+    private static final int MAX_CONTEXT_MEMORY_SIZE = 16;
 
     public EZPunish(Bot bot, JSONObject json) {
         this.bot = bot;
+        this.contextMemory = new LinkedHashMap<>() {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry eldest) {
+                return size() > MAX_CONTEXT_MEMORY_SIZE;
+            }
+        };
         buildRulebook(json);
     }
 

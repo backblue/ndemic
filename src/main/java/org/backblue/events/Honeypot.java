@@ -36,25 +36,32 @@ public class Honeypot extends MessagePriority {
 
 
             event.getMember().timeoutFor(12, TimeUnit.HOURS).reason("Posted in Honeypot Channel").queue();
-
-            GuildChannel c = bot.getIO().getChannel(DefinedChannel.DeploymentHoney);
+            String validPing = event.getAuthor().getAsMention();
+            GuildChannel c = bot.getIO().getChannel(DefinedChannel.DeploymentBotCommands);
             if (!(c instanceof GuildMessageChannel messageChannel)) {
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                         .setTitle("Someone posted in the honeypot channel...")
-                        .setThumbnail(event.getMember().getEffectiveAvatarUrl())
                         .setDescription(event.getMessage().getContentStripped())
                         .setFooter(event.getMessage().getAttachments().size() + " attachment(s), applied 12 hour timeout");
-
-                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getName() + " - " + event.getMember().getAsMention(),
+                if (event.getMember() != null) embedBuilder.setThumbnail(event.getAuthor().getEffectiveAvatarUrl());
+                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getName() + " - " + validPing,
                         embedBuilder.build(),
                         bot.toUploads(event.getMessage().getAttachments()));
+                event.getMessage().delete().queue();
+                bot.getIO().clean(event.getAuthor().getId());
             } else {
-                event.getMessage().forwardTo(messageChannel).queue();
-                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getName() + " - " + event.getMember().getAsMention() + " posted in honeypot");
+                event.getMessage().forwardTo(messageChannel).queue(
+                        success -> {
+                            event.getMessage().delete().queue();
+                            bot.getIO().clean(event.getAuthor().getId());
+                        },
+                        error -> {
+                            event.getMessage().delete().queue();
+                            bot.getIO().clean(event.getAuthor().getId());
+                        }
+                );
+                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention() + " - " + validPing + " posted in honeypot");
             }
-
-            event.getMessage().delete().queue();
-            bot.getIO().clean(event.getMember());
             return true;
         }
         return false;

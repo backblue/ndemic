@@ -1,4 +1,4 @@
-package org.backblue.wrappers;
+package org.backblue.scanners;
 
 import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
@@ -32,24 +32,31 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.time.OffsetTime;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class ProfileScan extends ListenerAdapter {
 
     private static final Logger Log = LoggerFactory.getLogger(ProfileScan.class);
+    private static final int MAX_SCAN_CACHE_SIZE = 16;
 
     final Bot bot;
     final ContentSafetyClient safetyClient;
     final int scanCooldownAfterFlagging;
     final int hateMinToAlert;
-    final EZPunishProfileScan hook;
-    final Map<String, OffsetTime> lastScan = new HashMap<>();
+    final ProfileScanExtension hook;
+    final Map<String, OffsetTime> lastScan;
 
-    public ProfileScan(Bot bot, EZPunishProfileScan hook, String endpoint, String key, JSONObject config) {
+    public ProfileScan(Bot bot, ProfileScanExtension hook, String endpoint, String key, JSONObject config) {
         this.bot = bot;
         this.hook = hook;
+        this.lastScan = new LinkedHashMap<>() {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry eldest) {
+                return size() > MAX_SCAN_CACHE_SIZE;
+            }
+        };
         if (key == null || endpoint == null) {
             Log.error("Cannot read Azure endpoint/key values, disabling");
             safetyClient = null;
@@ -123,10 +130,15 @@ public final class ProfileScan extends ListenerAdapter {
         BufferedImage img;
         try {
             img = ImageIO.read(bais);
+            if (img == null) {
+                Log.info("Unable to decode image for scan of {}", id);
+                return null;
+            }
             int width = img.getWidth();
             int height = img.getHeight();
             if (width < 50 || height < 50) {
                 Log.info("Did not scan {} due to resolution too small", id);
+                img.flush();
                 return null;
             }
         } catch (Exception e) {
@@ -145,7 +157,10 @@ public final class ProfileScan extends ListenerAdapter {
             } else {
                 bot.getIO().send(DefinedChannel.DebugAutoModAlert, "Failed to analyze image for `(" + id + ")` due to: " + e.getMessage());
             }
+            img.flush();
             return null;
+        } finally {
+            img.flush();
         }
         int hateLevel = 0;
         for (ImageCategoriesAnalysis analysis : response.getCategoriesAnalysis()) {
@@ -163,9 +178,17 @@ public final class ProfileScan extends ListenerAdapter {
             toDownload = URI.create(url).toURL();
             byte[] chunk = new byte[4096];
             int bytesRead;
+            int totalBytes = 0;
+            final int MAX_IMAGE_SIZE = 50_000_000; // 50MB limit per image
             InputStream stream = toDownload.openStream();
 
             while ((bytesRead = stream.read(chunk)) > 0) {
+                totalBytes += bytesRead;
+                if (totalBytes > MAX_IMAGE_SIZE) {
+                    Log.warn("Image {} exceeds max size limit ({} MB)", url, MAX_IMAGE_SIZE / 1_000_000);
+                    stream.close();
+                    return new byte[0];
+                }
                 outputStream.write(chunk, 0, bytesRead);
             }
             outputStream.close();

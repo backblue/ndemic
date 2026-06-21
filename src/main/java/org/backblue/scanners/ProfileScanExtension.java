@@ -1,4 +1,4 @@
-package org.backblue.wrappers;
+package org.backblue.scanners;
 
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -22,13 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public final class EZPunishProfileScan extends ListenerAdapter {
+public final class ProfileScanExtension extends ListenerAdapter {
 
     private final Map<Integer, EZPunishInfo> map = new HashMap<>();
     Bot bot;
     EZPunish ezpunish;
 
-    public EZPunishProfileScan(Bot bot, EZPunish ezpunish) {
+    public ProfileScanExtension(Bot bot, EZPunish ezpunish) {
         this.bot = bot;
         this.ezpunish = ezpunish;
     }

@@ -12,8 +12,7 @@ public enum FeatureFlag {
     ScanProfiles("scanProfiles", true),
     AI("ai", true),
     DetectCrypto("detectCryptoImages", true),
-    Gatekeeper("gatekeeper", true),;
-    
+    Gatekeeper("gatekeeper", true);
     private final String config;
     private final boolean restrict;
 

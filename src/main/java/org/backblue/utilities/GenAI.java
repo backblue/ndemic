@@ -1,13 +1,11 @@
-package org.backblue.wrappers;
+package org.backblue.utilities;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.ListModelsConfig;
 import org.backblue.core.Bot;
-import org.backblue.utilities.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,24 +42,21 @@ public final class GenAI {
         try {
             client.models.list(ListModelsConfig.builder().build());
         } catch (Exception e) {
-            Log.error("Gemini key invalid! Disabling AI features: " + e.getMessage());
+            Log.error("Gemini key invalid! Disabling AI features: {}", e.getMessage());
             bot.disableFeature(FeatureFlag.AI);
         }
     }
 
-    public ReturnJSON inputString(String prompt, GenerateContentConfig config) {
+    public GenerateContentResponse inputString(String prompt, GenerateContentConfig config) {
         for (String model : models) {
             try (Client client = Client.builder().apiKey(key).build()) {
-                return new ReturnJSON(true, client.models.generateContent(
+                return client.models.generateContent(
                         model,
                         prompt,
-                        config));
+                        config);
             } catch (Exception ignored) {}
         }
         Log.warn("Failure to receive any response from Google (models busy?)");
-        return new ReturnJSON(false, null);
+        return null;
     }
-
-    public record ReturnJSON(boolean success, @Nullable GenerateContentResponse response) {}
-
 }
