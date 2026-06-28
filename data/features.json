@@ -10,5 +10,7 @@
   "scanProfiles": true,
   "ai": true,
   "detectCryptoImages": true,
-  "gatekeeper": true
+  "gatekeeper": true,
+  "nitroBoostMessage": true,
+  "requireOnboarding": true
 }

@@ -9,10 +9,13 @@ public enum FeatureFlag {
     RoleIcons("roleIcons",  true),
     MessageForwarding("msgForward", true),
     RaidPauseInvites("raidPauseInvites", false),
+    NitroBoostMessage("nitroBoostMessage", false),
     ScanProfiles("scanProfiles", true),
     AI("ai", true),
     DetectCrypto("detectCryptoImages", true),
-    Gatekeeper("gatekeeper", true);
+    Gatekeeper("gatekeeper", true),
+    Gatekeeper_RequireOnboarding("requireOnboarding", false),;
+
     private final String config;
     private final boolean restrict;
 

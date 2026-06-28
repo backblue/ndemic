@@ -1,5 +1,6 @@
-package org.backblue.events;
+package org.backblue.moderation;
 
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
 import org.backblue.utilities.FeatureFlag;
@@ -11,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class Forwarding extends MessagePriority {
 
@@ -44,7 +44,12 @@ public class Forwarding extends MessagePriority {
         if (bot.isFeatureEnabled(FeatureFlag.MessageForwarding) && event.isFromGuild() && !event.getAuthor().isBot()) {
             for (String keyWord : keyWordToChannelId.keySet()) {
                 if (event.getMessage().getContentRaw().toLowerCase().contains(keyWord.toLowerCase())) {
-                    Objects.requireNonNull(event.getJDA().getTextChannelById(keyWordToChannelId.get(keyWord))).sendMessage("<@&"+keyWordToPingId.get(keyWord)+"> Forwarded message: \n>>> " + event.getMessage().getContentRaw() + "\n<#" + event.getChannel().getId() + ">").queue();
+                    TextChannel c = event.getJDA().getTextChannelById(keyWordToChannelId.get(keyWord));
+                    if (c != null) {
+                        event.getMessage().forwardTo(c).queue();
+                        c.sendMessage("<@&"+keyWordToPingId.get(keyWord)+">)").queue();
+                    }
+                    // Objects.requireNonNull(event.getJDA().getTextChannelById(keyWordToChannelId.get(keyWord))).sendMessage("<@&"+keyWordToPingId.get(keyWord)+"> Forwarded message: \n>>> " + event.getMessage().getContentRaw() + "\n<#" + event.getChannel().getId() + ">").queue();
                 }
             }
         }

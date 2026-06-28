@@ -113,11 +113,11 @@ public class Badge extends ListenerAdapter {
                 if (role == null) continue;
                 if (event.getMember().getUnsortedRoles().contains(role)) {
                     if (!eligibleIcons(event.getMember()).contains(iconProperties)) {
-                        changeBadge(event.getMember(), "badge:" + randomOut);
+                        this.changeBadge(event.getMember(), "badge:" + randomOut);
                     }
                 }
             }
-        } else if (event.getOldTimeBoosted() == null && event.getNewTimeBoosted() != null) {
+        } else if (event.getOldTimeBoosted() == null && event.getNewTimeBoosted() != null && bot.isFeatureEnabled(FeatureFlag.NitroBoostMessage)) {
             bot.getIO().send(event.getUser(), "Thanks for boosting **" + event.getGuild().getName() + "**\nFor your thanks, server boosters can select a badge to display next to their name!\nAllow " + event.getJDA().getSelfUser().getAsMention() + " to handle the `/badge` command in <#796358850735243264>");
         }
     }

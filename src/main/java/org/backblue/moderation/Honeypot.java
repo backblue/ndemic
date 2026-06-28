@@ -1,4 +1,4 @@
-package org.backblue.events;
+package org.backblue.moderation;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
@@ -34,8 +34,7 @@ public class Honeypot extends MessagePriority {
                 return false;
             }
 
-
-            event.getMember().timeoutFor(12, TimeUnit.HOURS).reason("Posted in Honeypot Channel").queue();
+            bot.timeout(event.getMember(), "Posted in honeypot", 12, TimeUnit.HOURS);
             String validPing = event.getAuthor().getAsMention();
             GuildChannel c = bot.getIO().getChannel(DefinedChannel.DeploymentBotCommands);
             if (!(c instanceof GuildMessageChannel messageChannel)) {

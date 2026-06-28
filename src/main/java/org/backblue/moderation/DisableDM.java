@@ -1,4 +1,4 @@
-package org.backblue.events;
+package org.backblue.moderation;
 
 import net.dv8tion.jda.api.entities.guild.SecurityIncidentActions;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;

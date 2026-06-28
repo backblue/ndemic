@@ -1,4 +1,4 @@
-package org.backblue.events;
+package org.backblue.moderation;
 
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.channel.ChannelType;

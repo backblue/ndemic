@@ -2,7 +2,7 @@
   "channels": {
     "_debug": "846837318132301904",
     "_deploy": "523349543505362945",
-    "_track": 16,
+    "_track": 8,
     "debugDirectMessages": "1354224979755008191",
     "debugAutoModAlert": "1354224983924019491",
     "debugEnforcement": "1354229171076731111",
@@ -64,5 +64,9 @@
   },
   "gemini": {
     "priorities": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite"]
+  },
+  "gatekeeper": {
+    "susRoles": ["1458142879334793405", "1462429526083502315"],
+    "regex": ["^[._][A-Za-z]+[._][0-9]+$", "^[A-Za-z]+[._][0-9]+$", "^[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+$"]
   }
 }

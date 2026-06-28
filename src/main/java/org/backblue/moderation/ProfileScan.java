@@ -1,4 +1,4 @@
-package org.backblue.scanners;
+package org.backblue.moderation;
 
 import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;
@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
+import org.backblue.core.Interactive;
 import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
@@ -45,10 +46,10 @@ public final class ProfileScan extends ListenerAdapter {
     final ContentSafetyClient safetyClient;
     final int scanCooldownAfterFlagging;
     final int hateMinToAlert;
-    final ProfileScanExtension hook;
+    final Interactive hook;
     final Map<String, OffsetTime> lastScan;
 
-    public ProfileScan(Bot bot, ProfileScanExtension hook, String endpoint, String key, JSONObject config) {
+    public ProfileScan(Bot bot, Interactive hook, String endpoint, String key, JSONObject config) {
         this.bot = bot;
         this.hook = hook;
         this.lastScan = new LinkedHashMap<>() {
@@ -88,7 +89,7 @@ public final class ProfileScan extends ListenerAdapter {
         }
         ScanResult avatar = scan(member.getId(), member.getEffectiveAvatarUrl());
         if (avatar != null && avatar.points >= this.hateMinToAlert) {
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.create(member, "picture", avatar.points));
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.createProfile(member, "picture", avatar.points));
             lastScan.put(member.getId(), OffsetTime.now());
         }
         member.getUser().retrieveProfile().queue(profile -> {
@@ -97,7 +98,7 @@ public final class ProfileScan extends ListenerAdapter {
             if (bannerUrl != null) {
                 ScanResult banner = scan(member.getId(), bannerUrl);
                 if (banner != null && banner.points() >= hateMinToAlert) {
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.create(member, "banner", banner.points));
+                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.createProfile(member, "banner", banner.points));
                     lastScan.put(member.getId(), OffsetTime.now());
                 }
             }

@@ -1,4 +1,4 @@
-package org.backblue.events;
+package org.backblue.moderation;
 
 import net.dv8tion.jda.api.events.automod.AutoModExecutionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;

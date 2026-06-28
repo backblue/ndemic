@@ -1,5 +1,6 @@
 package org.backblue.core;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -11,10 +12,10 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.FileUpload;
-import org.backblue.events.CryptoDetection;
-import org.backblue.events.OneAuthorGuide;
-import org.backblue.events.Forwarding;
-import org.backblue.events.Honeypot;
+import org.backblue.moderation.CryptoDetection;
+import org.backblue.moderation.OneAuthorGuide;
+import org.backblue.moderation.Forwarding;
+import org.backblue.moderation.Honeypot;
 import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.MessagePriority;
 import org.json.JSONException;
@@ -38,7 +39,7 @@ public final class MessageIO extends ListenerAdapter {
     private final Map<String, Deque<Message>> recentMessages = new ConcurrentHashMap<>();
     private final Map<String, Long> userLastActivity = new ConcurrentHashMap<>();
     private int prevMessagesLoggingLimit;
-    private static final long USER_INACTIVE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours
+    private static final byte USER_INACTIVE_TIMEOUT_MIN = 60;
 
     public void send(DefinedChannel dest, String text) {
         GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
@@ -130,7 +131,7 @@ public final class MessageIO extends ListenerAdapter {
         try {
             prevMessagesLoggingLimit = settingsChannel.getInt("_track");
         } catch (Exception e) {
-            prevMessagesLoggingLimit = 16;
+            prevMessagesLoggingLimit = 8;
         }
         messageQueue.add(new OneAuthorGuide(50, bot));
         messageQueue.add(new Honeypot(5, bot));
@@ -142,19 +143,20 @@ public final class MessageIO extends ListenerAdapter {
     private void cleanupInactiveUsers() {
         long now = System.currentTimeMillis();
         userLastActivity.entrySet().removeIf(entry -> {
-            if (now - entry.getValue() > USER_INACTIVE_TIMEOUT_MS) {
+            if (now - entry.getValue() > USER_INACTIVE_TIMEOUT_MIN * 60 * 1000) {
                 recentMessages.remove(entry.getKey());
                 return true;
             }
             return false;
         });
-        Log.debug("Cleaned up inactive users. Cache size: {} users", recentMessages.size());
+        Log.info("Cleaned up inactive users. Storing {} users", recentMessages.size());
     }
 
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
         if (event.isFromGuild() && !event.getAuthor().isBot()) {
             for (MessagePriority listener : messageQueue) if (listener.cancelled(event)) break;
+            if (event.getMember() != null && event.getMember().hasPermission(Permission.ADMINISTRATOR)) return;
             String userId = event.getAuthor().getId();
             Deque<Message> messages = this.recentMessages.computeIfAbsent(userId, id -> new ConcurrentLinkedDeque<>());
             messages.addLast(event.getMessage());

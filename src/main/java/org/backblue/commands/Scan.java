@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
 import org.backblue.utilities.FeatureFlag;
-import org.backblue.scanners.ProfileScan;
+import org.backblue.moderation.ProfileScan;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

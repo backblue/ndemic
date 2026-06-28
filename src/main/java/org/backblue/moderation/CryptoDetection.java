@@ -1,16 +1,8 @@
-package org.backblue.events;
+package org.backblue.moderation;
 
-import net.dv8tion.jda.api.components.container.Container;
-import net.dv8tion.jda.api.components.mediagallery.MediaGallery;
-import net.dv8tion.jda.api.components.mediagallery.MediaGalleryItem;
-import net.dv8tion.jda.api.components.section.Section;
-import net.dv8tion.jda.api.components.separator.Separator;
-import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
-import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.utils.FileUpload;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -24,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -84,7 +75,7 @@ public class CryptoDetection extends MessagePriority {
             tesseract.setPageSegMode(11);
 
             bot.getScheduler().scheduleAtFixedRate(this::sendAll, 1, 1, TimeUnit.MINUTES);
-            bot.getScheduler().scheduleAtFixedRate(this::cleanTemp, 20, 20, TimeUnit.MINUTES);
+            bot.getScheduler().scheduleAtFixedRate(this::cleanup, 20, 20, TimeUnit.MINUTES);
         }
     }
 
@@ -142,31 +133,13 @@ public class CryptoDetection extends MessagePriority {
             Member member = bot.getDeploymentGuild().getMemberById(id);
             ConcurrentLinkedQueue<Bundle> bundles = spammedChannels.remove(id);
             if (member == null || bundles == null) continue;
-            member.timeoutFor(6, TimeUnit.HOURS).reason("Posted suspected crypto content").queue();
+            this.bot.timeout(member, "Posted crypto messages", 6, TimeUnit.HOURS);
 
             List<File> files = bundles.stream()
                     .flatMap(bundle -> bundle.attachments().stream())
                     .toList();
 
-            Container container = Container.of(
-                    TextDisplay.of("# :warning: Messages Blocked").withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
-                    Section.of(
-                            Thumbnail.fromUrl(member.getEffectiveAvatarUrl()),
-                            TextDisplay.of(member.getUser().getAsMention() + "'s messages have been flagged for spam."),
-                            TextDisplay.of("## Details:\n> Sent **" + bundles.size() + "** messages containing crypto scam images.")
-                    ).withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
-
-                    MediaGallery.of(
-                            files.stream()
-                                    .map(file -> MediaGalleryItem.fromFile(FileUpload.fromData(file)))
-                                    .toList()
-                    ).withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
-
-                    Separator.createDivider(Separator.Spacing.SMALL).withUniqueId(5),
-                    TextDisplay.of("-# These messages have already been deleted by " + bot.getDeploymentGuild().getSelfMember().getAsMention() + ".").withUniqueId(4)
-
-            ).withUniqueId((int) (Math.random() * Short.MAX_VALUE));
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", container);
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createSpam(member, files));
             for (Bundle bundle : bundles) {
                 for (File file : bundle.attachments()) {
                     if (!file.delete()) Log.warn("Unable to delete file: {}", file.getAbsolutePath());
@@ -210,7 +183,7 @@ public class CryptoDetection extends MessagePriority {
         }
     }
 
-    public void cleanTemp() {
+    public void cleanup() {
         if (this.sendInProgress.get()) return;
         Path dir = Paths.get("data/temp");
         try (Stream<Path> files = Files.list(dir)) {

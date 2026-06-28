@@ -1,10 +1,7 @@
 package org.backblue.core;
 
 import net.dv8tion.jda.api.OnlineStatus;
-import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -13,12 +10,10 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
-import org.backblue.events.*;
+import org.backblue.moderation.*;
 import org.backblue.utilities.*;
 import org.backblue.utilities.BlueSky;
-import org.backblue.scanners.ProfileScanExtension;
-import org.backblue.utilities.GenAI;
-import org.backblue.scanners.ProfileScan;
+import org.backblue.moderation.ProfileScan;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -30,10 +25,12 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public final class Bot {
 
@@ -47,6 +44,7 @@ public final class Bot {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final MessageIO io;
     private final GenAI ai;
+    private final Interactive interactive;
 
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
@@ -107,14 +105,14 @@ public final class Bot {
         io = new MessageIO(settings, this);
         ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         EZPunish ezp = new EZPunish(this, rulebook);
-        ProfileScanExtension hook = new ProfileScanExtension(this, ezp);
-        ProfileScan profileScan = new ProfileScan(this, hook, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
+        interactive = new Interactive(this, ezp);
+        ProfileScan profileScan = new ProfileScan(this, this.interactive, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
         builder.addEventListeners(new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
-                io, new Deployment(io, settings.optJSONObject("channels", null)),
+                this.io, new Deployment(this.io, settings.optJSONObject("channels", null)),
                 ezp,
-                hook,
                 profileScan,
+                this.interactive,
                 new DisableDM(this),
                 new Scan(this, profileScan),
                 new Badge(this, badges),
@@ -159,8 +157,26 @@ public final class Bot {
     public Role getDebugPing() {
         return this.getJDA().getRoleById(this.debugPingRoleID);
     }
+    public Interactive getInteractive() {
+        return this.interactive;
+    }
     public ScheduledExecutorService getScheduler() {
         return this.scheduler;
+    }
+    public void timeout(Member member, String reason, int duration, TimeUnit unit) {
+        if (member == null) return;
+        OffsetDateTime currentTimeout = member.getTimeOutEnd();
+        OffsetDateTime newTimeout = OffsetDateTime.now().plus(duration, unit.toChronoUnit());
+        if (currentTimeout == null || currentTimeout.isBefore(OffsetDateTime.now())) {
+            if (newTimeout.isAfter(OffsetDateTime.now().plusDays(27))) newTimeout = OffsetDateTime.now().plusDays(27);
+            member.timeoutUntil(newTimeout).reason(reason).queue();
+        } else {
+            currentTimeout = currentTimeout.plus(duration, unit.toChronoUnit());
+            if (currentTimeout.isAfter(OffsetDateTime.now().plusDays(27))) currentTimeout = OffsetDateTime.now().plusDays(27);
+            member.timeoutUntil(currentTimeout).reason(reason).queue();
+        }
+
+        member.timeoutFor(duration, unit).reason(reason).queue();
     }
     public EnumSet<FeatureFlag> getFeatures() {
         return features;

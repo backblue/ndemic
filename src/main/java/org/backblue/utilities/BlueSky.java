@@ -42,7 +42,7 @@ public final class BlueSky {
             if (!key.equals("onlyLink") && json.get(key) instanceof String) {
                 bSkyMap.put(key, json.getString(key));
                 bSkyUserLastPost.put(key, Instant.now());
-                Log.info("Monitoring {} and posting to {}", key, json.get(key));
+                Log.info("Monitoring '{}' and posting to channel #{}", key, json.get(key));
                 bot.getScheduler().scheduleWithFixedDelay(() -> {
                     try {
                         checkAccount(key);

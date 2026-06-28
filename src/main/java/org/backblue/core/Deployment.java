@@ -36,15 +36,14 @@ public final class Deployment extends ListenerAdapter {
         commands.add(Commands.slash("badge", "Select a role icon that appears next to your username"));
 
         OptionData featuresList = new OptionData(OptionType.STRING, "flag", "The selected feature", true);
-        for (FeatureFlag feature : FeatureFlag.values()) {
-            featuresList.addChoice(feature.toString(), String.valueOf(feature.ordinal()));
-        }
+        for (FeatureFlag feature : FeatureFlag.values()) featuresList.addChoice(feature.toString(), String.valueOf(feature.ordinal()));
+
         commands.add(Commands.slash("features", "Feature flag management")
-                .addSubcommands(new SubcommandData("list", "List enabled/disabled status of feature flags/modules"))
+                .addSubcommands(new SubcommandData("list", "List status of feature flags/modules"))
                 .addSubcommands(new SubcommandData("enable", "Temporarily enable a feature flag/module").addOptions(featuresList))
                 .addSubcommands(new SubcommandData("disable", "Temporarily disable a feature flag/module").addOptions(featuresList))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED));
-        commands.add(Commands.slash("scan", "Azure Safety Wrapper")
+        commands.add(Commands.slash("scan", "Scan management")
                 .addSubcommands(new SubcommandData("profile", "Manually initiate a profile scan for an user")
                         .addOption(OptionType.USER, "user", "Select a user", true))
                 .addSubcommands(new SubcommandData("link", "Manually initiate a link scan")
