@@ -36,12 +36,12 @@ public final class Bot {
 
     public final int major = 0;
     public final int minor = 9;
-    public final int patch = 6;
+    public final int patch = 7;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
     private final ShardManager JDA;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private final MessageIO io;
     private final GenAI ai;
     private final Interactive interactive;
@@ -102,14 +102,14 @@ public final class Bot {
             builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("status")));
         }
 
-        io = new MessageIO(settings, this);
-        ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
+        this.io = new MessageIO(settings, this);
+        this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         EZPunish ezp = new EZPunish(this, rulebook);
         interactive = new Interactive(this, ezp);
         ProfileScan profileScan = new ProfileScan(this, this.interactive, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
         builder.addEventListeners(new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
-                this.io, new Deployment(this.io, settings.optJSONObject("channels", null)),
+                this.io, new Deployment(settings.optJSONObject("channels", null)),
                 ezp,
                 profileScan,
                 this.interactive,

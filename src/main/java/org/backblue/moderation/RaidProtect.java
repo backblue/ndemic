@@ -10,7 +10,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.time.OffsetDateTime;
 
-public class RaidProtect extends ListenerAdapter {
+public final class RaidProtect extends ListenerAdapter {
     private OffsetDateTime lastKnownRaidAlert = OffsetDateTime.MIN;
     final Bot bot;
 

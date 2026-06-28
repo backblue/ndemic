@@ -12,7 +12,7 @@ import org.backblue.utilities.MessagePriority;
 
 import java.util.concurrent.TimeUnit;
 
-public class Honeypot extends MessagePriority {
+public final class Honeypot extends MessagePriority {
 
     public Honeypot(int priority, Bot bot) {
         super(priority, bot);

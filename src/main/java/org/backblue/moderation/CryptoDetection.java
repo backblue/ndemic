@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-public class CryptoDetection extends MessagePriority {
+public final class CryptoDetection extends MessagePriority {
 
     private static final Logger Log = LoggerFactory.getLogger(CryptoDetection.class);
 

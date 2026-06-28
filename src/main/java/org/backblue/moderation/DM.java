@@ -8,7 +8,7 @@ import org.backblue.core.Bot;
 import org.backblue.utilities.DefinedChannel;
 import org.jetbrains.annotations.NotNull;
 
-public class DM extends ListenerAdapter {
+public final class DM extends ListenerAdapter {
 
     Bot bot;
 

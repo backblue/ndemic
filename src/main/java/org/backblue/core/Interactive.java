@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Interactive extends ListenerAdapter {
+public final class Interactive extends ListenerAdapter {
 
     private final Bot bot;
     private final EZPunish ezPunish;

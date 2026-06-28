@@ -9,6 +9,7 @@ import org.backblue.moderation.ProfileScan;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public class Scan extends ListenerAdapter {
 
@@ -27,7 +28,8 @@ public class Scan extends ListenerAdapter {
                 if ("profile".equals(event.getSubcommandName()) && event.getOption("user") != null) {
                     Member member = Objects.requireNonNull(event.getOption("user")).getAsMember();
                     if (member != null) event.reply("Scan initiated for " + member.getAsMention() + ". Please wait").setEphemeral(true).queue();
-                    this.scanner.scan(member);
+                    CompletableFuture.runAsync(()-> this.scanner.scan(member));
+
                 }
                 if ("link".equals(event.getSubcommandName())) {
                     event.deferReply().setEphemeral(true).queue();
@@ -40,7 +42,7 @@ public class Scan extends ListenerAdapter {
                     }
                 }
             } else {
-                event.reply("Temporarily disabled").queue();
+                event.reply("Temporarily disabled").setEphemeral(true).queue();
             }
         }
     }

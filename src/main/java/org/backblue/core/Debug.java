@@ -32,7 +32,7 @@ public final class Debug {
         if (usedMemoryMB > highestMemoryMB) highestMemoryMB = usedMemoryMB;
 
         Log.info("Heap ({}% used, ↑{}MB): {}MB used, {}MB allocated, {}MB total", String.format("%.2f", usedPercent*100), highestMemoryMB, usedMemoryMB, allocatedMemoryMB, maxMemoryMB);
-        if (usedPercent >= 0.9 && lastUsedMemoryMB != usedMemoryMB && lastUsedMemoryMB != Integer.MAX_VALUE) {
+        if (usedPercent >= 0.91 && lastUsedMemoryMB != usedMemoryMB && lastUsedMemoryMB != Integer.MAX_VALUE) {
             System.gc();
             bot.getIO().send(DefinedChannel.DebugEnforcement, String.format(bot.getDebugPing().getAsMention() + " Potential excessive memory usage detected: %dMB used, up from %dMB", usedMemoryMB, lastUsedMemoryMB));
             Log.warn("Excessive memory usage: {}MB used, up from {}MB", usedMemoryMB, lastUsedMemoryMB);

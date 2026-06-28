@@ -9,7 +9,8 @@ public class Ping extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("ping")) {
-            event.reply(":ping_pong: Pong! - `" + event.getJDA().getGatewayPing() + " ms`").queue();
+            event.deferReply().queue();
+            event.getHook().editOriginal(":ping_pong: Pong! - `" + event.getJDA().getRestPing() + " ms`").queue();
         }
     }
 

@@ -7,7 +7,7 @@ import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.jspecify.annotations.NonNull;
 
-public class AutoMod extends ListenerAdapter {
+public final class AutoMod extends ListenerAdapter {
 
     final Bot bot;
 

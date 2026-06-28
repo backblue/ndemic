@@ -40,7 +40,7 @@ import java.util.Map;
 public final class ProfileScan extends ListenerAdapter {
 
     private static final Logger Log = LoggerFactory.getLogger(ProfileScan.class);
-    private static final int MAX_SCAN_CACHE_SIZE = 16;
+    private static final int MAX_SCAN_CACHE_SIZE = 24;
 
     final Bot bot;
     final ContentSafetyClient safetyClient;

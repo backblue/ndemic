@@ -26,7 +26,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-public class Gatekeeper extends ListenerAdapter {
+public final class Gatekeeper extends ListenerAdapter {
 
     private static final Logger Log = LoggerFactory.getLogger(Gatekeeper.class);
 

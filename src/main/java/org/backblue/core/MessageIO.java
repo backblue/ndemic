@@ -10,7 +10,6 @@ import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.moderation.CryptoDetection;
 import org.backblue.moderation.OneAuthorGuide;
@@ -33,7 +32,7 @@ public final class MessageIO extends ListenerAdapter {
 
     private static final Logger Log = LoggerFactory.getLogger(MessageIO.class);
 
-    private ShardManager JDA;
+    private final Bot bot;
     private final Map<DefinedChannel, String> mapping;
     private final PriorityQueue<MessagePriority> messageQueue = new PriorityQueue<>();
     private final Map<String, Deque<Message>> recentMessages = new ConcurrentHashMap<>();
@@ -42,17 +41,17 @@ public final class MessageIO extends ListenerAdapter {
     private static final byte USER_INACTIVE_TIMEOUT_MIN = 60;
 
     public void send(DefinedChannel dest, String text) {
-        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(mapping.get(dest));
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
     }
 
     public void send(DefinedChannel dest, String text, MessageEmbed embed) {
-        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(mapping.get(dest));
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).setEmbeds(embed).queue();
     }
 
     public void send(DefinedChannel dest, String text, MessageEmbed embed, List<FileUpload> fileUploads) {
-        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(mapping.get(dest));
         if (embed == null && targetChannel instanceof MessageChannelUnion messageChannel) {
             messageChannel.sendMessage(text).addFiles(fileUploads).queue();
             return;
@@ -61,7 +60,7 @@ public final class MessageIO extends ListenerAdapter {
     }
 
     public void send(DefinedChannel dest, String text, List<FileUpload> fileUploads) {
-        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(mapping.get(dest));
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).queue();
     }
 
@@ -80,18 +79,18 @@ public final class MessageIO extends ListenerAdapter {
     }
 
     public void send(String textChannelID, String text) {
-        GuildChannel targetChannel = this.JDA.getGuildChannelById(textChannelID);
+        GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(textChannelID);
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
     }
 
     public void send(DefinedChannel dest, String text, Container container) {
-        GuildChannel targetChannel = this.JDA.getGuildChannelById(mapping.get(dest));
+        GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(mapping.get(dest));
         if (!text.isEmpty() && targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessageComponents(container).useComponentsV2(true).queue();
     }
 
     public GuildChannel getChannel(DefinedChannel dest) {
-        return this.JDA.getTextChannelById(mapping.get(dest));
+        return this.bot.getJDA().getTextChannelById(mapping.get(dest));
     }
 
     public void clean(String id) {
@@ -109,11 +108,8 @@ public final class MessageIO extends ListenerAdapter {
         }
     }
 
-    public void setJDA(ShardManager JDA) {
-        if (JDA != null) this.JDA = JDA;
-    }
-
     public MessageIO(JSONObject settings, Bot bot) {
+        this.bot = bot;
         this.mapping = new EnumMap<>(DefinedChannel.class);
         JSONObject settingsChannel = settings.optJSONObject("channels", null);
         if (settingsChannel == null) {

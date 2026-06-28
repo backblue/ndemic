@@ -8,7 +8,7 @@ import org.backblue.utilities.FeatureFlag;
 import java.time.OffsetDateTime;
 import java.util.concurrent.TimeUnit;
 
-public class DisableDM extends ListenerAdapter {
+public final class DisableDM extends ListenerAdapter {
 
     final Bot bot;
 

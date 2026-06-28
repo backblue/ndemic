@@ -2,7 +2,6 @@ package org.backblue.core;
 
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
-import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -19,13 +18,7 @@ import java.util.List;
 
 public final class Deployment extends ListenerAdapter {
 
-    private final MessageIO io;
     private final JSONObject settings;
-
-    @Override
-    public void onReady(@NonNull ReadyEvent event) {
-        io.setJDA(event.getJDA().getShardManager());
-    }
 
     @Override
     public void onGuildReady(@NonNull GuildReadyEvent event) {
@@ -60,8 +53,7 @@ public final class Deployment extends ListenerAdapter {
         }
     }
 
-    public Deployment(MessageIO messageIO, JSONObject settings) {
-        this.io = messageIO;
+    public Deployment(JSONObject settings) {
         this.settings = settings;
     }
 }

@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Forwarding extends MessagePriority {
+public final class Forwarding extends MessagePriority {
 
     private static final Logger Log = LoggerFactory.getLogger(Forwarding.class);
 
