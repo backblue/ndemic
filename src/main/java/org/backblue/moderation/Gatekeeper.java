@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -18,6 +17,7 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -32,23 +32,25 @@ public final class Gatekeeper extends ListenerAdapter {
 
     final Bot bot;
     final Set<String> joins = new LinkedHashSet<>();
-    final Map<String, ScheduledFuture<?>> scheduledTasks;
+    final Map<String, ScheduledFuture<?>> scheduledChecks;
     final String aiPrompt;
-
     final Pattern[] regex;
     final String[] susRoles;
+    final int minMembersToScan;
+
+    OffsetDateTime lastJoin = OffsetDateTime.MIN;
 
     public Gatekeeper(Bot bot, JSONObject json) {
         this.bot = bot;
-        bot.getScheduler().schedule(this::runChecks, 20, TimeUnit.MINUTES);
+        bot.getScheduler().scheduleWithFixedDelay(this::runChecks, 30, 20, TimeUnit.MINUTES);
 
         if (bot.isFeatureEnabled(FeatureFlag.Gatekeeper_RequireOnboarding)) {
-            scheduledTasks = new ConcurrentHashMap<>();
+            scheduledChecks = new ConcurrentHashMap<>();
         } else {
-            scheduledTasks = null;
+            scheduledChecks = null;
         }
 
-        this.aiPrompt = bot.readResource("genai/prompt.txt");
+        this.aiPrompt = bot.readResource("genai/gatekeeper.txt");
         if (aiPrompt == null) {
             Log.error("Cannot read internal resource... disabling Gatekeeper");
             bot.disableFeature(FeatureFlag.Gatekeeper);
@@ -78,16 +80,19 @@ public final class Gatekeeper extends ListenerAdapter {
             bot.disableFeature(FeatureFlag.Gatekeeper);
             susRoles = null;
         }
+        this.minMembersToScan = json.optInt("minMembersToScan", 16);
+
     }
 
     @Override
     public void onGuildMemberJoin(@NonNull GuildMemberJoinEvent event) {
         joins.add(event.getUser().getId());
+        lastJoin = OffsetDateTime.now();
         if (bot.isFeatureEnabled(FeatureFlag.Gatekeeper_RequireOnboarding)) {
-            int timer = (int) (Math.random() * 22 + 8);
-            ScheduledFuture<?> task = scheduledTasks.put(event.getUser().getId(), bot.getScheduler().schedule(() -> {
+            int timer = (int) (Math.random() * 40 + 20);
+            ScheduledFuture<?> task = scheduledChecks.put(event.getUser().getId(), bot.getScheduler().schedule(() -> {
                 this.kickNonCompliance(event.getMember().getId(), timer);
-                scheduledTasks.remove(event.getUser().getId());
+                scheduledChecks.remove(event.getUser().getId());
             }, timer, TimeUnit.MINUTES));
             if (task != null) task.cancel(true);
         }
@@ -97,46 +102,42 @@ public final class Gatekeeper extends ListenerAdapter {
     @Override
     public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
         joins.remove(event.getUser().getId());
-        ScheduledFuture<?> task = scheduledTasks.remove(event.getUser().getId());
+        ScheduledFuture<?> task = scheduledChecks.remove(event.getUser().getId());
         if (task != null) task.cancel(true);
     }
 
     public void runChecks() {
-        if (!this.enoughMembers() && !bot.isFeatureEnabled(FeatureFlag.Gatekeeper)) return;
+
+        if (!this.precheck() || !bot.isFeatureEnabled(FeatureFlag.Gatekeeper)) return;
         JSONObject json = this.asJSON(this.joins);
+        Log.info(json.toString());
         GenerateContentConfig config = GenerateContentConfig.builder().temperature(0.0f).responseMimeType("application/json").build();
         GenerateContentResponse r = bot.getAI().inputString(aiPrompt.replace("{{ACCOUNTS_JSON}}", json.toString()), config);
         JSONArray captured;
-        bot.getIO().send(DefinedChannel.DebugDirectMessages, "A check is ran <@852609613253443584>");
         try {
             if (r == null || r.text() == null) throw new NullPointerException();
-            captured = new JSONObject(r.text()).optJSONArray("captured");
+            Log.info(r.text());
+            captured = new JSONObject(r.text()).optJSONArray("flagged");
             Log.info(captured.toString());
         } catch (JSONException | NullPointerException e) {
             Log.error("Failure to parse AI response: {}", e.getMessage());
             return;
         }
-
-
         this.joins.clear();
     }
 
-    public boolean enoughMembers() {
-        if (joins.size() >= 16) return true;
-        if (joins.size() >= 18 * 0.8) {
-            bot.getScheduler().schedule(() -> {
-                this.enoughMembers();
-            }, 5, TimeUnit.MINUTES);
-        } else {
-            bot.getScheduler().schedule(() -> {
-                this.enoughMembers();
-            }, 20, TimeUnit.MINUTES);
+    public boolean precheck() {
+        Log.info("{} members queued.", this.joins.size());
+        if (this.lastJoin.isAfter(OffsetDateTime.now().plusMinutes(10))) {
+            Log.info("Did not run checks b/c join in last 10 mins");
+            return false;
         }
-        return false;
+        return this.joins.size() >= this.minMembersToScan;
     }
 
     public JSONObject asJSON(Set<String> keys) {
         JSONObject json = new JSONObject();
+        JSONArray arr = new JSONArray();
         for (String key : keys) {
             Member m = bot.getDeploymentGuild().getMemberById(key);
             if (m != null) {
@@ -146,9 +147,10 @@ public final class Gatekeeper extends ListenerAdapter {
                 obj.put("displayName", m.getEffectiveName());
                 obj.put("discordCreatedTimestamp", m.getUser().getTimeCreated().toEpochSecond());
                 obj.put("guildCreatedTimestamp", m.getTimeJoined().toEpochSecond());
-                json.put(key, obj);
+                arr.put(obj);
             }
         }
+        json.put("members", arr);
         return json;
     }
 

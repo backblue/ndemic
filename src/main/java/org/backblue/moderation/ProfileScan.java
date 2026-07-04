@@ -195,7 +195,6 @@ public final class ProfileScan extends ListenerAdapter {
             outputStream.close();
             stream.close();
         } catch (Exception e) {
-            Log.warn("Unable to download image due to: {}", e.getMessage());
             return new byte[0];
         }
         return outputStream.toByteArray();

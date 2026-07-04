@@ -36,7 +36,7 @@ public final class CryptoDetection extends MessagePriority {
 
     final double threshold;
     final Map<String, Double> keywords;
-    final Map<String, ConcurrentLinkedQueue<CryptoDetection.Bundle>> spammedChannels;
+    final Map<String, PendingReport> pendingReports;
     final Set<String> flaggedUsers;
     final ITesseract tesseract;
     AtomicBoolean sendInProgress = new AtomicBoolean(false);
@@ -47,12 +47,12 @@ public final class CryptoDetection extends MessagePriority {
             threshold = 0;
             tesseract = null;
             keywords = null;
-            spammedChannels = null;
+            pendingReports = null;
             flaggedUsers = null;
         } else {
             if (json == null) {
                 keywords = null;
-                spammedChannels = null;
+                pendingReports = null;
                 flaggedUsers = null;
                 threshold = 0;
                 tesseract = null;
@@ -61,7 +61,7 @@ public final class CryptoDetection extends MessagePriority {
                 return;
             }
             keywords = new ConcurrentHashMap<>();
-            spammedChannels = new ConcurrentHashMap<>();
+            pendingReports = new ConcurrentHashMap<>();
             flaggedUsers = ConcurrentHashMap.newKeySet();
             threshold = json.optDouble("threshold", 8.00);
             JSONObject obj = json.optJSONObject("keywords");
@@ -74,7 +74,6 @@ public final class CryptoDetection extends MessagePriority {
             tesseract.setOcrEngineMode(1);
             tesseract.setPageSegMode(11);
 
-            bot.getScheduler().scheduleAtFixedRate(this::sendAll, 1, 1, TimeUnit.MINUTES);
             bot.getScheduler().scheduleAtFixedRate(this::cleanup, 20, 20, TimeUnit.MINUTES);
         }
     }
@@ -116,8 +115,17 @@ public final class CryptoDetection extends MessagePriority {
             }
         }
         if (userAlreadyFlagged || points >= threshold) {
-            spammedChannels.computeIfAbsent(event.getAuthor().getId(), id -> new ConcurrentLinkedQueue<>())
-                    .add(new Bundle(points, files));
+            PendingReport report = pendingReports.computeIfAbsent(
+                    event.getAuthor().getId(),
+                    id -> new PendingReport());
+            report.bundles.add(new Bundle(points, files));
+            if (report.scheduled.compareAndSet(false, true)) {
+                bot.getScheduler().schedule(
+                        () -> sendReport(event.getAuthor().getId()),
+                        1,
+                        TimeUnit.MINUTES);
+            }
+
             flaggedUsers.add(event.getAuthor().getId());
             event.getMessage().delete().queue();
             return true;
@@ -126,28 +134,24 @@ public final class CryptoDetection extends MessagePriority {
         return false;
     }
 
-    public void sendAll() {
-        if (spammedChannels.isEmpty()) return;
-        this.sendInProgress.set(true);
-        for (String id : spammedChannels.keySet()) {
-            Member member = bot.getDeploymentGuild().getMemberById(id);
-            ConcurrentLinkedQueue<Bundle> bundles = spammedChannels.remove(id);
-            if (member == null || bundles == null) continue;
-            this.bot.timeout(member, "Posted crypto messages", 6, TimeUnit.HOURS);
+    private void sendReport(String userId) {
+        PendingReport report = pendingReports.remove(userId);
+        if (report == null) return;
 
-            List<File> files = bundles.stream()
-                    .flatMap(bundle -> bundle.attachments().stream())
-                    .toList();
+        Member member = bot.getDeploymentGuild().getMemberById(userId);
+        if (member == null) return;
+        List<File> files = report.bundles.stream()
+                .flatMap(bundle -> bundle.attachments().stream())
+                .toList();
 
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createSpam(member, files));
-            for (Bundle bundle : bundles) {
-                for (File file : bundle.attachments()) {
-                    if (!file.delete()) Log.warn("Unable to delete file: {}", file.getAbsolutePath());
-                }
+        bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createSpam(member, files));
+        for (Bundle bundle : report.bundles) {
+            for (File file : bundle.attachments()) {
+                if (!file.delete()) Log.warn("Unable to delete file: {}", file.getAbsolutePath());
             }
         }
-        this.sendInProgress.set(false);
-        this.flaggedUsers.clear();
+
+        flaggedUsers.remove(userId);
     }
 
     private double processImage(File file) throws TesseractException, IOException {
@@ -161,7 +165,6 @@ public final class CryptoDetection extends MessagePriority {
             for (String key : this.keywords.keySet()) {
                 if (text.contains(key)) {
                     result += this.keywords.get(key);
-                    if (result >= threshold) return result;
                 }
             }
         }
@@ -210,4 +213,8 @@ public final class CryptoDetection extends MessagePriority {
     }
 
     record Bundle(double points, List<File> attachments) {}
+    private static class PendingReport {
+        final ConcurrentLinkedQueue<Bundle> bundles = new ConcurrentLinkedQueue<>();
+        final AtomicBoolean scheduled = new AtomicBoolean(false);
+    }
 }

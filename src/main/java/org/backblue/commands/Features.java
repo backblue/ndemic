@@ -31,10 +31,7 @@ public class Features extends ListenerAdapter {
             }
             String feature = Objects.requireNonNull(event.getOption("flag")).getAsString();
             if (event.getSubcommandName().equals("enable")) {
-                if (bot.getFeature(feature) == null) {
-                    event.reply("Failure to retrieve feature flag").setEphemeral(true).queue();
-                    return;
-                }
+                bot.getFeature(feature);
                 if (Objects.requireNonNull(bot.getFeature(feature)).restricted()) {
                     event.reply("This feature can only be re-enabled with a restart.").setEphemeral(true).queue();
                     return;

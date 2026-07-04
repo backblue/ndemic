@@ -140,7 +140,7 @@ public final class Bot {
         for (FeatureFlag feature : FeatureFlag.values()) {
             if (feature.ordinal() == Integer.parseInt(ordinal)) return feature;
         }
-        return null;
+        throw new RuntimeException("Unable to find feature with ordinal '" + ordinal + "'");
     }
     public MessageIO getIO() {
         return this.io;
@@ -165,18 +165,19 @@ public final class Bot {
     }
     public void timeout(Member member, String reason, int duration, TimeUnit unit) {
         if (member == null) return;
-        OffsetDateTime currentTimeout = member.getTimeOutEnd();
-        OffsetDateTime newTimeout = OffsetDateTime.now().plus(duration, unit.toChronoUnit());
-        if (currentTimeout == null || currentTimeout.isBefore(OffsetDateTime.now())) {
-            if (newTimeout.isAfter(OffsetDateTime.now().plusDays(27))) newTimeout = OffsetDateTime.now().plusDays(27);
-            member.timeoutUntil(newTimeout).reason(reason).queue();
-        } else {
-            currentTimeout = currentTimeout.plus(duration, unit.toChronoUnit());
-            if (currentTimeout.isAfter(OffsetDateTime.now().plusDays(27))) currentTimeout = OffsetDateTime.now().plusDays(27);
-            member.timeoutUntil(currentTimeout).reason(reason).queue();
-        }
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime maxTimeout = now.plusDays(27);
+        OffsetDateTime timeoutEnd = member.getTimeOutEnd();
 
-        member.timeoutFor(duration, unit).reason(reason).queue();
+        if (timeoutEnd == null || timeoutEnd.isBefore(now)) timeoutEnd = now;
+        timeoutEnd = timeoutEnd.plus(duration, unit.toChronoUnit());
+
+        if (timeoutEnd.isAfter(maxTimeout)) timeoutEnd = maxTimeout;
+
+        member.timeoutUntil(timeoutEnd).reason(reason).queue(
+                success -> {},
+                failure -> {}
+        );
     }
     public EnumSet<FeatureFlag> getFeatures() {
         return features;
