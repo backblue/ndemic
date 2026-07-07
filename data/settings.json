@@ -36,6 +36,8 @@
   ],
   "detectCrypto": {
     "threshold": 7,
+    "useCloud": true,
+    "fallbackOnLocal": false,
     "keywords": {
       "mellstrgame78": 4,
       "MELLBON": 3,

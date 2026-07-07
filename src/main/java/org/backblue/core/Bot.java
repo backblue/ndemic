@@ -166,7 +166,7 @@ public final class Bot {
     public void timeout(Member member, String reason, int duration, TimeUnit unit) {
         if (member == null) return;
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime maxTimeout = now.plusDays(27);
+        OffsetDateTime maxTimeout = now.plusDays(28).minusSeconds(1);
         OffsetDateTime timeoutEnd = member.getTimeOutEnd();
 
         if (timeoutEnd == null || timeoutEnd.isBefore(now)) timeoutEnd = now;
