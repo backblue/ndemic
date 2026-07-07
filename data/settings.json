@@ -3,6 +3,7 @@
     "_debug": "846837318132301904",
     "_deploy": "523349543505362945",
     "_track": 8,
+    "_useOldMessageLogging": false,
     "debugDirectMessages": "1354224979755008191",
     "debugAutoModAlert": "1354224983924019491",
     "debugEnforcement": "1354229171076731111",

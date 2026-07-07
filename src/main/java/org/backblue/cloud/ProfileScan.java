@@ -1,4 +1,4 @@
-package org.backblue.moderation;
+package org.backblue.cloud;
 
 import com.azure.ai.contentsafety.ContentSafetyClient;
 import com.azure.ai.contentsafety.ContentSafetyClientBuilder;

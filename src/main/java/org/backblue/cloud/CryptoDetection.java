@@ -1,4 +1,4 @@
-package org.backblue.moderation;
+package org.backblue.cloud;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -39,40 +39,56 @@ public final class CryptoDetection extends MessagePriority {
     final Map<String, PendingReport> pendingReports;
     final Set<String> flaggedUsers;
     final ITesseract tesseract;
+    final CloudOCR azure;
+
     AtomicBoolean sendInProgress = new AtomicBoolean(false);
 
-    public CryptoDetection(int priority, Bot bot, JSONObject json) {
+    public CryptoDetection(int priority, Bot bot, JSONObject json, String endpoint, String secret) {
         super(priority, bot);
-        if (!bot.isFeatureEnabled(FeatureFlag.DetectCrypto)) {
+        if (!bot.isFeatureEnabled(FeatureFlag.DetectCrypto) || json == null) {
             threshold = 0;
             tesseract = null;
             keywords = null;
             pendingReports = null;
             flaggedUsers = null;
+            azure = null;
+            if (json == null) Log.warn("No config provided for crypto detection, disabling");
+            bot.disableFeature(FeatureFlag.DetectCrypto);
         } else {
-            if (json == null) {
-                keywords = null;
-                pendingReports = null;
-                flaggedUsers = null;
-                threshold = 0;
-                tesseract = null;
-                Log.warn("No config provided for crypto detection, disabling");
-                bot.disableFeature(FeatureFlag.DetectCrypto);
-                return;
-            }
             keywords = new ConcurrentHashMap<>();
             pendingReports = new ConcurrentHashMap<>();
             flaggedUsers = ConcurrentHashMap.newKeySet();
             threshold = json.optDouble("threshold", 8.00);
+            boolean local = json.optBoolean("fallbackOnLocal", true);
             JSONObject obj = json.optJSONObject("keywords");
-            for (String key : obj.keySet()) {
-                keywords.put(key, obj.getDouble(key));
+            for (String key : obj.keySet()) keywords.put(key, obj.getDouble(key));
+
+            if (local) {
+                tesseract = new Tesseract();
+                tesseract.setDatapath("data/tessdata");
+                tesseract.setLanguage("eng");
+                tesseract.setOcrEngineMode(1);
+                tesseract.setPageSegMode(11);
+            } else {
+                tesseract = null;
             }
-            tesseract = new Tesseract();
-            tesseract.setDatapath("data/tessdata");
-            tesseract.setLanguage("eng");
-            tesseract.setOcrEngineMode(1);
-            tesseract.setPageSegMode(11);
+            boolean useCloud = json.optBoolean("useCloud", true);
+            if (useCloud) {
+                if (endpoint == null || secret == null) {
+                    azure = null;
+                    Log.warn("OCR provider requires credentials, disabling");
+                    return;
+                }
+                azure = new CloudOCR(endpoint, secret);
+            } else {
+                azure = null;
+            }
+
+            if (tesseract == null && azure == null) {
+                Log.error("No OCR provider selected, disabling");
+                bot.disableFeature(FeatureFlag.DetectCrypto);
+                return;
+            }
 
             bot.getScheduler().scheduleAtFixedRate(this::cleanup, 20, 20, TimeUnit.MINUTES);
         }
@@ -159,7 +175,7 @@ public final class CryptoDetection extends MessagePriority {
         double result = 0.0;
         String name = file.getName().toLowerCase();
         if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp")) {
-            String text = extractText(file);
+            String text = extractTextWrapper(file);
             if (text == null) return 0.0;
             text = text.toLowerCase();
             for (String key : this.keywords.keySet()) {
@@ -171,6 +187,12 @@ public final class CryptoDetection extends MessagePriority {
         long end = System.currentTimeMillis();
         Log.info("Processed image {} in {}ms with score {}", file.getName(), (end - start), result);
         return result;
+    }
+
+    public String extractTextWrapper(File file) throws TesseractException, IOException {
+        if (azure != null && azure.enabled()) return azure.extractText(file);
+        if (tesseract != null) return extractText(file);
+        return "";
     }
 
     public String extractText(File file) throws TesseractException, IOException {

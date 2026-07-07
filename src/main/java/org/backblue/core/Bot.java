@@ -13,7 +13,7 @@ import org.backblue.commands.*;
 import org.backblue.moderation.*;
 import org.backblue.utilities.*;
 import org.backblue.utilities.BlueSky;
-import org.backblue.moderation.ProfileScan;
+import org.backblue.cloud.ProfileScan;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -102,7 +102,7 @@ public final class Bot {
             builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("status")));
         }
 
-        this.io = new MessageIO(settings, this);
+        this.io = new MessageIO(settings, this, keys);
         this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         EZPunish ezp = new EZPunish(this, rulebook);
         interactive = new Interactive(this, ezp);

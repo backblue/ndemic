@@ -83,7 +83,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>6.4.1</version>
+            <version>6.5.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>club.minnced</groupId>
@@ -126,6 +126,11 @@
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-webp</artifactId>
             <version>3.13.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-ai-vision-imageanalysis</artifactId>
+            <version>1.0.9</version>
         </dependency>
     </dependencies>
 

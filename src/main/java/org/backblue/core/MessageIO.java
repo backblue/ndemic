@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
-import org.backblue.moderation.CryptoDetection;
+import org.backblue.cloud.CryptoDetection;
 import org.backblue.moderation.OneAuthorGuide;
 import org.backblue.moderation.Forwarding;
 import org.backblue.moderation.Honeypot;
@@ -91,7 +91,7 @@ public final class MessageIO extends ListenerAdapter {
     public GuildChannel getChannel(DefinedChannel dest) {
         return this.bot.getJDA().getTextChannelById(mapping.get(dest));
     }
-
+    // Todo: 1. Use Collections delete for 2+ msgs, 2. Update so that it uses guild.search API instead to save memory
     public void clean(String id) {
         Deque<Message> messages = this.recentMessages.remove(id);
         if (messages == null) return;
@@ -107,7 +107,7 @@ public final class MessageIO extends ListenerAdapter {
         }
     }
 
-    public MessageIO(JSONObject settings, Bot bot) {
+    public MessageIO(JSONObject settings, Bot bot, Properties props) {
         this.bot = bot;
         this.mapping = new EnumMap<>(DefinedChannel.class);
         JSONObject settingsChannel = settings.optJSONObject("channels", null);
@@ -131,7 +131,7 @@ public final class MessageIO extends ListenerAdapter {
         messageQueue.add(new OneAuthorGuide(50, bot));
         messageQueue.add(new Honeypot(5, bot));
         messageQueue.add(new Forwarding(15, bot, settings.optJSONArray("messageForwarding")));
-        messageQueue.add(new CryptoDetection(6, bot, settings.optJSONObject("detectCrypto")));
+        messageQueue.add(new CryptoDetection(6, bot, settings.optJSONObject("detectCrypto"), (String) props.getOrDefault("VISION_ENDPOINT", null), (String) props.getOrDefault("VISION_KEY", null)));
         bot.getScheduler().scheduleAtFixedRate(this::cleanupInactiveUsers, 1, 1, TimeUnit.HOURS);
     }
 
