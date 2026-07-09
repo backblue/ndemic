@@ -98,7 +98,7 @@ public final class ProfileScan extends ListenerAdapter {
             if (bannerUrl != null) {
                 ScanResult banner = scan(member.getId(), bannerUrl);
                 if (banner != null && banner.points() >= hateMinToAlert) {
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.createProfile(member, "banner", banner.points));
+                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", hook.createProfile(member, "banner", banner.points));
                     lastScan.put(member.getId(), OffsetTime.now());
                 }
             }

@@ -91,10 +91,13 @@ public final class MessageIO extends ListenerAdapter {
     public GuildChannel getChannel(DefinedChannel dest) {
         return this.bot.getJDA().getTextChannelById(mapping.get(dest));
     }
-    // Todo: 1. Use Collections delete for 2+ msgs, 2. Update so that it uses guild.search API instead to save memory
     public void clean(String id) {
         Deque<Message> messages = this.recentMessages.remove(id);
-        if (messages == null) return;
+        if (messages == null || messages.isEmpty()) return;
+        if (messages.size() == 1) {
+            messages.getFirst().delete().queue();
+        }
+
         for (Message message : messages) {
             message.delete().queue(
                     success -> {},

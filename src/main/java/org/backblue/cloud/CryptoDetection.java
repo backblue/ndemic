@@ -1,5 +1,6 @@
 package org.backblue.cloud;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -105,6 +106,7 @@ public final class CryptoDetection extends MessagePriority {
         if (!bot.isFeatureEnabled(FeatureFlag.DetectCrypto)) {
             return false;
         }
+        if (event.getMember() != null && event.getMember().hasPermission(Permission.ADMINISTRATOR)) return false;
         List<Message.Attachment> attachmentList = event.getMessage().getAttachments();
         List<File> files = new ArrayList<>();
         double points = 0.0;

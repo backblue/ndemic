@@ -2,12 +2,14 @@ package org.backblue.moderation;
 
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
+import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -17,6 +19,7 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -39,6 +42,7 @@ public final class Gatekeeper extends ListenerAdapter {
     final int minMembersToScan;
 
     OffsetDateTime lastJoin = OffsetDateTime.MIN;
+    OffsetDateTime lastCheck = OffsetDateTime.now();
 
     public Gatekeeper(Bot bot, JSONObject json) {
         this.bot = bot;
@@ -110,19 +114,39 @@ public final class Gatekeeper extends ListenerAdapter {
 
         if (!this.precheck() || !bot.isFeatureEnabled(FeatureFlag.Gatekeeper)) return;
         JSONObject json = this.asJSON(this.joins);
+
+        long minutes = Math.abs(Duration.between(OffsetDateTime.now(), this.lastCheck).toMinutes());
         Log.info(json.toString());
         GenerateContentConfig config = GenerateContentConfig.builder().temperature(0.0f).responseMimeType("application/json").build();
-        GenerateContentResponse r = bot.getAI().inputString(aiPrompt.replace("{{ACCOUNTS_JSON}}", json.toString()), config);
+        String prompt = aiPrompt.replace("{{ACCOUNTS_JSON}}", json.toString());
+        prompt = prompt.replace("{{INTERVAL}}", minutes + " minutes");
+
+        GenerateContentResponse r = bot.getAI().inputString(prompt, config);
         JSONArray captured;
         try {
             if (r == null || r.text() == null) throw new NullPointerException();
-            Log.info(r.text());
-            captured = new JSONObject(r.text()).optJSONArray("flagged");
-            Log.info(captured.toString());
+            JSONObject jsonResponse = new JSONObject(r.text());
+            captured = jsonResponse.optJSONArray("flagged");
+            boolean ping = jsonResponse.optBoolean("modPings");
+            Log.info(jsonResponse.toString(4));
+
+            if (captured == null || captured.isEmpty()) return;
+            EmbedBuilder e = new EmbedBuilder();
+            e.setTitle(captured.length() + " potential spambots?");
+            e.setFooter("AI may make mistakes; use final judgement.");
+            e.addField("info", String.format("`ping mods:%s,mins since last check:%d}`", ping, minutes), false);
+
+            StringBuilder a = new StringBuilder();
+            for (int i = 0; i < captured.length(); i++) {
+                a.append("<").append(captured.getString(i)).append("> ");
+            }
+            e.setDescription(a.toString());
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", e.build());
         } catch (JSONException | NullPointerException e) {
             Log.error("Failure to parse AI response: {}", e.getMessage());
             return;
         }
+        this.lastCheck = OffsetDateTime.now();
         this.joins.clear();
     }
 
