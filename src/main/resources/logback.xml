@@ -1,14 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration scan="true"> <!-- Reloads every minute -->
+<configuration scan="true">
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %boldCyan(%-26.-26thread) %boldYellow(%-20.-20logger{0}) %highlight(%-6level) %msg%n%throwable</pattern>
         </encoder>
     </appender>
 
-    <!-- Async wrapper -->
-    <appender name="ASYNC_STDOUT"
-              class="ch.qos.logback.classic.AsyncAppender">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>data/log.txt</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>data/log-%d{yyyy-MM-dd}.%i.txt</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-26.-26thread %-20.-20logger{0} %-6level %msg%n%throwable</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_STDOUT" class="ch.qos.logback.classic.AsyncAppender">
 
         <queueSize>8192</queueSize>
         <discardingThreshold>0</discardingThreshold>
@@ -17,12 +31,22 @@
         <appender-ref ref="STDOUT"/>
     </appender>
 
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+
+        <queueSize>8192</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+
+        <appender-ref ref="FILE"/>
+    </appender>
+
     <!-- JDA -->
     <logger name="net.dv8tion.jda" level="INFO"/>
 
     <!-- Root -->
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="ASYNC_STDOUT"/>
+        <appender-ref ref="ASYNC_FILE"/>
     </root>
 
 </configuration>

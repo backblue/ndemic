@@ -43,6 +43,8 @@ public final class Gatekeeper extends ListenerAdapter {
 
     OffsetDateTime lastJoin = OffsetDateTime.MIN;
     OffsetDateTime lastCheck = OffsetDateTime.now();
+    int lastCheckAmount = -1;
+    long lastCheckMinutes = -1;
 
     public Gatekeeper(Bot bot, JSONObject json) {
         this.bot = bot;
@@ -120,6 +122,8 @@ public final class Gatekeeper extends ListenerAdapter {
         GenerateContentConfig config = GenerateContentConfig.builder().temperature(0.0f).responseMimeType("application/json").build();
         String prompt = aiPrompt.replace("{{ACCOUNTS_JSON}}", json.toString());
         prompt = prompt.replace("{{INTERVAL}}", minutes + " minutes");
+        prompt = prompt.replace("{MEMBERS_JOINED_LAST_CYCLE}", String.valueOf(this.lastCheckAmount));
+        prompt = prompt.replace("{TIME_TOOK_TO_CHECK_THOSE_MEMBERS}", String.valueOf(this.lastCheckMinutes));
 
         GenerateContentResponse r = bot.getAI().inputString(prompt, config);
         JSONArray captured;
@@ -134,11 +138,11 @@ public final class Gatekeeper extends ListenerAdapter {
             EmbedBuilder e = new EmbedBuilder();
             e.setTitle(captured.length() + " potential spambots?");
             e.setFooter("AI may make mistakes; use final judgement.");
-            e.addField("info", String.format("`ping mods:%s,mins since last check:%d}`", ping, minutes), false);
+            e.addField("info", String.format("`{ping:%s,lastCheck:%d}`", ping, minutes), false);
 
             StringBuilder a = new StringBuilder();
             for (int i = 0; i < captured.length(); i++) {
-                a.append("<").append(captured.getString(i)).append("> ");
+                a.append("<@").append(captured.getString(i)).append("> ");
             }
             e.setDescription(a.toString());
             bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", e.build());
@@ -146,6 +150,8 @@ public final class Gatekeeper extends ListenerAdapter {
             Log.error("Failure to parse AI response: {}", e.getMessage());
             return;
         }
+        this.lastCheckAmount = this.joins.size();
+        this.lastCheckMinutes = minutes;
         this.lastCheck = OffsetDateTime.now();
         this.joins.clear();
     }

@@ -4,6 +4,12 @@ coordinated fake accounts based purely on username patterns.
 Only flag accounts when there is reasonable evidence based on these rules.
 When uncertain, do not flag. Avoid false positives over maximizing detections.
 
+Flagging requires either (a) a Rule 2 timing cluster that also passes the Rule 3
+name-pattern check, or (b) a single account with extremely strong standalone
+evidence under Rule 1 (e.g. an unambiguous algorithmically generated username).
+Never scan the full batch for name similarity independent of a timing cluster —
+only compare names within an already-identified timing cluster.
+
 You will be given a JSON array of accounts, each with a "name" and "id" field.
 
 ## Detection Rules
@@ -16,39 +22,40 @@ Flag accounts whose usernames appear to be machine-generated. Common patterns in
 - Usernames that are highly similar to others in the batch (e.g. "CoolUser1",
   "CoolUser2", "CoolUser3")
 
-### Rule 2 — "Perfect" Display Names (Group Flag)
-Some bot accounts disguise themselves with clean, human-sounding single or multi-word display
-names — typically real given names or soft English words with positive connotations.
-If a display name is not in English, mentally translate its meaning before evaluating
-whether it belongs to the "perfect display name" pattern.
-Examples: "Georgiana", "Aurora", "Michelle", "Dawn", "Peaceful", "Serenity", etc.
+### Rule 2 — Coordinated Successive Joins (Primary Trigger)
+First, look ONLY at guildCreatedTimestamp. Identify any sequence of 3 or more
+accounts that joined in succession with roughly regular spacing of 4–9 minutes
+between each consecutive join (e.g. joins at T, T+5, T+11, T+16 — allow ±2 min
+jitter). This is a timing cluster.
 
-A single account with such a name is NOT suspicious on its own.
-However, if a notable cluster of accounts in the same batch share this pattern,
-flag the entire cluster — cluster generally consists of three or more accounts sharing the same naming pattern,
-unless the batch itself is very small.
+A timing cluster by itself is NOT sufficient to flag anyone — regular join spacing
+alone happens in real servers (e.g. a Discord getting shared in a group chat).
 
-Analyze every account before deciding which ones to flag.
-Do not evaluate accounts independently.
-Look for naming patterns across the entire batch.
+### Rule 3 — Name Similarity Within a Timing Cluster (Corroboration Only)
+Only after identifying a timing cluster under Rule 2, examine the display names and
+usernames of ONLY the accounts in that cluster (ignore the rest of the batch for
+this check). Flag the cluster if the accounts within it share a naming pattern more
+specific than "generic pleasant human name," for example:
+- Same narrow theme (all single virtue/nature nouns, all the same uncommon
+  non-English name root, all identical capitalization/spacing quirks)
+- Sequential or templated usernames (e.g. "CoolUser1", "CoolUser2")
+- Usernames that are randomish strings (see Rule 1)
 
-### Rule 3 — Coordinated Join Timing
+Do NOT flag a timing cluster where the shared trait is just "these are all normal
+first names" (e.g. Michelle, Alex, Sam appearing near each other in time) — that is
+expected coincidence, not evidence. You must be able to articulate why the specific
+names are unusual together, not just that they are pleasant-sounding.
 
-If multiple accounts that already appear similar by username or display name
-also joined approximately 4–9 minutes apart from one another, treat this as
-additional evidence of coordinated creation.
+An account may ONLY be flagged if it is part of a Rule 2 timing cluster AND that
+cluster passes the Rule 3 name-pattern check. Do not flag accounts outside any
+timing cluster based on name pattern alone, no matter how unusual the names look —
+without the timing signal, treat unusual names as insufficient evidence per Rule 1's
+"single unusual username" guidance.
 
-Do not flag accounts solely because they joined approximately 4–10 minutes apart.
-Join timing should strengthen other indicators, not replace them.
 
-When evaluating the batch, look for repeated spacing between multiple accounts
-rather than a single coincidence.
-
-Use the guildCreatedTimestamp values to identify coordinated join timing.
-Compare all members in the batch to determine whether multiple similar accounts
-joined at roughly regular 4–9 minute intervals.
-
-Lastly, based on these statistics, should moderators be alerted that this may be a raid? Be conservative.
+Lastly, based on these statistics, moderators should only be alerted if the flagged cluster is large relative to total joins.
+You will be provided the amount of members that joined and the time it took to check those members from the last cycle.
+If the amount is -1, then make your judgment without the consideration of those who joined from the previous cycle.
 
 ## Output Format
 Return ONLY a valid JSON object. No explanations, no Markdown, no preamble.
@@ -82,3 +89,6 @@ You will also be provided the interval, meaning in X long of time, these amount 
 <INTERVAL>
 {{INTERVAL}}
 </INTERVAL>
+<LAST_CHECK>
+{membersJoined:{MEMBERS_JOINED_LAST_CYCLE},timeTookToScanMins:{TIME_TOOK_TO_CHECK_THOSE_MEMBERS}}
+</LAST_CHECK>
