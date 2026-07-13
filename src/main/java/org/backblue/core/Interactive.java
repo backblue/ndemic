@@ -1,12 +1,15 @@
 package org.backblue.core;
 
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.attachmentupload.AttachmentUpload;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.label.Label;
 import net.dv8tion.jda.api.components.mediagallery.MediaGallery;
 import net.dv8tion.jda.api.components.mediagallery.MediaGalleryItem;
 import net.dv8tion.jda.api.components.replacer.ComponentReplacer;
 import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.selections.StringSelectMenu;
 import net.dv8tion.jda.api.components.separator.Separator;
 import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
@@ -14,6 +17,7 @@ import net.dv8tion.jda.api.components.tree.MessageComponentTree;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.modals.Modal;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.commands.EZPunish;
 import org.jspecify.annotations.NonNull;
@@ -29,7 +33,7 @@ public final class Interactive extends ListenerAdapter {
 
     private final Bot bot;
     private final EZPunish ezPunish;
-    private final Map<Short, InteractiveCore> actions = new ConcurrentHashMap<>();
+    private final Map<Short, Interactive.Type> actions = new ConcurrentHashMap<>();
 
     public Interactive(Bot bot, EZPunish ezPunish) {
         this.bot = bot;
@@ -40,11 +44,11 @@ public final class Interactive extends ListenerAdapter {
     public void onButtonInteraction(@NonNull ButtonInteractionEvent event) {
         if (event.getButton().getCustomId() == null) return;
         short id = Short.parseShort(event.getButton().getCustomId().split(";")[0]);
-        InteractiveCore interactive = actions.get(id);
+        Type interactive = actions.get(id);
         switch (interactive) {
-            case InteractiveCore.Profile action -> {
+            case Type.Profile data -> {
                 String punishment = event.getButton().getCustomId().split(";")[1];
-                Member member = bot.getDeploymentGuild().getMemberById(action.memberID);
+                Member member = bot.getDeploymentGuild().getMemberById(data.memberID);
                 if (member != null) {
                     if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), false, member.getEffectiveAvatarUrl(), null);
                     if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), true, member.getEffectiveAvatarUrl(), null);
@@ -52,15 +56,29 @@ public final class Interactive extends ListenerAdapter {
                 MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
                 event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
             }
-            case InteractiveCore.Spam action -> {
+            case Type.Spam data -> {
                 String punishment = event.getButton().getCustomId().split(";")[1];
-                Member member = bot.getDeploymentGuild().getMemberById(action.memberID);
+                Member member = bot.getDeploymentGuild().getMemberById(data.memberID);
                 if (member != null) {
                     if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), false, member.getEffectiveAvatarUrl(), null);
                     if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), true, member.getEffectiveAvatarUrl(), null);
                 }
                 MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
                 event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
+            }
+            case Type.Gatekeeper data -> {
+                List<String> list = data.memberIDs();
+                StringSelectMenu.Builder selectMenu = StringSelectMenu.create("gatekeeper:target").setRequired(true).setRequiredRange(1, 8);
+                for (String memberID : list) {
+                    Member member = bot.getDeploymentGuild().getMemberById(memberID);
+                    if (member != null) selectMenu.addOption(member.getUser().getName(), id+";"+memberID);
+                }
+                Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
+                        .addComponents(
+                                TextDisplay.of("Test Modal. Does not work"),
+                                Label.of("Targets", selectMenu.build())
+                        ).build();
+                event.replyModal(modal).queue();
             }
         }
 
@@ -90,7 +108,7 @@ public final class Interactive extends ListenerAdapter {
                 TextDisplay.of("-# Punishment actions will notify the user (and logged).").withUniqueId(100)
 
         ).withUniqueId(id);
-        actions.put(id, new InteractiveCore.Profile(member.getId(), type));
+        actions.put(id, new Type.Profile(member.getId(), type));
         return container;
     }
     public Container createSpam(Member member, List<File> attachments) {
@@ -114,18 +132,44 @@ public final class Interactive extends ListenerAdapter {
                         Button.danger(id+";ban", "Ban"),
                         Button.secondary(id+";nothing", "Do nothing")
                 ).withUniqueId(101),
-
+                
                 Separator.createDivider(Separator.Spacing.SMALL).withUniqueId(5),
                 TextDisplay.of("-# These messages have already been deleted.").withUniqueId(100)
 
         ).withUniqueId(id);
-        actions.put(id, new InteractiveCore.Spam(member.getId()));
+        actions.put(id, new Type.Spam(member.getId()));
+        return container;
+    }
+    public Container createGatekeeper(List<String> memberIDs, long timeUntilScan, boolean pingMods) {
+        short id = this.generate();
+        String icon = bot.getDeploymentGuild().getIconUrl() == null ? "" : bot.getDeploymentGuild().getIconUrl();
+
+        StringBuilder list = new StringBuilder();
+        for (String memberID : memberIDs) {
+            list.append("<@").append(memberID).append("> ");
+        }
+
+        Container container = Container.of(
+                TextDisplay.of("# :shield: Recent Join Activity"),
+                Section.of(
+                        Thumbnail.fromUrl(icon),
+                        TextDisplay.of(String.format("In **%,d minutes**, **%,d members** joined.", timeUntilScan, memberIDs.size())),
+                        TextDisplay.of(String.format("## > Details: {ping==%b}\n" + list, pingMods))
+                ),
+                ActionRow.of(
+                        Button.primary(id+";action", "Take action...")
+                ).withUniqueId(101),
+                Separator.createDivider(Separator.Spacing.SMALL),
+                TextDisplay.of("-# AI may make mistakes; use final judgement.").withUniqueId(100)
+
+        ).withUniqueId(id);
+        actions.put(id, new Type.Gatekeeper(memberIDs));
         return container;
     }
 
-    sealed interface InteractiveCore {
-        record Profile(String memberID, String type) implements InteractiveCore {}
-        record Spam(String memberID) implements InteractiveCore {}
+    sealed interface Type {
+        record Profile(String memberID, String type) implements Type {}
+        record Spam(String memberID) implements Type {}
+        record Gatekeeper(List<String> memberIDs) implements Type {}
     }
-
 }

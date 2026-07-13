@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -133,19 +134,8 @@ public final class Gatekeeper extends ListenerAdapter {
             captured = jsonResponse.optJSONArray("flagged");
             boolean ping = jsonResponse.optBoolean("modPings");
             Log.info(jsonResponse.toString(4));
-
-            if (captured == null || captured.isEmpty()) return;
-            EmbedBuilder e = new EmbedBuilder();
-            e.setTitle(captured.length() + " potential spambots?");
-            e.setFooter("AI may make mistakes; use final judgement.");
-            e.addField("info", String.format("`{ping:%s,lastCheck:%d}`", ping, minutes), false);
-
-            StringBuilder a = new StringBuilder();
-            for (int i = 0; i < captured.length(); i++) {
-                a.append("<@").append(captured.getString(i)).append("> ");
-            }
-            e.setDescription(a.toString());
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", e.build());
+            List<String> list = captured.toList().stream().map(Object::toString).toList();
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createGatekeeper(list, minutes, ping));
         } catch (JSONException | NullPointerException e) {
             Log.error("Failure to parse AI response: {}", e.getMessage());
             return;

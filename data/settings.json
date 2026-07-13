@@ -25,6 +25,7 @@
     "did:plc:fnjpvrzkdt74wlgb5b4gtc6e": "699373249338802226"
   },
   "profileScanner": {
+    "pingMods": false,
     "cooldownBetweenScans": 10,
     "hateMinToAlert": 2
   },

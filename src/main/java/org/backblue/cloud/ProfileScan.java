@@ -17,7 +17,6 @@ import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
-import org.backblue.core.Interactive;
 import org.backblue.utilities.DefinedChannel;
 import org.backblue.utilities.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
@@ -46,12 +45,11 @@ public final class ProfileScan extends ListenerAdapter {
     final ContentSafetyClient safetyClient;
     final int scanCooldownAfterFlagging;
     final int hateMinToAlert;
-    final Interactive hook;
+    final boolean ping;
     final Map<String, OffsetTime> lastScan;
 
-    public ProfileScan(Bot bot, Interactive hook, String endpoint, String key, JSONObject config) {
+    public ProfileScan(Bot bot, String endpoint, String key, JSONObject config) {
         this.bot = bot;
-        this.hook = hook;
         this.lastScan = new LinkedHashMap<>() {
             @Override
             protected boolean removeEldestEntry(Map.Entry eldest) {
@@ -63,6 +61,7 @@ public final class ProfileScan extends ListenerAdapter {
             safetyClient = null;
             scanCooldownAfterFlagging = 0;
             hateMinToAlert = 0;
+            ping = false;
             this.bot.disableFeature(FeatureFlag.ScanProfiles);
             return;
         }
@@ -74,9 +73,11 @@ public final class ProfileScan extends ListenerAdapter {
             Log.info("Missing configurations, set default values");
             scanCooldownAfterFlagging = 10;
             hateMinToAlert = 2;
+            ping = true;
         } else {
             scanCooldownAfterFlagging = config.optInt("cooldownBetweenScans", 10);
             hateMinToAlert = config.optInt("hateMinToAlert", 2);
+            ping = config.optBoolean("pingMods", true);
         }
     }
 
@@ -89,7 +90,7 @@ public final class ProfileScan extends ListenerAdapter {
         }
         ScanResult avatar = scan(member.getId(), member.getEffectiveAvatarUrl());
         if (avatar != null && avatar.points >= this.hateMinToAlert) {
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), hook.createProfile(member, "picture", avatar.points));
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, this.ping ? bot.getMostModerators().getAsMention() : "", bot.getInteractive().createProfile(member, "picture", avatar.points));
             lastScan.put(member.getId(), OffsetTime.now());
         }
         member.getUser().retrieveProfile().queue(profile -> {
@@ -98,7 +99,7 @@ public final class ProfileScan extends ListenerAdapter {
             if (bannerUrl != null) {
                 ScanResult banner = scan(member.getId(), bannerUrl);
                 if (banner != null && banner.points() >= hateMinToAlert) {
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", hook.createProfile(member, "banner", banner.points));
+                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createProfile(member, "banner", banner.points));
                     lastScan.put(member.getId(), OffsetTime.now());
                 }
             }

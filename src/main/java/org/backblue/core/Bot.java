@@ -36,7 +36,7 @@ public final class Bot {
 
     public final int major = 0;
     public final int minor = 9;
-    public final int patch = 7;
+    public final int patch = 8;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
@@ -106,7 +106,7 @@ public final class Bot {
         this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         EZPunish ezp = new EZPunish(this, rulebook);
         interactive = new Interactive(this, ezp);
-        ProfileScan profileScan = new ProfileScan(this, this.interactive, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
+        ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
         builder.addEventListeners(new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
                 this.io, new Deployment(settings.optJSONObject("channels", null)),
