@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
 import org.backblue.utilities.DefinedChannel;
@@ -172,6 +173,20 @@ public final class Gatekeeper extends ListenerAdapter {
         }
         json.put("members", arr);
         return json;
+    }
+
+    @Override
+    public void onModalInteraction(@NonNull ModalInteractionEvent event) {
+        if (event.getModalId().equals("modal:gatekeeper")) {
+            List<String> targets = event.getValues().getFirst().getAsStringList();
+            boolean ban = event.getValues().get(1).getAsBoolean();
+            for (String target : targets) {
+                Member m = bot.getDeploymentGuild().getMemberById(target);
+                if (m == null || m.hasPermission(Permission.ADMINISTRATOR)) continue;
+                m.ban(0, TimeUnit.SECONDS).queue();
+                if (!ban) bot.getDeploymentGuild().unban(m).queue();
+            }
+        }
     }
 
     public void kickNonCompliance(String id, int time) {

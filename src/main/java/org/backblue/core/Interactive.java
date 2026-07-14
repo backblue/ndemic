@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.components.label.Label;
 import net.dv8tion.jda.api.components.mediagallery.MediaGallery;
 import net.dv8tion.jda.api.components.mediagallery.MediaGalleryItem;
+import net.dv8tion.jda.api.components.radiogroup.RadioGroup;
 import net.dv8tion.jda.api.components.replacer.ComponentReplacer;
 import net.dv8tion.jda.api.components.section.Section;
 import net.dv8tion.jda.api.components.selections.StringSelectMenu;
@@ -75,8 +76,12 @@ public final class Interactive extends ListenerAdapter {
                 }
                 Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
                         .addComponents(
-                                TextDisplay.of("Test Modal. Does not work"),
-                                Label.of("Targets", selectMenu.build())
+                                TextDisplay.of("Spambots are not notified when they're removed."),
+                                Label.of("Targets", selectMenu.build()),
+                                Label.of("Punishment", RadioGroup.create("gatekeeper:type")
+                                        .addOption("Softban", "softban")
+                                        .addOption("Ban", "ban")
+                                        .build())
                         ).build();
                 event.replyModal(modal).queue();
             }
