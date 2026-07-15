@@ -2,7 +2,6 @@ package org.backblue.moderation;
 
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
@@ -136,7 +135,7 @@ public final class Gatekeeper extends ListenerAdapter {
             boolean ping = jsonResponse.optBoolean("modPings");
             Log.info(jsonResponse.toString(4));
             List<String> list = captured.toList().stream().map(Object::toString).toList();
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createGatekeeper(list, minutes, ping));
+            if (!list.isEmpty()) bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createGatekeeper(list, minutes, ping));
         } catch (JSONException | NullPointerException e) {
             Log.error("Failure to parse AI response: {}", e.getMessage());
             return;
