@@ -4,6 +4,7 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -21,14 +22,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 public final class Gatekeeper extends ListenerAdapter {
 
@@ -38,9 +36,9 @@ public final class Gatekeeper extends ListenerAdapter {
     final Set<String> joins = new LinkedHashSet<>();
     final Map<String, ScheduledFuture<?>> scheduledChecks;
     final String aiPrompt;
-    final Pattern[] regex;
     final String[] susRoles;
     final int minMembersToScan;
+    final int stopBeingSus;
 
     OffsetDateTime lastJoin = OffsetDateTime.MIN;
     OffsetDateTime lastCheck = OffsetDateTime.now();
@@ -66,16 +64,6 @@ public final class Gatekeeper extends ListenerAdapter {
             Log.error("Requires feature flag AI, disabling Gatekeeper");
             bot.disableFeature(FeatureFlag.Gatekeeper);
         }
-        if (json.optJSONArray("regex") != null) {
-            regex = new Pattern[json.optJSONArray("regex").length()];
-            for (int i = 0; i < json.optJSONArray("regex").length(); i++) {
-                regex[i] = Pattern.compile(json.optJSONArray("regex").getString(i));
-            }
-        } else {
-            Log.error("Cannot find regex array in config... disabling Gatekeeper");
-            bot.disableFeature(FeatureFlag.Gatekeeper);
-            regex = null;
-        }
 
         if (json.optJSONArray("susRoles") != null) {
             susRoles = new String[json.optJSONArray("susRoles").length()];
@@ -88,7 +76,7 @@ public final class Gatekeeper extends ListenerAdapter {
             susRoles = null;
         }
         this.minMembersToScan = json.optInt("minMembersToScan", 16);
-
+        this.stopBeingSus = json.optInt("stopBeingSus", 30);
     }
 
     @Override
@@ -99,6 +87,7 @@ public final class Gatekeeper extends ListenerAdapter {
             int timer = (int) (Math.random() * 40 + 20);
             ScheduledFuture<?> task = scheduledChecks.put(event.getUser().getId(), bot.getScheduler().schedule(() -> {
                 this.kickNonCompliance(event.getMember().getId(), timer);
+                this.removeLowQualityAccounts(event.getMember().getId());
                 scheduledChecks.remove(event.getUser().getId());
             }, timer, TimeUnit.MINUTES));
             if (task != null) task.cancel(true);
@@ -149,7 +138,7 @@ public final class Gatekeeper extends ListenerAdapter {
     public boolean precheck() {
         Log.info("{} members queued.", this.joins.size());
         if (this.lastJoin.isAfter(OffsetDateTime.now().plusMinutes(10))) {
-            Log.info("Did not run checks b/c join in last 10 mins");
+            Log.debug("Did not run checks b/c join in last 10 mins");
             return false;
         }
         return this.joins.size() >= this.minMembersToScan;
@@ -194,5 +183,22 @@ public final class Gatekeeper extends ListenerAdapter {
         if (m.getFlags().contains(Member.MemberFlag.COMPLETED_ONBOARDING)) return;
         if (m.getFlags().contains(Member.MemberFlag.BYPASSES_VERIFICATION)) return;
         m.kick().reason(String.format("Did not complete discord onboarding in %d minutes", time)).queue();
+    }
+
+    public void removeLowQualityAccounts(String id) {
+        if (!bot.isFeatureEnabled(FeatureFlag.Gatekeeper_RemoveLowQualityAccounts)) return;
+        Member m = bot.getDeploymentGuild().getMemberById(id);
+        if (m == null || m.hasPermission(Permission.ADMINISTRATOR)) return;
+        Set<Role> susRoles = new HashSet<>();
+        for (String susRole : this.susRoles) {
+            if (bot.getDeploymentGuild().getRoleById(susRole) != null) {
+                susRoles.add(bot.getDeploymentGuild().getRoleById(susRole));
+            }
+        }
+        if (susRoles.isEmpty() || Collections.disjoint(susRoles, m.getRoles())) return;
+        long timeDifference = Math.abs(ChronoUnit.DAYS.between(m.getUser().getTimeCreated(), OffsetDateTime.now()));
+        if (timeDifference < this.stopBeingSus) {
+            m.kick().reason("Joined too quickly after account creation -- " + timeDifference + " days").queue();
+        }
     }
 }

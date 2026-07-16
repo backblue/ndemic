@@ -73,6 +73,8 @@
   },
   "gatekeeper": {
     "minMembersToScan": 20,
+    "susTime": 14,
+    "rollingProbability": 0.015,
     "susRoles": ["1458142879334793405", "1462429526083502315"],
     "regex": ["^[._][A-Za-z]+[._][0-9]+$", "^[A-Za-z]+[._][0-9]+$", "^[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+$"]
   }

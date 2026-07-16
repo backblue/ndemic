@@ -12,5 +12,7 @@
   "detectCryptoImages": true,
   "gatekeeper": true,
   "nitroBoostMessage": true,
-  "requireOnboarding": true
+  "requireOnboarding": true,
+  "removeLowQualityAccounts": true,
+  "internalGatekeeperEnforcement": true
 }

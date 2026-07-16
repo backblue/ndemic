@@ -14,7 +14,9 @@ public enum FeatureFlag {
     AI("ai", true),
     DetectCrypto("detectCryptoImages", true),
     Gatekeeper("gatekeeper", true),
-    Gatekeeper_RequireOnboarding("requireOnboarding", false),;
+    Gatekeeper_RequireOnboarding("requireOnboarding", false),
+    Gatekeeper_RemoveLowQualityAccounts("removeLowQualityAccounts", false),
+    Gatekeeper_Enforcement("internalGatekeeperEnforcement", false),;
 
     private final String config;
     private final boolean restrict;
