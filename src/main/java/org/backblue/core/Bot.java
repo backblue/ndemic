@@ -216,4 +216,16 @@ public final class Bot {
             return null;
         }
     }
+    public String formattedTime(long seconds, boolean abbreviated) {
+        long days = seconds / (60 * 60 * 24);
+        long hours = (seconds % (60 * 60 * 24)) / (60 * 60);
+        long minutes = (seconds % (60 * 60)) / 60;
+        long second = seconds % 60;
+
+        if (abbreviated) {
+            return String.format("%d:%02d:%02d", hours, minutes, second);
+        } else {
+            return String.format("%d days, %d hours, %d minutes, %d seconds", days, hours, minutes, second);
+        }
+    }
 }

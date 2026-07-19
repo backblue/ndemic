@@ -25,7 +25,7 @@ public class Enforcement extends ListenerAdapter {
 
     public Enforcement(Bot bot, JSONObject config) {
         this.bot = bot;
-        if (config.getJSONObject("regex") != null) {
+        if (config.optJSONArray("regex") != null) {
             this.regex = new Pattern[config.getJSONArray("regex").length()];
             for (int i = 0; i < config.getJSONArray("regex").length(); i++) {
                 this.regex[i] = Pattern.compile(config.getJSONArray("regex").getString(i));

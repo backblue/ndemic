@@ -31,6 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class Interactive extends ListenerAdapter {
 
+    private static final int Footer_Note = 101;
+    private static final int Action_Buttons = 100;
+
     private final Bot bot;
     private final EZPunish ezPunish;
     private final Map<Short, Interactive.Type> actions = new ConcurrentHashMap<>();
@@ -53,7 +56,7 @@ public final class Interactive extends ListenerAdapter {
                     if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), false, member.getEffectiveAvatarUrl(), null);
                     if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), true, member.getEffectiveAvatarUrl(), null);
                 }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
+                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Action_Buttons, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
                 event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
             }
             case Type.Spam data -> {
@@ -63,15 +66,21 @@ public final class Interactive extends ListenerAdapter {
                     if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), false, member.getEffectiveAvatarUrl(), null);
                     if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), true, member.getEffectiveAvatarUrl(), null);
                 }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(100, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
+                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Action_Buttons, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
                 event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
             }
             case Type.Gatekeeper data -> {
+                String action = event.getButton().getCustomId().split(";")[1];
+                if (action.equals("nothing")) {
+                    MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Action_Buttons, TextDisplay.of("-# Interaction locked <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
+                    event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
+                    return;
+                }
                 List<String> list = data.memberIDs();
                 StringSelectMenu.Builder selectMenu = StringSelectMenu.create("gatekeeper:target").setRequired(true).setRequiredRange(1, 8);
                 for (String memberID : list) {
                     Member member = bot.getDeploymentGuild().getMemberById(memberID);
-                    if (member != null) selectMenu.addOption(member.getUser().getName(), memberID);
+                    if (member != null) selectMenu.addOption(member.getUser().getName(), member.getEffectiveName(), memberID);
                 }
                 Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
                         .addComponents(
@@ -107,9 +116,9 @@ public final class Interactive extends ListenerAdapter {
                         Button.danger(id+";kick", "Softban"),
                         Button.danger(id+";ban", "Ban"),
                         Button.secondary(id+";nothing", "Do nothing")
-                ).withUniqueId(101),
+                ).withUniqueId(Interactive.Footer_Note),
                 Separator.createDivider(Separator.Spacing.SMALL),
-                TextDisplay.of("-# Punishment actions will notify the user (and logged).").withUniqueId(100)
+                TextDisplay.of("-# Punishment actions will notify the user (and logged).").withUniqueId(Interactive.Footer_Note)
 
         ).withUniqueId(id);
         actions.put(id, new Type.Profile(member.getId(), type));
@@ -118,11 +127,11 @@ public final class Interactive extends ListenerAdapter {
     public Container createSpam(Member member, List<File> attachments) {
         short id = this.generate();
         Container container = Container.of(
-                TextDisplay.of("# :warning: Messages Blocked").withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
+                TextDisplay.of("# :warning: Messages Blocked"),
                 Section.of(
                         Thumbnail.fromUrl(member.getEffectiveAvatarUrl()),
                         TextDisplay.of(member.getUser().getAsMention() + "'s messages have been flagged for spam."),
-                        TextDisplay.of("## Details:\n> Sent **" + attachments.size() + "** messages containing crypto scam images.")
+                        TextDisplay.of("## Details:\n> Sent **" + attachments.size() + "** images containing scams/invites.")
                 ).withUniqueId((int) (Math.random() * Short.MAX_VALUE)),
 
                 MediaGallery.of(
@@ -135,10 +144,10 @@ public final class Interactive extends ListenerAdapter {
                         Button.danger(id+";kick", "Softban"),
                         Button.danger(id+";ban", "Ban"),
                         Button.secondary(id+";nothing", "Do nothing")
-                ).withUniqueId(101),
+                ).withUniqueId(Interactive.Action_Buttons),
                 
-                Separator.createDivider(Separator.Spacing.SMALL).withUniqueId(5),
-                TextDisplay.of("-# These messages have already been deleted.").withUniqueId(100)
+                Separator.createDivider(Separator.Spacing.SMALL),
+                TextDisplay.of("-# These messages have already been deleted.").withUniqueId(Interactive.Footer_Note)
 
         ).withUniqueId(id);
         actions.put(id, new Type.Spam(member.getId()));
@@ -157,14 +166,15 @@ public final class Interactive extends ListenerAdapter {
                 TextDisplay.of("# :shield: Recent Join Activity"),
                 Section.of(
                         Thumbnail.fromUrl(icon),
-                        TextDisplay.of(String.format("In **%,d minutes**, **%,d members** joined.", timeUntilScan, memberIDs.size())),
-                        TextDisplay.of(String.format("## > Details: {ping==%b}\n" + list, pingMods))
+                        TextDisplay.of(String.format("In **%s**, **%,d potential spambots** joined.", bot.formattedTime(timeUntilScan, true), memberIDs.size())),
+                        TextDisplay.of(String.format("## Details:\n>%s", list))
                 ),
                 ActionRow.of(
-                        Button.primary(id+";action", "Take action...")
-                ).withUniqueId(101),
+                        Button.primary(id+";action", "Take action..."),
+                        Button.secondary(id+";nothing", "Do nothing")
+                ).withUniqueId(Interactive.Action_Buttons),
                 Separator.createDivider(Separator.Spacing.SMALL),
-                TextDisplay.of("-# AI may make mistakes; use final judgement.").withUniqueId(100)
+                TextDisplay.of(String.format("-# AI may make mistakes; use final judgement. %b", pingMods)).withUniqueId(Interactive.Footer_Note)
 
         ).withUniqueId(id);
         actions.put(id, new Type.Gatekeeper(memberIDs));

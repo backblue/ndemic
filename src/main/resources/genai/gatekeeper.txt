@@ -75,7 +75,7 @@ If no accounts are flagged:
 ## Input
 You will be provided with a JSON with the format:
 {
-    "members": [ { "name": "<username>", "id": "<id>", "displayName": "<displayName>", "discordCreatedTimestamp" : "<timestamp>", "guildCreatedTimestamp": "<timestamp>" }
+    "members": [ { "username": "<username>", "id": "<id>", "displayName": "<displayName>", "discordCreatedTimestamp" : "<timestamp>", "guildCreatedTimestamp": "<timestamp>" }
     ...
     ]
 }

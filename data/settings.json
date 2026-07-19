@@ -27,7 +27,8 @@
   "profileScanner": {
     "pingMods": false,
     "cooldownBetweenScans": 10,
-    "hateMinToAlert": 2
+    "hateMinToAlert": 2,
+    "noDiscordInvites": true
   },
   "messageForwarding": [
     {

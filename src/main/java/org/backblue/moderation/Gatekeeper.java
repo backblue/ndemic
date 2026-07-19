@@ -24,16 +24,15 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public final class Gatekeeper extends ListenerAdapter {
 
     private static final Logger Log = LoggerFactory.getLogger(Gatekeeper.class);
+    private static final ScheduledExecutorService Scheduler = Executors.newScheduledThreadPool(1);
 
     final Bot bot;
-    final Set<String> joins = new LinkedHashSet<>();
+    final Set<String> joins = ConcurrentHashMap.newKeySet();
     final Map<String, ScheduledFuture<?>> scheduledChecks;
     final String aiPrompt;
     final String[] susRoles;
@@ -47,7 +46,7 @@ public final class Gatekeeper extends ListenerAdapter {
 
     public Gatekeeper(Bot bot, JSONObject json) {
         this.bot = bot;
-        bot.getScheduler().scheduleWithFixedDelay(this::runChecks, 30, 20, TimeUnit.MINUTES);
+        Gatekeeper.Scheduler.scheduleWithFixedDelay(this::runChecks, 30, 20, TimeUnit.MINUTES);
 
         if (bot.isFeatureEnabled(FeatureFlag.Gatekeeper_RequireOnboarding)) {
             scheduledChecks = new ConcurrentHashMap<>();
@@ -80,12 +79,12 @@ public final class Gatekeeper extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMemberJoin(@NonNull GuildMemberJoinEvent event) {
+    public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {
         joins.add(event.getUser().getId());
         lastJoin = OffsetDateTime.now();
         if (bot.isFeatureEnabled(FeatureFlag.Gatekeeper_RequireOnboarding)) {
             int timer = (int) (Math.random() * 40 + 20);
-            ScheduledFuture<?> task = scheduledChecks.put(event.getUser().getId(), bot.getScheduler().schedule(() -> {
+            ScheduledFuture<?> task = scheduledChecks.put(event.getUser().getId(), Gatekeeper.Scheduler.schedule(() -> {
                 this.kickNonCompliance(event.getMember().getId(), timer);
                 this.removeLowQualityAccounts(event.getMember().getId());
                 scheduledChecks.remove(event.getUser().getId());
@@ -98,8 +97,11 @@ public final class Gatekeeper extends ListenerAdapter {
     @Override
     public void onGuildMemberRemove(@NotNull GuildMemberRemoveEvent event) {
         joins.remove(event.getUser().getId());
-        ScheduledFuture<?> task = scheduledChecks.remove(event.getUser().getId());
-        if (task != null) task.cancel(true);
+        if (this.scheduledChecks != null) {
+            ScheduledFuture<?> task = scheduledChecks.remove(event.getUser().getId());
+            if (task != null) task.cancel(true);
+        }
+
     }
 
     public void runChecks() {
@@ -137,7 +139,7 @@ public final class Gatekeeper extends ListenerAdapter {
 
     public boolean precheck() {
         Log.info("{} members queued.", this.joins.size());
-        if (this.lastJoin.isAfter(OffsetDateTime.now().plusMinutes(10))) {
+        if (this.lastJoin.isAfter(OffsetDateTime.now().minusMinutes(10))) {
             Log.debug("Did not run checks b/c join in last 10 mins");
             return false;
         }

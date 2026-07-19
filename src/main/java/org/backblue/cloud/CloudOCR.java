@@ -15,33 +15,51 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-public class CloudOCR {
+public final class CloudOCR {
 
     private static final Logger log = LoggerFactory.getLogger(CloudOCR.class);
     private ImageAnalysisClient client;
+    ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+
+
+    private final Semaphore semaphore = new Semaphore(9, true);
 
     public CloudOCR(String endpoint, String key) {
 
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            semaphore.drainPermits();
+            semaphore.release(9);
+        }, 30, 30, TimeUnit.SECONDS);
         try {
             this.client = new ImageAnalysisClientBuilder()
                     .endpoint(endpoint)
                     .credential(new KeyCredential(key))
                     .buildClient();
         } catch (Exception e) {
-            client = null;
+            this.client = null;
             log.error("Error initiating Cloud OCR (Azure Vision)", e);
         }
+    }
 
+    private void waitForRateLimit() throws InterruptedException {
+        semaphore.acquire();
     }
 
     public boolean enabled() {
         return this.client != null;
     }
 
-    public String extractText(File file) throws IOException {
+    public String extractText(File file) throws IOException, InterruptedException {
         byte[] imageBytes = Files.readAllBytes(file.toPath());
         BinaryData imageData = BinaryData.fromBytes(imageBytes);
+
+        this.waitForRateLimit();
+
         ImageAnalysisResult result = client.analyze(
                 imageData,
                 Collections.singletonList(VisualFeatures.READ),

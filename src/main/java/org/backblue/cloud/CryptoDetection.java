@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public final class CryptoDetection extends MessagePriority {
@@ -41,8 +43,8 @@ public final class CryptoDetection extends MessagePriority {
     final Set<String> flaggedUsers;
     final ITesseract tesseract;
     final CloudOCR azure;
-
-    AtomicBoolean sendInProgress = new AtomicBoolean(false);
+    final boolean inviteCheck;
+    final Pattern inviteRegex = Pattern.compile("(?i)(discord(?:app)?.gg(?:/|\\+/+)|discord(?:app)?.com(?:/|\\+/+)invite/)([A-z0-9-]{2,})");
 
     public CryptoDetection(int priority, Bot bot, JSONObject json, String endpoint, String secret) {
         super(priority, bot);
@@ -53,6 +55,7 @@ public final class CryptoDetection extends MessagePriority {
             pendingReports = null;
             flaggedUsers = null;
             azure = null;
+            inviteCheck = false;
             if (json == null) Log.warn("No config provided for crypto detection, disabling");
             bot.disableFeature(FeatureFlag.DetectCrypto);
         } else {
@@ -60,6 +63,7 @@ public final class CryptoDetection extends MessagePriority {
             pendingReports = new ConcurrentHashMap<>();
             flaggedUsers = ConcurrentHashMap.newKeySet();
             threshold = json.optDouble("threshold", 8.00);
+            inviteCheck = json.optBoolean("inviteCheck", false);
             boolean local = json.optBoolean("fallbackOnLocal", true);
             JSONObject obj = json.optJSONObject("keywords");
             for (String key : obj.keySet()) keywords.put(key, obj.getDouble(key));
@@ -128,7 +132,7 @@ public final class CryptoDetection extends MessagePriority {
             try {
                 points += this.processImage(file);
                 if (points >= threshold) break;
-            } catch (TesseractException | IOException e) {
+            } catch (Exception e) {
                 Log.error("Error processing image for crypto detection", e);
             }
         }
@@ -172,7 +176,7 @@ public final class CryptoDetection extends MessagePriority {
         flaggedUsers.remove(userId);
     }
 
-    private double processImage(File file) throws TesseractException, IOException {
+    private double processImage(File file) throws TesseractException, IOException, InterruptedException {
         long start = System.currentTimeMillis();
         double result = 0.0;
         String name = file.getName().toLowerCase();
@@ -185,13 +189,17 @@ public final class CryptoDetection extends MessagePriority {
                     result += this.keywords.get(key);
                 }
             }
+            if (this.inviteCheck) {
+                Matcher matcher = this.inviteRegex.matcher(text);
+                if (matcher.find()) result += this.threshold;
+            }
         }
         long end = System.currentTimeMillis();
         Log.info("Processed image {} in {}ms with score {}", file.getName(), (end - start), result);
         return result;
     }
 
-    public String extractTextWrapper(File file) throws TesseractException, IOException {
+    public String extractTextWrapper(File file) throws TesseractException, IOException, InterruptedException {
         if (azure != null && azure.enabled()) return azure.extractText(file);
         if (tesseract != null) return extractText(file);
         return "";
@@ -211,7 +219,6 @@ public final class CryptoDetection extends MessagePriority {
     }
 
     public void cleanup() {
-        if (this.sendInProgress.get()) return;
         Path dir = Paths.get("data/temp");
         try (Stream<Path> files = Files.list(dir)) {
             files.filter(Files::isRegularFile)
