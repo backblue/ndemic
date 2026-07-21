@@ -13,6 +13,5 @@
   "gatekeeper": true,
   "nitroBoostMessage": true,
   "requireOnboarding": true,
-  "removeLowQualityAccounts": true,
-  "internalGatekeeperEnforcement": true
+  "removeLowQualityAccounts": true
 }

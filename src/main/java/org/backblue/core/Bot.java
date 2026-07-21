@@ -118,7 +118,6 @@ public final class Bot {
                 new Badge(this, badges),
                 new RaidProtect(this),
                 new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
-                new Enforcement(this, settings.optJSONObject("gatekeeper")),
                 new About(this, settingSelf.optString("watermark", "")));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
