@@ -36,7 +36,7 @@ public final class Bot {
 
     public final int major = 0;
     public final int minor = 9;
-    public final int patch = 8;
+    public final int patch = 9;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
@@ -219,12 +219,32 @@ public final class Bot {
         long days = seconds / (60 * 60 * 24);
         long hours = (seconds % (60 * 60 * 24)) / (60 * 60);
         long minutes = (seconds % (60 * 60)) / 60;
-        long second = seconds % 60;
+        long secs = seconds % 60;
 
+        StringBuilder sb = new StringBuilder();
         if (abbreviated) {
-            return String.format("%d:%02d:%02d", hours, minutes, second);
+            if (days > 0) {
+                sb.append(String.format("%02dd", days));
+            }
+            if (days > 0 || hours > 0) {
+                sb.append(String.format("%02dh", hours));
+            }
+            if (days > 0 || hours > 0 || minutes > 0) {
+                sb.append(String.format("%02dm", minutes));
+            }
+            sb.append(String.format("%02ds", secs));
         } else {
-            return String.format("%d days, %d hours, %d minutes, %d seconds", days, hours, minutes, second);
+            if (days > 0) {
+                sb.append(days).append(days == 1 ? " day, " : " days, ");
+            }
+            if (days > 0 || hours > 0) {
+                sb.append(hours).append(hours == 1 ? " hour, " : " hours, ");
+            }
+            if (days > 0 || hours > 0 || minutes > 0) {
+                sb.append(minutes).append(minutes == 1 ? " minute, " : " minutes, ");
+            }
+            sb.append(secs).append(secs == 1 ? " second" : " seconds");
         }
+        return sb.toString();
     }
 }

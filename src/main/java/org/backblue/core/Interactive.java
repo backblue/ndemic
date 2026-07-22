@@ -56,7 +56,7 @@ public final class Interactive extends ListenerAdapter {
                     if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), false, member.getEffectiveAvatarUrl(), null);
                     if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), true, member.getEffectiveAvatarUrl(), null);
                 }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Action_Buttons, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
+                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
                 event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
             }
             case Type.Spam data -> {
@@ -66,13 +66,13 @@ public final class Interactive extends ListenerAdapter {
                     if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), false, member.getEffectiveAvatarUrl(), null);
                     if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), true, member.getEffectiveAvatarUrl(), null);
                 }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Action_Buttons, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
+                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
                 event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
             }
             case Type.Gatekeeper data -> {
                 String action = event.getButton().getCustomId().split(";")[1];
                 if (action.equals("nothing")) {
-                    MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Action_Buttons, TextDisplay.of("-# Interaction locked <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
+                    MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Interaction locked <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
                     event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
                     return;
                 }
@@ -166,8 +166,8 @@ public final class Interactive extends ListenerAdapter {
                 TextDisplay.of("# :shield: Recent Join Activity"),
                 Section.of(
                         Thumbnail.fromUrl(icon),
-                        TextDisplay.of(String.format("In **%s**, **%,d potential spambots** joined.", bot.formattedTime(timeUntilScan, true), memberIDs.size())),
-                        TextDisplay.of(String.format("## Details:\n>%s", list))
+                        TextDisplay.of(String.format("In **%s**, **%,d potential spambot(s)** joined.", bot.formattedTime(timeUntilScan, true), memberIDs.size())),
+                        TextDisplay.of(String.format("## Details:\n> %s", list))
                 ),
                 ActionRow.of(
                         Button.primary(id+";action", "Take action..."),

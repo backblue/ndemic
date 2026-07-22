@@ -4,11 +4,14 @@ coordinated fake accounts based purely on username patterns.
 Only flag accounts when there is reasonable evidence based on these rules.
 When uncertain, do not flag. Avoid false positives over maximizing detections.
 
-Flagging requires either (a) a Rule 2 timing cluster that also passes the Rule 3
-name-pattern check, or (b) a single account with extremely strong standalone
-evidence under Rule 1 (e.g. an unambiguous algorithmically generated username).
-Never scan the full batch for name similarity independent of a timing cluster —
-only compare names within an already-identified timing cluster.
+Flagging requires one of: (a) a Rule 2 timing cluster that also passes the Rule 3
+name-pattern check, (b) a Rule 1b batch-wide templated-construction match (3+
+accounts, no timing requirement), or (c) a single account with extremely strong
+standalone evidence under Rule 1.
+
+Only compare names within an already-identified timing cluster for Rule 3 purposes.
+Rule 1b is the sole exception: it scans the full batch for shared construction
+templates independent of timing.
 
 You will be given a JSON array of accounts, each with a "name" and "id" field.
 
@@ -22,11 +25,29 @@ Flag accounts whose usernames appear to be machine-generated. Common patterns in
 - Usernames that are highly similar to others in the batch (e.g. "CoolUser1",
   "CoolUser2", "CoolUser3")
 
-### Rule 2 — Coordinated Successive Joins (Primary Trigger)
-First, look ONLY at guildCreatedTimestamp. Identify any sequence of 3 or more
-accounts that joined in succession with roughly regular spacing of 4–9 minutes
-between each consecutive join (e.g. joins at T, T+5, T+11, T+16 — allow ±2 min
-jitter). This is a timing cluster.
+### Rule 1b — Batch-Wide Templated Username Construction (Standalone Trigger)
+Independent of any timing cluster, scan the full batch for a shared construction
+template across 3+ accounts, such as:
+- Consistent two-token concatenation (e.g. CapWord+CapWord, no separator) drawn
+  from a narrow shared vocabulary (e.g. anime/kawaii loanwords, virtue nouns,
+  color+animal), even if the tokens themselves are pronounceable
+- Consistent prefix/suffix scaffolding with varying infixes
+- Identical capitalization/length/character-class pattern across many otherwise
+  distinct-looking names
+
+This can flag accounts even with NO timing cluster and even if names are not
+random strings — the signal is the shared *construction rule*, not randomness.
+Require at least 3 accounts fitting the same template to trigger; single
+templated-looking names still fall under Rule 1 (standalone, requires strong
+evidence).
+
+### Rule 2 — Coordinated Joins (Primary Trigger)
+Flag a timing cluster if EITHER:
+(a) 3+ accounts join with join-to-join gaps each falling between 2–11 minutes,
+      regardless of consistency between gaps (do not require gaps to resemble
+      each other — bots often randomize delay within a range specifically to
+      evade "regular interval" detection).
+(b) 5+ accounts join within any rolling 5-minute window (burst pattern).
 
 A timing cluster by itself is NOT sufficient to flag anyone — regular join spacing
 alone happens in real servers (e.g. a Discord getting shared in a group chat).
@@ -46,12 +67,15 @@ first names" (e.g. Michelle, Alex, Sam appearing near each other in time) — th
 expected coincidence, not evidence. You must be able to articulate why the specific
 names are unusual together, not just that they are pleasant-sounding.
 
-An account may ONLY be flagged if it is part of a Rule 2 timing cluster AND that
-cluster passes the Rule 3 name-pattern check. Do not flag accounts outside any
-timing cluster based on name pattern alone, no matter how unusual the names look —
-without the timing signal, treat unusual names as insufficient evidence per Rule 1's
-"single unusual username" guidance.
+Under Rule 3, an account may only be flagged if it is part of a Rule 2 timing
+cluster AND that cluster passes the Rule 3 name-pattern check. Do not flag
+accounts outside any timing cluster based on name pattern alone under this rule,
+no matter how unusual the names look — without the timing signal, treat unusual
+names as insufficient evidence per Rule 1's "single unusual username" guidance.
 
+This restriction applies only to Rule 3. Rule 1b is a separate, independent path
+that does not require a timing cluster: if 3+ accounts share a construction
+template per Rule 1b, flag them on that basis alone.
 
 Lastly, based on these statistics, moderators should only be alerted if the flagged cluster is large relative to total joins.
 You will be provided the amount of members that joined and the time it took to check those members from the last cycle.
