@@ -25,24 +25,30 @@ public final class DisableDM extends ListenerAdapter {
         }
     }
 
+    private OffsetDateTime deploymentGuildInvitesDisabledUntil() {
+        OffsetDateTime until = bot.getDeploymentGuild().getSecurityIncidentActions().getInvitesDisabledUntil();
+        if (until == null) return null;
+        return OffsetDateTime.now().isAfter(until) ? OffsetDateTime.now() : until;
+    }
+
     private boolean isActive() {
         if (bot.getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil() == null) return false;
         return bot.getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil().toEpochSecond() > OffsetDateTime.now().toEpochSecond();
     }
 
-    public void enable() {
+    private void enable() {
         try {
             if (bot.isFeatureEnabled(FeatureFlag.DisableDMs) && bot.getDeploymentGuild() != null && !isActive()) {
-                SecurityIncidentActions incidentActions = SecurityIncidentActions.enabled(bot.getDeploymentGuild().getSecurityIncidentActions().getInvitesDisabledUntil(), OffsetDateTime.now().plusSeconds(86399));
+                SecurityIncidentActions incidentActions = SecurityIncidentActions.enabled(this.deploymentGuildInvitesDisabledUntil(), OffsetDateTime.now().plusSeconds(86399));
                 bot.getDeploymentGuild().modifySecurityIncidents(incidentActions).queue();
             }
         } catch (NullPointerException ignored) {}
 
     }
 
-    public void disable() {
+    private void disable() {
         if (isActive()) {
-            SecurityIncidentActions incidentActions = SecurityIncidentActions.enabled(bot.getDeploymentGuild().getSecurityIncidentActions().getInvitesDisabledUntil(), null);
+            SecurityIncidentActions incidentActions = SecurityIncidentActions.enabled(this.deploymentGuildInvitesDisabledUntil(), null);
             bot.getDeploymentGuild().modifySecurityIncidents(incidentActions).queue();
         }
     }
