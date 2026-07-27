@@ -34,9 +34,9 @@ import java.util.concurrent.TimeUnit;
 
 public final class Bot {
 
-    public final int major = 0;
-    public final int minor = 9;
-    public final int patch = 10;
+    public final int major = 1;
+    public final int minor = 0;
+    public final int patch = 0;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
