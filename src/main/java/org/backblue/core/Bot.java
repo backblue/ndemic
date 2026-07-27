@@ -48,7 +48,8 @@ public final class Bot {
 
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
-    private final String pingRoleID;
+    private final String mostModeratorsPing;
+    private final String allModeratorsPing;
     private final String debugPingRoleID;
 
     public Bot(String... args) {
@@ -73,7 +74,8 @@ public final class Bot {
             System.exit(1);
         }
         this.deploymentGuildID = settings.getJSONObject("channels").getString("_deploy");
-        this.pingRoleID = settingSelf.optString("pingAlerts", null);
+        this.mostModeratorsPing = settingSelf.optString("pingAlerts", null);
+        this.allModeratorsPing = settingSelf.optString("allPingAlerts", null);
         this.debugPingRoleID = settingSelf.optString("debugPingAlerts", null);
 
         features = EnumSet.noneOf(FeatureFlag.class);
@@ -152,7 +154,10 @@ public final class Bot {
         return JDA.getGuildById(this.deploymentGuildID);
     }
     public Role getMostModerators() {
-        return this.getJDA().getRoleById(this.pingRoleID);
+        return this.getJDA().getRoleById(this.mostModeratorsPing);
+    }
+    public Role getAllModerators() {
+        return this.getJDA().getRoleById(this.allModeratorsPing);
     }
     public Role getDebugPing() {
         return this.getJDA().getRoleById(this.debugPingRoleID);

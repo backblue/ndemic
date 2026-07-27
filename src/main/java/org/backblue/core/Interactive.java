@@ -80,7 +80,7 @@ public final class Interactive extends ListenerAdapter {
                 StringSelectMenu.Builder selectMenu = StringSelectMenu.create("gatekeeper:target").setRequired(true).setRequiredRange(1, 8);
                 for (String memberID : list) {
                     Member member = bot.getDeploymentGuild().getMemberById(memberID);
-                    if (member != null) selectMenu.addOption(member.getUser().getName(), member.getEffectiveName(), memberID);
+                    if (member != null) selectMenu.addOption(member.getUser().getName(), memberID, member.getEffectiveName());
                 }
                 Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
                         .addComponents(

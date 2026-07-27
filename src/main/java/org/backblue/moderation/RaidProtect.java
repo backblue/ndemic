@@ -30,12 +30,12 @@ public final class RaidProtect extends ListenerAdapter {
                 if (bot.isFeatureEnabled(FeatureFlag.RaidPauseInvites)) {
                     SecurityIncidentActions actions = event.getGuild().getSecurityIncidentActions();
                     if (actions.getInvitesDisabledUntil() == null) {
-                        actions = SecurityIncidentActions.enabled(OffsetDateTime.now().plusHours(4), bot.getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil());
+                        actions = SecurityIncidentActions.enabled(OffsetDateTime.now().plusHours(1), bot.getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil());
                         bot.getDeploymentGuild().modifySecurityIncidents(actions).queue();
                     }
                 }
                 if (bot.isFeatureEnabled(FeatureFlag.AutoModAlerts)) {
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention());
+                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getAllModerators().getAsMention() + " we're getting raided please remove spambots");
                     bot.getIO().send(DefinedChannel.DebugAutoModAlert, "A security alert was triggered by Discord in " + event.getGuild().getName());
                 }
             }

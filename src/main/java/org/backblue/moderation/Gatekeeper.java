@@ -37,7 +37,7 @@ public final class Gatekeeper extends ListenerAdapter {
     final String aiPrompt;
     final String[] susRoles;
     final int minMembersToScan;
-    final int stopBeingSus;
+    final long stopBeingSus;
 
     OffsetDateTime lastJoin = OffsetDateTime.MIN;
     OffsetDateTime lastCheck = OffsetDateTime.now();
@@ -75,7 +75,7 @@ public final class Gatekeeper extends ListenerAdapter {
             susRoles = null;
         }
         this.minMembersToScan = json.optInt("minMembersToScan", 16);
-        this.stopBeingSus = json.optInt("stopBeingSus", 30);
+        this.stopBeingSus = json.optLong("stopBeingSus", 30);
     }
 
     @Override
@@ -169,12 +169,16 @@ public final class Gatekeeper extends ListenerAdapter {
     public void onModalInteraction(@NonNull ModalInteractionEvent event) {
         if (event.getModalId().equals("modal:gatekeeper")) {
             List<String> targets = event.getValues().getFirst().getAsStringList();
-            boolean ban = event.getValues().get(1).getAsBoolean();
+            boolean ban = event.getValues().get(1).getAsString().equals("ban");
             for (String target : targets) {
                 Member m = bot.getDeploymentGuild().getMemberById(target);
                 if (m == null || m.hasPermission(Permission.ADMINISTRATOR)) continue;
-                m.ban(0, TimeUnit.SECONDS).queue();
-                if (!ban) bot.getDeploymentGuild().unban(m).queue();
+                m.ban(0, TimeUnit.SECONDS).queue(
+                        success -> {
+                            if (!ban) bot.getDeploymentGuild().unban(m).queue();
+                        },
+                        failure -> {}
+                );
             }
         }
     }
@@ -198,9 +202,9 @@ public final class Gatekeeper extends ListenerAdapter {
             }
         }
         if (susRoles.isEmpty() || Collections.disjoint(susRoles, m.getRoles())) return;
-        long timeDifference = Math.abs(ChronoUnit.DAYS.between(m.getUser().getTimeCreated(), OffsetDateTime.now()));
-        if (timeDifference < this.stopBeingSus) {
-            m.kick().reason("Joined too quickly after account creation -- " + timeDifference + " days").queue();
+        long timeDifference = Math.abs(ChronoUnit.SECONDS.between(m.getUser().getTimeCreated(), OffsetDateTime.now()));
+        if (timeDifference < this.stopBeingSus * 24 * 60 *60) {
+            m.kick().reason("Joined too quickly after account creation -- " + bot.formattedTime(timeDifference, false)).queue();
         }
     }
 }

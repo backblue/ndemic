@@ -28,7 +28,7 @@ public final class DisableDM extends ListenerAdapter {
     private OffsetDateTime deploymentGuildInvitesDisabledUntil() {
         OffsetDateTime until = bot.getDeploymentGuild().getSecurityIncidentActions().getInvitesDisabledUntil();
         if (until == null) return null;
-        return OffsetDateTime.now().isAfter(until) ? OffsetDateTime.now() : until;
+        return OffsetDateTime.now().isAfter(until) ? OffsetDateTime.now().plusSeconds(1) : until;
     }
 
     private boolean isActive() {
