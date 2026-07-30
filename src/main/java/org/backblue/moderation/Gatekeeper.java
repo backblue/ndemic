@@ -170,6 +170,7 @@ public final class Gatekeeper extends ListenerAdapter {
         if (event.getModalId().equals("modal:gatekeeper")) {
             List<String> targets = event.getValues().getFirst().getAsStringList();
             boolean ban = event.getValues().get(1).getAsString().equals("ban");
+            event.reply(ban ? "Banned" : "Softbanned" + " **" + targets.size() + "** members").setEphemeral(true).queue();
             for (String target : targets) {
                 Member m = bot.getDeploymentGuild().getMemberById(target);
                 if (m == null || m.hasPermission(Permission.ADMINISTRATOR)) continue;
