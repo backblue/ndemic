@@ -16,6 +16,7 @@ public enum FeatureFlag {
     Gatekeeper("gatekeeper", true),
     Gatekeeper_RequireOnboarding("requireOnboarding", false),
     Gatekeeper_RemoveLowQualityAccounts("removeLowQualityAccounts", false),;
+
     private final String config;
     private final boolean restrict;
 

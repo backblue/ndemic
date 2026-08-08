@@ -87,7 +87,7 @@ public final class Bot {
             }
         }
         Log.info("{} features successfully enabled", features.size());
-        new Debug(this, Set.of(args));
+        new MemoryDebug(this, Set.of(args));
 
         DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.create(keys.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class));
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);

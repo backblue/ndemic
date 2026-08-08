@@ -24,6 +24,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,7 +86,7 @@ public final class Interactive extends ListenerAdapter {
                 Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
                         .addComponents(
                                 TextDisplay.of("Spambots are not notified when they're removed."),
-                                Label.of("Targets", selectMenu.build()),
+                                Label.of("Eligible Targets", selectMenu.build()),
                                 Label.of("Punishment", RadioGroup.create("gatekeeper:type")
                                         .addOption("Softban", "softban")
                                         .addOption("Ban", "ban")
@@ -166,7 +167,7 @@ public final class Interactive extends ListenerAdapter {
                 TextDisplay.of("# :shield: Recent Join Activity"),
                 Section.of(
                         Thumbnail.fromUrl(icon),
-                        TextDisplay.of(String.format("In **%s**, **%,d potential spambot(s)** joined.", bot.formattedTime(timeUntilScan, true), memberIDs.size())),
+                        TextDisplay.of(String.format("From **<t:%s:t>** to **<t:%s:t>**, **%,d potential spambot(s)** joined.", timeUntilScan, OffsetDateTime.now().toEpochSecond(), memberIDs.size())),
                         TextDisplay.of(String.format("## Details:\n> %s", list))
                 ),
                 ActionRow.of(
@@ -174,7 +175,7 @@ public final class Interactive extends ListenerAdapter {
                         Button.secondary(id+";nothing", "Do nothing")
                 ).withUniqueId(Interactive.Action_Buttons),
                 Separator.createDivider(Separator.Spacing.SMALL),
-                TextDisplay.of(String.format("-# AI may make mistakes; use final judgement. %b", pingMods)).withUniqueId(Interactive.Footer_Note)
+                TextDisplay.of("-# AI may make mistakes; use final judgement.").withUniqueId(Interactive.Footer_Note)
 
         ).withUniqueId(id);
         actions.put(id, new Type.Gatekeeper(memberIDs));

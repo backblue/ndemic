@@ -1,21 +1,21 @@
-package org.backblue.core;
+package org.backblue.utilities;
 
-import org.backblue.utilities.DefinedChannel;
+import org.backblue.core.Bot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public final class Debug {
+public final class MemoryDebug {
 
-    private static final Logger Log = LoggerFactory.getLogger(Debug.class);
+    private static final Logger Log = LoggerFactory.getLogger(MemoryDebug.class);
     Bot bot;
     Runtime runtime = null;
     private long lastUsedMemoryMB = Integer.MAX_VALUE;
     private long highestMemoryMB = 0;
 
-    public Debug(Bot bot, Set<String> args) {
+    public MemoryDebug(Bot bot, Set<String> args) {
         this.bot = bot;
         if (args.contains("--heap")) {
             this.runtime = Runtime.getRuntime();
