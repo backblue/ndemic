@@ -1,0 +1,10 @@
+{
+  "_version": 1,
+  "messageDelete": false,
+  "messageEdit": false,
+  "memberJoin": false,
+  "memberRolesRemove": false,
+  "memberRolesAdd": false,
+  "memberBan": false,
+  "memberUnban": false
+}

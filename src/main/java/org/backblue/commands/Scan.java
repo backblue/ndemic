@@ -4,7 +4,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.enums.FeatureFlag;
 import org.backblue.cloud.ProfileScan;
 import org.jetbrains.annotations.NotNull;
 

@@ -10,8 +10,8 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.utilities.DefinedChannel;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,6 +20,9 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -45,6 +48,7 @@ public final class Gatekeeper extends ListenerAdapter {
     long lastCheckMinutes = -1;
 
     public Gatekeeper(Bot bot, JSONObject json) {
+        String tempAiPrompt;
         this.bot = bot;
         Gatekeeper.Scheduler.scheduleWithFixedDelay(this::runChecks, 30, 20, TimeUnit.MINUTES);
 
@@ -54,11 +58,18 @@ public final class Gatekeeper extends ListenerAdapter {
             scheduledChecks = null;
         }
 
-        this.aiPrompt = bot.readResource("genai/gatekeeper.txt");
-        if (aiPrompt == null) {
-            Log.error("Cannot read internal resource... disabling Gatekeeper");
-            bot.disableFeature(FeatureFlag.Gatekeeper);
+        try {
+            Log.warn("Using custom Gatekeeper AI. Improper configuration will cause issues!");
+            tempAiPrompt = Files.readString(Path.of("data/gatekeeper-override.txt"));
+        } catch (Exception e) {
+            tempAiPrompt = bot.readResource("genai/gatekeeper.txt");
+            if (tempAiPrompt == null) {
+                Log.error("Cannot read internal resource... disabling Gatekeeper");
+                bot.disableFeature(FeatureFlag.Gatekeeper);
+            }
         }
+
+        this.aiPrompt = tempAiPrompt;
         if (!bot.isFeatureEnabled(FeatureFlag.AI)) {
             Log.error("Requires feature flag AI, disabling Gatekeeper");
             bot.disableFeature(FeatureFlag.Gatekeeper);
@@ -123,10 +134,9 @@ public final class Gatekeeper extends ListenerAdapter {
             if (r == null || r.text() == null) throw new NullPointerException();
             JSONObject jsonResponse = new JSONObject(r.text());
             captured = jsonResponse.optJSONArray("flagged");
-            boolean ping = jsonResponse.optBoolean("modPings");
             Log.info(jsonResponse.toString(4));
             List<String> list = captured.toList().stream().map(Object::toString).toList();
-            if (!list.isEmpty()) bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createGatekeeper(list, this.lastCheck.toEpochSecond(), ping));
+            if (!list.isEmpty()) bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createGatekeeper(list, this.lastCheck.toEpochSecond()));
         } catch (JSONException | NullPointerException e) {
             Log.error("Failure to parse AI response: {}", e.getMessage());
             return;

@@ -3,7 +3,7 @@ package org.backblue.moderation;
 import net.dv8tion.jda.api.entities.guild.SecurityIncidentActions;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.enums.FeatureFlag;
 
 import java.time.OffsetDateTime;
 import java.util.concurrent.TimeUnit;

@@ -1,4 +1,4 @@
-package org.backblue.utilities;
+package org.backblue.enums;
 
 public enum FeatureFlag {
     EnforceOneGuideAccess("enforceGuideAccess", false),
@@ -15,7 +15,9 @@ public enum FeatureFlag {
     DetectCrypto("detectCryptoImages", true),
     Gatekeeper("gatekeeper", true),
     Gatekeeper_RequireOnboarding("requireOnboarding", false),
-    Gatekeeper_RemoveLowQualityAccounts("removeLowQualityAccounts", false),;
+    Gatekeeper_RemoveLowQualityAccounts("removeLowQualityAccounts", false),
+    Autoresponder("autoresponder", false),
+    Audit("audit", false);
 
     private final String config;
     private final boolean restrict;

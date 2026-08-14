@@ -3,7 +3,7 @@ package org.backblue.moderation;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.enums.FeatureFlag;
 import org.backblue.utilities.MessagePriority;
 import org.json.JSONArray;
 import org.json.JSONObject;

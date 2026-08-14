@@ -154,7 +154,7 @@ public final class Interactive extends ListenerAdapter {
         actions.put(id, new Type.Spam(member.getId()));
         return container;
     }
-    public Container createGatekeeper(List<String> memberIDs, long timeUntilScan, boolean pingMods) {
+    public Container createGatekeeper(List<String> memberIDs, long timeUntilScan) {
         short id = this.generate();
         String icon = bot.getDeploymentGuild().getIconUrl() == null ? "" : bot.getDeploymentGuild().getIconUrl();
 

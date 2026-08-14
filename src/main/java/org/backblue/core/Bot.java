@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
+import org.backblue.enums.FeatureFlag;
 import org.backblue.moderation.*;
 import org.backblue.utilities.*;
 import org.backblue.utilities.BlueSky;
@@ -36,7 +37,7 @@ public final class Bot {
 
     public final int major = 1;
     public final int minor = 0;
-    public final int patch = 0;
+    public final int patch = 1;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
@@ -53,26 +54,29 @@ public final class Bot {
     private final String debugPingRoleID;
 
     public Bot(String... args) {
+
         Properties keys = new Properties();
         JSONObject settings = null;
         JSONObject badges = null;
         JSONObject rulebook = null;
         JSONObject featuresList = null;
         JSONObject settingSelf = null;
+
+        Configurator config;
+
         try {
-            keys.load(new StringReader(Files.readString(Path.of("data/bot.properties"))));
-            settings = new JSONObject(Files.readString(Path.of("data/settings.json")));
-            rulebook = new JSONObject(Files.readString(Path.of("data/rulebook.json")));
-            badges = new JSONObject(Files.readString(Path.of("data/badges.json")));
-            featuresList = new JSONObject(Files.readString(Path.of("data/features.json")));
+            config = new Configurator(this);
+            keys = config.properties;
+            settings = config.settingsFile;
+            rulebook = config.rulebookFile;
+            badges = config.badgesFile;
+            featuresList = config.featuresFile;
             settingSelf = settings.getJSONObject("self");
             settings.getJSONObject("channels").getString("_deploy");
-
-        } catch (IOException e) {
-            Log.error("Cannot read files: data/bot.properties, data/settings.json, data/rulebook.json, data/badges.json, data/features.json");
-            Log.error("settings.json also requires JSON objects attached to keys 'self', 'channels");
+        } catch (Configurator.Error e) {
             System.exit(1);
         }
+
         this.deploymentGuildID = settings.getJSONObject("channels").getString("_deploy");
         this.mostModeratorsPing = settingSelf.optString("pingAlerts", null);
         this.allModeratorsPing = settingSelf.optString("allPingAlerts", null);
@@ -216,7 +220,7 @@ public final class Bot {
             if (stream == null) throw new FileNotFoundException(path);
             return new String(stream.readAllBytes());
         } catch (IOException e) {
-            Log.error("Error reading prompt: {}", e.getMessage());
+            Log.error("Error reading resource: {}", e.getMessage());
             return null;
         }
     }

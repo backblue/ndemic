@@ -1,4 +1,4 @@
-package org.backblue.utilities;
+package org.backblue.enums;
 
 public enum DefinedChannel {
     DebugDirectMessages("debugDirectMessages"),

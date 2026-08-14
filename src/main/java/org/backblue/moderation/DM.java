@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.utilities.DefinedChannel;
+import org.backblue.enums.DefinedChannel;
 import org.jetbrains.annotations.NotNull;
 
 public final class DM extends ListenerAdapter {

@@ -8,8 +8,8 @@ import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.backblue.core.Bot;
-import org.backblue.utilities.DefinedChannel;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.FeatureFlag;
 import org.backblue.utilities.MessagePriority;
 
 import org.json.JSONObject;

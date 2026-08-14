@@ -4,7 +4,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.utilities.DefinedChannel;
+import org.backblue.enums.DefinedChannel;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;

@@ -5,6 +5,7 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.ListModelsConfig;
 import org.backblue.core.Bot;
+import org.backblue.enums.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.slf4j.Logger;

@@ -1,6 +1,7 @@
 package org.backblue.utilities;
 
 import org.backblue.core.Bot;
+import org.backblue.enums.FeatureFlag;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;

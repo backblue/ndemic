@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.enums.FeatureFlag;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
 

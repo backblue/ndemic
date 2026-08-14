@@ -29,7 +29,7 @@ public class About extends ListenerAdapter {
             if (!watermark.isEmpty()) {
                 embed.setFooter(this.watermark);
             }
-            event.replyEmbeds(embed.build()).queue();
+            event.replyEmbeds(embed.build()).setEphemeral(true).queue();
         }
         if (event.getName().equals("privacy")) {
             event.deferReply(true).queue();

@@ -6,8 +6,8 @@ import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
-import org.backblue.utilities.DefinedChannel;
-import org.backblue.utilities.FeatureFlag;
+import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.FeatureFlag;
 import org.backblue.utilities.MessagePriority;
 
 import java.util.concurrent.TimeUnit;
