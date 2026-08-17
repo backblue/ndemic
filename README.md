@@ -20,8 +20,18 @@ Live on discord.com/ndemic, this multipurpose moderation and utility Discord Bot
 
 
 ## Setup & Deployment
+
+There is a directory named `data` that needs to be present.
+
+### Required:
+Download `eng.traineddata` and `osd.traineddata` from [Tesseract](https://github.com/tesseract-ocr/tessdata), then drop them into `data/tessdata`.
+
+### Then,
+
 You can clone this project, then run to get a JAR:
 
 `mvn clean package`
 
-Rename `bot.txt` to `bot.properties`, edit `settings.json`; set the appropriate keys.
+Rename `data/bot.txt` to `data/bot.properties`, then add keys for every value, then run.
+
+Bot will generate required example configuration files.

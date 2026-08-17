@@ -1,0 +1,13 @@
+{
+  "_version": 1,
+  "default": false,
+  "content": [
+    {
+      "modalTitle": "Example",
+      "modalID": "ex",
+      "emojiCode": "<:ex:1234567890>",
+      "emojiRoleID": "1234567890",
+      "eligibleRoles": [],
+      "flags": []
+    }]
+}

@@ -1,0 +1,57 @@
+{
+  "_version": 1,
+  "channels": {
+    "_debug": "1234567890",
+    "_deploy": "1234567890",
+    "_track": 64,
+    "debugDirectMessages": "1234567890",
+    "debugAutoModAlert": "1234567890",
+    "debugEnforcement": "1234567890",
+    "debugImageDump": "1383994500820500522",
+    "deploymentBotCmds": "1234567890",
+    "deploymentWarnings": "1234567890",
+    "deploymentLogs": "1234567890",
+    "deploymentHoney": "1234567890"
+  },
+  "self": {
+    "debugPingAlerts": "1234567890",
+    "pingAlerts": "1234567890",
+    "allPingAlerts": "1234567890",
+    "status": "Generic Status",
+    "presence": "online",
+    "watermark": "Generic Watermark"
+  },
+  "blueSky": {
+    "did:plc:abcdefghijk": "1234567890"
+  },
+  "profileScanner": {
+    "pingMods": false,
+    "cooldownBetweenScans": 60,
+    "hateMinToAlert": 6,
+    "noDiscordInvites": false
+  },
+  "messageForwarding": [
+    {
+      "match": "[whatever text]",
+      "sendToInAnalysisChannel": "1234567890",
+      "pingRoleIdInAnalysisChannel": "1234567890"
+    }
+  ],
+  "detectCrypto": {
+    "threshold": 1,
+    "useCloud": false,
+    "fallbackOnLocal": false,
+    "keywords": {
+      "example1": 1
+    }
+  },
+  "gemini": {
+    "priorities": []
+  },
+  "gatekeeper": {
+    "minMembersToScan": 16,
+    "susTime": 7,
+    "susRoles": [],
+    "regex": []
+  }
+}

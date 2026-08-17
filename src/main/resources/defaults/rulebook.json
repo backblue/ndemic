@@ -1,0 +1,18 @@
+{
+  "_version": 1,
+  "content": [
+    {
+      "id": 1,
+      "title": "Example Rule 1",
+      "desc": "Example description"
+    }
+  ],
+  "keywords": [
+    {
+      "id": 1,
+      "modal": "dropdownOne",
+      "title": "Dropdown Entry 1",
+      "desc": "Description of dropdown 1"
+    }
+  ]
+}

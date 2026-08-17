@@ -39,4 +39,6 @@ build/
 
 ### Bot-specific items ###
 /bot.properties
+/data/privacypolicy.txt
+/data/*.json
 /data/log.txt

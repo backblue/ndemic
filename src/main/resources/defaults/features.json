@@ -1,0 +1,18 @@
+{
+  "_version": 1,
+  "enforceGuideAccess": false,
+  "blueSky": false,
+  "honeypot": false,
+  "disableDMs": false,
+  "autoModAlerts": false,
+  "roleIcons": false,
+  "msgForward": false,
+  "raidPauseInvites": false,
+  "scanProfiles": false,
+  "ai": false,
+  "detectCryptoImages": false,
+  "gatekeeper": false,
+  "nitroBoostMessage": false,
+  "requireOnboarding": false,
+  "removeLowQualityAccounts": false
+}
