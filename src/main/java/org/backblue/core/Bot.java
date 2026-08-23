@@ -10,6 +10,8 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
+import org.backblue.core.containers.Interactive;
+import org.backblue.core.containers.LiveContainer;
 import org.backblue.enums.FeatureFlag;
 import org.backblue.moderation.*;
 import org.backblue.utilities.*;
@@ -23,9 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -36,8 +35,8 @@ import java.util.concurrent.TimeUnit;
 public final class Bot {
 
     public final int major = 1;
-    public final int minor = 0;
-    public final int patch = 1;
+    public final int minor = 1;
+    public final int patch = 0;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
@@ -46,6 +45,7 @@ public final class Bot {
     private final MessageIO io;
     private final GenAI ai;
     private final Interactive interactive;
+    private final LiveContainer liveContainer;
 
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
@@ -62,7 +62,7 @@ public final class Bot {
         JSONObject featuresList = null;
         JSONObject settingSelf = null;
 
-        Configurator config;
+        Configurator config = null;
 
         try {
             config = new Configurator(this);
@@ -108,21 +108,26 @@ public final class Bot {
             builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("status")));
         }
 
+        this.liveContainer = new LiveContainer(this);
         this.io = new MessageIO(settings, this, keys);
         this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         EZPunish ezp = new EZPunish(this, rulebook);
         interactive = new Interactive(this, ezp);
+        Auditing auditing = new Auditing(this, config.deploymentAuditFile);
         ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
         builder.addEventListeners(new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
                 this.io, new Deployment(settings.optJSONObject("channels", null)),
                 ezp,
+                liveContainer,
                 profileScan,
                 this.interactive,
+                auditing,
                 new DisableDM(this),
                 new Scan(this, profileScan),
                 new Badge(this, badges),
                 new RaidProtect(this),
+                new Audit(this, auditing),
                 new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
                 new About(this, settingSelf.optString("watermark", "")));
 
@@ -172,6 +177,9 @@ public final class Bot {
     public ScheduledExecutorService getScheduler() {
         return this.scheduler;
     }
+    public LiveContainer getLiveContainer() {
+        return this.liveContainer;
+    }
     public void timeout(Member member, String reason, int duration, TimeUnit unit) {
         if (member == null) return;
         OffsetDateTime now = OffsetDateTime.now();
@@ -215,7 +223,7 @@ public final class Bot {
                 .toList();
 
     }
-    public String readResource(String path) {
+    public String readResourceString(String path) {
         try (InputStream stream = getClass().getClassLoader().getResourceAsStream(path)) {
             if (stream == null) throw new FileNotFoundException(path);
             return new String(stream.readAllBytes());

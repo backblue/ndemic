@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.io.File;
+import java.io.UncheckedIOException;
 
 public class About extends ListenerAdapter {
 
@@ -33,8 +34,13 @@ public class About extends ListenerAdapter {
         }
         if (event.getName().equals("privacy")) {
             event.deferReply(true).queue();
-            FileUpload upload = FileUpload.fromData(new File("data/privacypolicy.txt"));
-            event.getHook().sendFiles(upload).queue();
+            try {
+                FileUpload upload = FileUpload.fromData(new File("data/privacypolicy.txt"));
+                event.getHook().sendFiles(upload).queue();
+            } catch (UncheckedIOException e) {
+                event.getHook().sendMessage("No privacy policy has been set for " + event.getJDA().getSelfUser().getAsMention() + ".").queue();
+            }
+
         }
     }
 

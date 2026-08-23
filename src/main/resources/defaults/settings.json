@@ -4,6 +4,7 @@
     "_debug": "1234567890",
     "_deploy": "1234567890",
     "_track": 64,
+    "_timeOutHrs": 1,
     "debugDirectMessages": "1234567890",
     "debugAutoModAlert": "1234567890",
     "debugEnforcement": "1234567890",

@@ -1,4 +1,4 @@
-package org.backblue.core;
+package org.backblue.core.containers;
 
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.modals.Modal;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.commands.EZPunish;
+import org.backblue.core.Bot;
 import org.jspecify.annotations.NonNull;
 
 import java.io.File;
@@ -30,6 +31,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ *  Centralized container/components systems.<br>
+ *  All container components, buttons functionality are defined in this class.
+ */
+@Deprecated
 public final class Interactive extends ListenerAdapter {
 
     private static final int Footer_Note = 101;
@@ -47,55 +53,57 @@ public final class Interactive extends ListenerAdapter {
     @Override
     public void onButtonInteraction(@NonNull ButtonInteractionEvent event) {
         if (event.getButton().getCustomId() == null) return;
-        short id = Short.parseShort(event.getButton().getCustomId().split(";")[0]);
-        Type interactive = actions.get(id);
-        switch (interactive) {
-            case Type.Profile data -> {
-                String punishment = event.getButton().getCustomId().split(";")[1];
-                Member member = bot.getDeploymentGuild().getMemberById(data.memberID);
-                if (member != null) {
-                    if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), false, member.getEffectiveAvatarUrl(), null);
-                    if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), true, member.getEffectiveAvatarUrl(), null);
-                }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
-                event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
-            }
-            case Type.Spam data -> {
-                String punishment = event.getButton().getCustomId().split(";")[1];
-                Member member = bot.getDeploymentGuild().getMemberById(data.memberID);
-                if (member != null) {
-                    if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), false, member.getEffectiveAvatarUrl(), null);
-                    if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), true, member.getEffectiveAvatarUrl(), null);
-                }
-                MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
-                event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
-            }
-            case Type.Gatekeeper data -> {
-                String action = event.getButton().getCustomId().split(";")[1];
-                if (action.equals("nothing")) {
-                    MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Interaction locked <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
+        try {
+            short id = Short.parseShort(event.getButton().getCustomId().split(";")[0]);
+            Type interactive = actions.get(id);
+            switch (interactive) {
+                case Type.Profile data -> {
+                    String punishment = event.getButton().getCustomId().split(";")[1];
+                    Member member = bot.getDeploymentGuild().getMemberById(data.memberID);
+                    if (member != null) {
+                        if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), false, member.getEffectiveAvatarUrl(), null);
+                        if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:profile"), true, member.getEffectiveAvatarUrl(), null);
+                    }
+                    MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
                     event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
-                    return;
                 }
-                List<String> list = data.memberIDs();
-                StringSelectMenu.Builder selectMenu = StringSelectMenu.create("gatekeeper:target").setRequired(true).setRequiredRange(1, 8);
-                for (String memberID : list) {
-                    Member member = bot.getDeploymentGuild().getMemberById(memberID);
-                    if (member != null) selectMenu.addOption(member.getUser().getName(), memberID, member.getEffectiveName());
+                case Type.Spam data -> {
+                    String punishment = event.getButton().getCustomId().split(";")[1];
+                    Member member = bot.getDeploymentGuild().getMemberById(data.memberID);
+                    if (member != null) {
+                        if (punishment.equals("kick")) this.ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), false, member.getEffectiveAvatarUrl(), null);
+                        if (punishment.equals("ban")) ezPunish.ezPunish(member, event.getMember(), List.of("ezpunish:spam"), true, member.getEffectiveAvatarUrl(), null);
+                    }
+                    MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Action taken <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")));
+                    event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
                 }
-                Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
-                        .addComponents(
-                                TextDisplay.of("Spambots are not notified when they're removed."),
-                                Label.of("Eligible Targets", selectMenu.build()),
-                                Label.of("Punishment", RadioGroup.create("gatekeeper:type")
-                                        .addOption("Softban", "softban")
-                                        .addOption("Ban", "ban")
-                                        .build())
-                        ).build();
-                event.replyModal(modal).queue();
+                case Type.Gatekeeper data -> {
+                    String action = event.getButton().getCustomId().split(";")[1];
+                    if (action.equals("nothing")) {
+                        MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Interaction locked <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
+                        event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
+                        return;
+                    }
+                    List<String> list = data.memberIDs();
+                    StringSelectMenu.Builder selectMenu = StringSelectMenu.create("gatekeeper:target").setRequired(true).setRequiredRange(1, 8);
+                    for (String memberID : list) {
+                        Member member = bot.getDeploymentGuild().getMemberById(memberID);
+                        if (member != null) selectMenu.addOption(member.getUser().getName(), memberID, member.getEffectiveName());
+                    }
+                    Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
+                            .addComponents(
+                                    TextDisplay.of("Spambots are not notified when they're removed."),
+                                    Label.of("Eligible Targets", selectMenu.build()),
+                                    Label.of("Punishment", RadioGroup.create("gatekeeper:type")
+                                            .addOption("Softban", "softban")
+                                            .addOption("Ban", "ban")
+                                            .build())
+                            ).build();
+                    event.replyModal(modal).queue();
+                }
+                default -> {}
             }
-        }
-
+        } catch (NumberFormatException ignored) {}
     }
 
     private short generate() {
@@ -122,6 +130,7 @@ public final class Interactive extends ListenerAdapter {
                 TextDisplay.of("-# Punishment actions will notify the user (and logged).").withUniqueId(Interactive.Footer_Note)
 
         ).withUniqueId(id);
+
         actions.put(id, new Type.Profile(member.getId(), type));
         return container;
     }

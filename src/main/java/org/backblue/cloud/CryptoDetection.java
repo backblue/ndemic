@@ -166,7 +166,7 @@ public final class CryptoDetection extends MessagePriority {
                 .flatMap(bundle -> bundle.attachments().stream())
                 .toList();
 
-        bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createSpam(member, files));
+        bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createSpam(member, files), null);
         for (Bundle bundle : report.bundles) {
             for (File file : bundle.attachments()) {
                 if (!file.delete()) Log.warn("Unable to delete file: {}", file.getAbsolutePath());

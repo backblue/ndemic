@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Properties;
 
-class Configurator {
+final class Configurator {
 
     static final Logger Log = LoggerFactory.getLogger(Configurator.class);
     Bot bot;
@@ -74,6 +74,7 @@ class Configurator {
 
         if (!updated) {
             for (String key : defaultResource.keySet()) {
+                if (key.equals("_version")) continue;
                 if (!resource.has(key)) {
                     updated = true;
                     resource.put(key, defaultResource.get(key));
@@ -87,12 +88,23 @@ class Configurator {
             }
         }
 
+        int currVersion = resource.optInt("_version", Integer.MIN_VALUE);
+        if (currVersion != Integer.MIN_VALUE) {
+            if (defaultResource.optInt("_version", Integer.MIN_VALUE) > currVersion) {
+                Log.warn("Unable to write to {}. Read configuration is newer than current packaged", path);
+                return resource;
+            } if (defaultResource.optInt("_version", Integer.MIN_VALUE) < currVersion) {
+                resource.put("_version", defaultResource.getInt("_version"));
+                updated = true;
+            }
+        }
+
         if (updated) {
             try (FileWriter fw = new FileWriter(path)) {
-                fw.write(resource.toString());
+                fw.write(resource.toString(4));
                 Log.info("A resource was created: {}", path);
             } catch (IOException e) {
-                Log.warn("Unable to update {}. New features/improvements may not be enabled. Check if file is accessible & write-able.", path);
+                Log.warn("Unable to write to {}. New features/improvements may not be enabled. Check if file is accessible & write-able.", path);
             }
         }
 

@@ -25,7 +25,6 @@ public final class MemoryDebug {
     }
 
     private void sendHeap() {
-
         long usedMemoryMB = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
         long allocatedMemoryMB = runtime.totalMemory() / (1024 * 1024);
         long maxMemoryMB = runtime.maxMemory() / (1024 * 1024);
@@ -35,11 +34,11 @@ public final class MemoryDebug {
         Log.info("Heap ({}% used, ↑{}MB): {}MB used, {}MB allocated, {}MB total", String.format("%.2f", usedPercent*100), highestMemoryMB, usedMemoryMB, allocatedMemoryMB, maxMemoryMB);
         if (usedPercent >= 0.91 && lastUsedMemoryMB != usedMemoryMB && lastUsedMemoryMB != Integer.MAX_VALUE) {
             System.gc();
-            bot.getIO().send(DefinedChannel.DebugEnforcement, String.format(bot.getDebugPing().getAsMention() + " Potential excessive memory usage detected: %dMB used, up from %dMB", usedMemoryMB, lastUsedMemoryMB));
+            bot.getIO().send(DefinedChannel.DebugEnforcement, String.format("%s Potential excessive memory usage detected: %dMB used, up from %dMB", bot.getDebugPing().getAsMention(), usedMemoryMB, lastUsedMemoryMB));
             Log.warn("Excessive memory usage: {}MB used, up from {}MB", usedMemoryMB, lastUsedMemoryMB);
         }
         if (usedPercent >= 0.96 && lastUsedMemoryMB != usedMemoryMB && lastUsedMemoryMB != Integer.MAX_VALUE) {
-            bot.getIO().send(DefinedChannel.DebugEnforcement, String.format(bot.getDebugPing().getAsMention() + " Memory usage critical: %.2f%% used (%dMB), consider investigating or increasing heap size", usedPercent*100, usedMemoryMB));
+            bot.getIO().send(DefinedChannel.DebugEnforcement, String.format("%s Memory usage critical: %.2f%% used (%dMB), consider investigating or increasing heap size", bot.getDebugPing().getAsMention(), usedPercent*100, usedMemoryMB));
             Log.error("Memory usage critical: {}% used ({}MB)!", String.format("%.2f", usedPercent*100), usedMemoryMB);
         }
         lastUsedMemoryMB = usedMemoryMB;

@@ -90,7 +90,7 @@ public final class ProfileScan extends ListenerAdapter {
         }
         ScanResult avatar = scan(member.getId(), member.getEffectiveAvatarUrl());
         if (avatar != null && avatar.points >= this.hateMinToAlert) {
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, this.ping ? bot.getMostModerators().getAsMention() : "", bot.getInteractive().createProfile(member, "picture", avatar.points));
+            bot.getIO().send(DefinedChannel.DeploymentBotCommands, this.ping ? bot.getMostModerators().getAsMention() : "", bot.getInteractive().createProfile(member, "picture", avatar.points), null);
             lastScan.put(member.getId(), OffsetTime.now());
         }
         member.getUser().retrieveProfile().queue(profile -> {
@@ -99,7 +99,7 @@ public final class ProfileScan extends ListenerAdapter {
             if (bannerUrl != null) {
                 ScanResult banner = scan(member.getId(), bannerUrl);
                 if (banner != null && banner.points() >= hateMinToAlert) {
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createProfile(member, "banner", banner.points));
+                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createProfile(member, "banner", banner.points), null);
                     lastScan.put(member.getId(), OffsetTime.now());
                 }
             }

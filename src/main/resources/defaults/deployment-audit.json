@@ -1,8 +1,10 @@
 {
   "_version": 1,
+  "webhookLink": "",
   "messageDelete": false,
   "messageEdit": false,
   "memberJoin": false,
+  "memberLeave": false,
   "memberRolesRemove": false,
   "memberRolesAdd": false,
   "memberBan": false,
