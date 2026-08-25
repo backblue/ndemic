@@ -1,7 +1,6 @@
 package org.backblue.core;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -111,9 +110,6 @@ public final class MessageIO extends ListenerAdapter {
     public void clean(String id) {
         Deque<Message> messages = this.recentMessages.remove(id);
         if (messages == null || messages.isEmpty()) return;
-        if (messages.size() == 1) {
-            messages.getFirst().delete().queue();
-        }
 
         for (Message message : messages) {
             message.delete().queue(
@@ -176,8 +172,8 @@ public final class MessageIO extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NonNull MessageReceivedEvent event) {
         if (event.isFromGuild() && event.getGuild().getId().equals(bot.getDeploymentGuild().getId()) && !event.getAuthor().isBot()) {
-            for (MessagePriority listener : messageListenersPriority) if (listener.cancelled(event)) break;
-            if (event.getMember() != null && event.getMember().hasPermission(Permission.ADMINISTRATOR)) return;
+            for (MessagePriority listener : messageListenersPriority) if (listener.cancelled(event)) return;
+            if (event.getMember() == null) return;
             String userId = event.getAuthor().getId();
             Deque<Message> messages = this.recentMessages.computeIfAbsent(userId, id -> new ConcurrentLinkedDeque<>());
             messages.addLast(event.getMessage());
@@ -210,11 +206,13 @@ public final class MessageIO extends ListenerAdapter {
             }
 
             EmbedBuilder embed = auditing.base(event.getAuthor());
-            embed.addField("Old [Raw]", msg != null ? msg.getContentRaw() : "*[Irretrievable message]*", false);
-            embed.addField("New [Raw]", event.getMessage().getContentRaw(), false);
+            embed.addField("Old", msg != null ? msg.getContentRaw() : "*[Irretrievable message]*", false);
+            embed.addField("New", event.getMessage().getContentRaw(), false);
             embed.addField("Jump to", textJump(event.getMessage()), false);
             embed.setColor(Color.RED);
             embed.setDescription(event.getAuthor().getAsMention() + " **edited a message in " + event.getChannel().getAsMention() + "**");
+            auditing.sendAudit(embed.build());
+            this.recentMessageIds.put(event.getMessageIdLong(), event.getMessage());
         }
     }
 
@@ -229,9 +227,10 @@ public final class MessageIO extends ListenerAdapter {
             if (msg != null && !msg.getAuthor().isBot() && msg.getMember() != null) {
                 User member = msg.getMember().getUser();
                 EmbedBuilder embed = auditing.base(member);
-                embed.addField("Content [Raw]", msg.getContentRaw(), false);
+                embed.addField("Content", msg.getContentRaw(), false);
                 embed.setColor(Color.RED);
                 embed.setDescription(member.getAsMention() + " **deleted a message in " + event.getChannel().getAsMention() + "**");
+                auditing.sendAudit(embed.build());
             }
         }
     }

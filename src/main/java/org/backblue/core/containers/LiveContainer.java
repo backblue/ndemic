@@ -19,14 +19,14 @@ import java.util.concurrent.TimeUnit;
 public final class LiveContainer extends ListenerAdapter {
 
     private final ConcurrentHashMap<Long, @NotNull ContainerNode> containers = new ConcurrentHashMap<>();
-    private static final long Timeout = TimeUnit.MINUTES.toMillis(15);
+    private static final long Timeout = TimeUnit.HOURS.toMillis(18);
 
     public LiveContainer(Bot bot) {
-        bot.getScheduler().scheduleWithFixedDelay(this::clean, 45, 45, TimeUnit.MINUTES);
+        bot.getScheduler().scheduleWithFixedDelay(this::clean, 10, 10, TimeUnit.MINUTES);
     }
 
-    public void applyContainerization(@NotNull Container container, Message message, @NotNull LiveFramework handler) {
-        containers.put(message.getIdLong(), new ContainerNode(container, handler, System.currentTimeMillis()));
+    public void applyContainerization(@NotNull Container container, Message message, LiveFramework handler) {
+        if (handler != null) containers.put(message.getIdLong(), new ContainerNode(container, handler, System.currentTimeMillis()));
     }
 
     private void clean() {

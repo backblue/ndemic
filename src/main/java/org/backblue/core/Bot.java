@@ -19,6 +19,7 @@ import org.backblue.utilities.BlueSky;
 import org.backblue.cloud.ProfileScan;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public final class Bot {
 
     public final int major = 1;
     public final int minor = 1;
-    public final int patch = 0;
+    public final int patch = 1;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
@@ -232,36 +233,67 @@ public final class Bot {
             return null;
         }
     }
-    public String formattedTime(long seconds, boolean abbreviated) {
-        long days = seconds / (60 * 60 * 24);
-        long hours = (seconds % (60 * 60 * 24)) / (60 * 60);
-        long minutes = (seconds % (60 * 60)) / 60;
-        long secs = seconds % 60;
-
-        StringBuilder sb = new StringBuilder();
-        if (abbreviated) {
-            if (days > 0) {
-                sb.append(String.format("%02dd", days));
-            }
-            if (days > 0 || hours > 0) {
-                sb.append(String.format("%02dh", hours));
-            }
-            if (days > 0 || hours > 0 || minutes > 0) {
-                sb.append(String.format("%02dm", minutes));
-            }
-            sb.append(String.format("%02ds", secs));
-        } else {
-            if (days > 0) {
-                sb.append(days).append(days == 1 ? " day, " : " days, ");
-            }
-            if (days > 0 || hours > 0) {
-                sb.append(hours).append(hours == 1 ? " hour, " : " hours, ");
-            }
-            if (days > 0 || hours > 0 || minutes > 0) {
-                sb.append(minutes).append(minutes == 1 ? " minute, " : " minutes, ");
-            }
-            sb.append(secs).append(secs == 1 ? " second" : " seconds");
+    public String formattedTime(long seconds, boolean abbreviated, int maxUnits) {
+        if (maxUnits <= 0) {
+            return "";
         }
+
+        long[] values = getValues(seconds);
+
+        String[] longNames = {
+                "year", "month", "week", "day", "hour", "minute", "second"
+        };
+
+        String[] shortNames = {"y", "mo", "w", "d", "h", "m", "s"};
+        StringBuilder sb = new StringBuilder();
+        int unitsAdded = 0;
+
+        for (int i = 0; i < values.length && unitsAdded < maxUnits; i++) {
+            long value = values[i];
+
+            if (value == 0 && (unitsAdded > 0 || i != values.length - 1)) {
+                continue;
+            }
+
+            if (abbreviated) {
+                sb.append(String.format("%02d%s", value, shortNames[i]));
+            } else {
+                if (unitsAdded > 0) {
+                    sb.append(", ");
+                }
+                sb.append(value)
+                        .append(" ")
+                        .append(longNames[i])
+                        .append(value == 1 ? "" : "s");
+            }
+
+            unitsAdded++;
+        }
+
         return sb.toString();
+    }
+
+    private static long @NonNull [] getValues(long seconds) {
+        final long SECOND = 1;
+        final long MINUTE = 60 * SECOND;
+        final long HOUR = 60 * MINUTE;
+        final long DAY = 24 * HOUR;
+        final long WEEK = 7 * DAY;
+        final long MONTH = 30 * DAY;
+        final long YEAR = 365 * DAY;
+
+        return new long[]{
+                seconds / YEAR,
+                (seconds % YEAR) / MONTH,
+                (seconds % MONTH) / WEEK,
+                (seconds % WEEK) / DAY,
+                (seconds % DAY) / HOUR,
+                (seconds % HOUR) / MINUTE,
+                seconds % MINUTE
+        };
+    }
+
+    public String formattedTime(long seconds, boolean abbreviated) {
+        return formattedTime(seconds, abbreviated, Integer.MAX_VALUE);
     }
 }

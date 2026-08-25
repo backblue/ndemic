@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *  Centralized container/components systems.<br>
  *  All container components, buttons functionality are defined in this class.
  */
-@Deprecated
 public final class Interactive extends ListenerAdapter {
 
     private static final int Footer_Note = 101;

@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.EnumSet;
 import java.util.List;
@@ -126,15 +127,15 @@ public class Auditing extends ListenerAdapter {
 
     @Override
     public void onGuildMemberRoleAdd(@NonNull GuildMemberRoleAddEvent event) {
-        memberChangeRoles(event.getGuild(), event.getRoles(), event.getUser());
+        memberChangeRoles(event.getGuild(), event.getRoles(), event.getUser(), true);
     }
 
     @Override
     public void onGuildMemberRoleRemove(@NonNull GuildMemberRoleRemoveEvent event) {
-        memberChangeRoles(event.getGuild(), event.getRoles(), event.getUser());
+        memberChangeRoles(event.getGuild(), event.getRoles(), event.getUser(), false);
     }
 
-    private void memberChangeRoles(Guild guild, List<Role> roles, User user) {
+    private void memberChangeRoles(Guild guild, List<Role> roles, User user, boolean add) {
         if (guild.getId().equals(bot.getDeploymentGuild().getId())
                 && listeners.contains(AuditAction.MembersRoleAdd) && !roles.isEmpty()) {
             StringBuilder b = new StringBuilder();
@@ -142,7 +143,9 @@ public class Auditing extends ListenerAdapter {
             b.deleteCharAt(b.length() - 1).deleteCharAt(b.length() - 1);
             EmbedBuilder embedBuilder = this.base(user);
             embedBuilder.setColor(Color.CYAN);
-            embedBuilder.setDescription(user.getAsMention() + " removed roles: **" + b + "**");
+            embedBuilder.setThumbnail(user.getAvatarUrl());
+            String addOrRemove = add ? "added" : "removed";
+            embedBuilder.setDescription(user.getAsMention() + " " + addOrRemove + " roles: **" + b + "**");
             this.sendAudit(embedBuilder.build());
         }
     }
@@ -153,9 +156,10 @@ public class Auditing extends ListenerAdapter {
                 && listeners.contains(AuditAction.MemberJoin)) {
             EmbedBuilder embedBuilder = this.base(event.getUser());
             embedBuilder.setColor(Color.CYAN);
+            embedBuilder.setThumbnail(event.getUser().getAvatarUrl());
             embedBuilder.setAuthor("Member Joined", event.getUser().getAvatarUrl(), event.getUser().getAvatarUrl());
-            embedBuilder.setDescription(event.getUser().getAsMention() + " " + event.getUser().getName());
-            embedBuilder.addField("Account Age", bot.formattedTime(event.getUser().getTimeCreated().toEpochSecond(), false), false);
+            embedBuilder.setDescription(event.getUser().getAsMention() + " `" + event.getUser().getName() + "`");
+            embedBuilder.addField("Account Age", bot.formattedTime(Duration.between(event.getUser().getTimeCreated(), OffsetDateTime.now()).toSeconds(), false, 3), false);
             this.sendAudit(embedBuilder.build());
         }
     }
@@ -165,9 +169,10 @@ public class Auditing extends ListenerAdapter {
         if (event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
                 && listeners.contains(AuditAction.MembersRoleRemove)) {
             EmbedBuilder embedBuilder = this.base(event.getUser());
+            embedBuilder.setThumbnail(event.getUser().getAvatarUrl());
             embedBuilder.setColor(Color.RED);
             embedBuilder.setAuthor("Member Left", event.getUser().getAvatarUrl(), event.getUser().getAvatarUrl());
-            embedBuilder.setDescription(event.getUser().getAsMention() + " " + event.getUser().getName());
+            embedBuilder.setDescription(event.getUser().getAsMention() + " `" + event.getUser().getName() + "`");
             this.sendAudit(embedBuilder.build());
         }
     }
