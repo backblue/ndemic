@@ -17,10 +17,7 @@ import org.backblue.cloud.CryptoDetection;
 import org.backblue.enums.AuditAction;
 import org.backblue.enums.LiveFramework;
 import org.backblue.enums.DefinedChannel;
-import org.backblue.moderation.Auditing;
-import org.backblue.moderation.OneAuthorGuide;
-import org.backblue.moderation.Forwarding;
-import org.backblue.moderation.Honeypot;
+import org.backblue.moderation.*;
 import org.backblue.utilities.*;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -123,6 +120,10 @@ public final class MessageIO extends ListenerAdapter {
         }
     }
 
+    public void addListener(MessagePriority... m) {
+        messageListenersPriority.addAll(Arrays.stream(m).toList());
+    }
+
     public MessageIO(JSONObject settings, Bot bot, Properties props) {
         this.bot = bot;
         this.definedChannels = new EnumMap<>(DefinedChannel.class);
@@ -145,7 +146,6 @@ public final class MessageIO extends ListenerAdapter {
 
         prevMessagesLoggingLimit = settingsChannel.optInt("_track", 8);
         inactiveTimeoutHours = settingsChannel.optInt("_timeOutHrs", 1);
-
         messageListenersPriority.add(new OneAuthorGuide(50, bot));
         messageListenersPriority.add(new Honeypot(5, bot));
         messageListenersPriority.add(new Forwarding(15, bot, settings.optJSONArray("messageForwarding")));

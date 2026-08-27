@@ -108,9 +108,10 @@ public final class Bot {
         if (settings.getJSONObject("self").optString("presence", null) != null) {
             builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("status")));
         }
-
+        Autoresponding autoresponding = new Autoresponding(Integer.MAX_VALUE, this, config.deploymentAutoresponderFile);
         this.liveContainer = new LiveContainer(this);
         this.io = new MessageIO(settings, this, keys);
+        this.io.addListener(autoresponding);
         this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         EZPunish ezp = new EZPunish(this, rulebook);
         interactive = new Interactive(this, ezp);
@@ -124,6 +125,7 @@ public final class Bot {
                 profileScan,
                 this.interactive,
                 auditing,
+                new Autorespond(this, autoresponding),
                 new DisableDM(this),
                 new Scan(this, profileScan),
                 new Badge(this, badges),

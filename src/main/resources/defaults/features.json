@@ -14,5 +14,6 @@
   "gatekeeper": false,
   "nitroBoostMessage": false,
   "requireOnboarding": false,
-  "removeLowQualityAccounts": false
+  "removeLowQualityAccounts": false,
+  "autoResponder": true
 }

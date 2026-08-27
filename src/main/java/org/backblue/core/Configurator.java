@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Properties;
 
-final class Configurator {
+public final class Configurator {
 
     static final Logger Log = LoggerFactory.getLogger(Configurator.class);
     Bot bot;
@@ -102,7 +102,7 @@ final class Configurator {
         if (updated) {
             try (FileWriter fw = new FileWriter(path)) {
                 fw.write(resource.toString(4));
-                Log.info("A resource was created: {}", path);
+                Log.info("A resource was updated: {}", path);
             } catch (IOException e) {
                 Log.warn("Unable to write to {}. New features/improvements may not be enabled. Check if file is accessible & write-able.", path);
             }

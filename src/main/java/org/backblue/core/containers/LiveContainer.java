@@ -36,6 +36,13 @@ public final class LiveContainer extends ListenerAdapter {
         );
     }
 
+    /**
+     * Attempts to recognize button direction.<br>
+     * The structure of a button ID: {@code "{className};primaryAction;..."}<br>
+     * For containers with {@code Pagination}, the primaryAction is {@code PREVIOUS_BUTTON} or {@code NEXT_BUTTON}.
+     * <br>
+     * @param event - The button itself
+     */
     @Override
     public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
         long messageId = event.getMessage().getIdLong();
@@ -45,15 +52,32 @@ public final class LiveContainer extends ListenerAdapter {
         if (customId == null) return;
         String[] split = customId.split(";");
         registration.lastUpdated = System.currentTimeMillis();
-        if (registration.handler instanceof LiveFramework.ButtonReturn k) {
-            event.deferEdit().queue(hook ->
+
+        switch (registration.handler) {
+            case LiveFramework.Pagination k -> {
+                try {
+                    int isBackOrForward = Integer.parseInt(split[1]);
+                    if (isBackOrForward == LiveFramework.Pagination.NEXT_BUTTON) {
+                        event.deferEdit().queue(hook ->
+                                hook.editOriginalComponents(k.onButtonNext()).useComponentsV2().queue()
+                        );
+                    } else if (isBackOrForward == LiveFramework.Pagination.PREVIOUS_BUTTON) {
+                        event.deferEdit().queue(hook ->
+                                hook.editOriginalComponents(k.onButtonPrevious()).useComponentsV2().queue()
+                        );
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            case LiveFramework.ButtonReturn k -> event.deferEdit().queue(hook ->
                     hook.editOriginalComponents(k.onButton(event, split)).useComponentsV2().queue()
             );
-        } else if (registration.handler instanceof LiveFramework.ButtonVoid m) {
-            event.deferEdit().queue();
-            m.onButton(event, split);
-        } else {
-            throw new IllegalStateException("Unexpected button handler: " + registration.handler.getClass().getName());
+            case LiveFramework.ButtonVoid m -> {
+                event.deferEdit().queue();
+                m.onButton(event, split);
+            }
+            default ->
+                    throw new IllegalStateException("Unexpected button handler: " + registration.handler.getClass().getName());
         }
     }
 

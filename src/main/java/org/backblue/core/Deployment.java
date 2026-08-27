@@ -48,6 +48,8 @@ public final class Deployment extends ListenerAdapter {
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
         commands.add(Commands.slash("audit", "Enable/disable audit logging...")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
+        commands.add(Commands.slash("autorespond", "Modify trigger rules for autoresponding...")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
         if (settings.optBoolean("$enablePrivacyPolicyCommand")) commands.add(Commands.slash("privacy", "View the bot's privacy policy"));
 
         if (event.getGuild().getId().equals(settings.optString("_deploy", "")) || event.getGuild().getId().equals(settings.optString("_debug", ""))) {
