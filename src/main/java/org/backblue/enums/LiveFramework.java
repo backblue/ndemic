@@ -25,11 +25,11 @@ public interface LiveFramework {
     }
 
     interface Pagination extends LiveFramework {
-        int PREVIOUS_BUTTON = 86;
-        int NEXT_BUTTON = 96;
+        int PREVIOUS_BUTTON = -1;
+        int NEXT_BUTTON = -2;
 
-        Container onButtonNext();
-        Container onButtonPrevious();
+        Container onButtonNext(long messageId);
+        Container onButtonPrevious(long messageId);
 
         default ActionRow buildPagingRows(int currentPage, int elementsPerPage, int elementsMax) {
             List<ActionRowChildComponent> row = new ArrayList<>();

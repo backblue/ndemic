@@ -11,8 +11,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Autoresponding extends MessagePriority {
 
@@ -33,8 +31,9 @@ public class Autoresponding extends MessagePriority {
                 if ((obj instanceof JSONObject json)) {
                     String text = json.optString("keyword", null);
                     String emoji = json.optString("response", null);
+                    boolean exact = json.optBoolean("exact", false);
                     if (text != null && emoji != null) {
-                        this.messages.add(new AutoresponderMessage(text, emoji));
+                        this.messages.add(new AutoresponderMessage(text, emoji, exact));
                     }
                 }
             });
@@ -44,8 +43,9 @@ public class Autoresponding extends MessagePriority {
                 if ((obj instanceof JSONObject json)) {
                     String keyword = json.optString("keyword", null);
                     String emoji = json.optString("emoji", null);
+                    boolean exact = json.optBoolean("exact", false);
                     if (keyword != null && emoji != null) {
-                        this.emojis.add(new AutoresponderEmoji(keyword, emoji));
+                        this.emojis.add(new AutoresponderEmoji(keyword, emoji, exact));
                     }
                 }
             });
@@ -76,13 +76,13 @@ public class Autoresponding extends MessagePriority {
         if (bot.isFeatureEnabled(FeatureFlag.Autoresponder) && event.getAuthor().isBot()) return false;
 
         for (AutoresponderMessage m : messages) {
-            if (event.getMessage().getContentRaw().contains(m.keyword)) {
+            if (event.getMessage().getContentRaw().equalsIgnoreCase(m.keyword)) {
                 bot.getIO().send(event.getChannel().getId(), m.response);
                 return false;
             }
         }
         for (AutoresponderEmoji emoji : emojis) {
-            if (event.getMessage().getContentRaw().contains(emoji.keyword)) {
+            if (event.getMessage().getContentRaw().equalsIgnoreCase(emoji.keyword)) {
                 Emoji emote = Emoji.fromFormatted(emoji.emoji);
                 event.getMessage().addReaction(emote).queue();
                 return false;
@@ -92,6 +92,6 @@ public class Autoresponding extends MessagePriority {
     }
 
     public interface AutoresponderEntry {}
-    public record AutoresponderMessage(String keyword, String response) implements AutoresponderEntry {}
-    public record AutoresponderEmoji(String keyword, String emoji) implements AutoresponderEntry {}
+    public record AutoresponderMessage(String keyword, String response, boolean exact) implements AutoresponderEntry {}
+    public record AutoresponderEmoji(String keyword, String emoji, boolean exact) implements AutoresponderEntry {}
 }

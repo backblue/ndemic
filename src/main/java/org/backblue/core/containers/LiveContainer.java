@@ -51,35 +51,48 @@ public final class LiveContainer extends ListenerAdapter {
         String customId = event.getButton().getCustomId();
         if (customId == null) return;
         String[] split = customId.split(";");
+        if (split.length < 2) return;
         registration.lastUpdated = System.currentTimeMillis();
-
-        switch (registration.handler) {
-            case LiveFramework.Pagination k -> {
-                try {
-                    int isBackOrForward = Integer.parseInt(split[1]);
-                    if (isBackOrForward == LiveFramework.Pagination.NEXT_BUTTON) {
-                        event.deferEdit().queue(hook ->
-                                hook.editOriginalComponents(k.onButtonNext()).useComponentsV2().queue()
-                        );
-                    } else if (isBackOrForward == LiveFramework.Pagination.PREVIOUS_BUTTON) {
-                        event.deferEdit().queue(hook ->
-                                hook.editOriginalComponents(k.onButtonPrevious()).useComponentsV2().queue()
-                        );
-                    }
-                } catch (NumberFormatException ignored) {
+        LiveFramework handler = registration.handler;
+        if (handler instanceof LiveFramework.Pagination pagination) {
+            try {
+                int action = Integer.parseInt(split[1]);
+                if (action == LiveFramework.Pagination.NEXT_BUTTON) {
+                    event.deferEdit().queue(hook -> {
+                        Container c = pagination.onButtonNext(messageId);
+                        if (c != null) {
+                            hook.editOriginalComponents(c).useComponentsV2().queue();
+                        }
+                    });
+                    return;
                 }
-            }
-            case LiveFramework.ButtonReturn k -> event.deferEdit().queue(hook ->
-                    hook.editOriginalComponents(k.onButton(event, split)).useComponentsV2().queue()
-            );
-            case LiveFramework.ButtonVoid m -> {
-                event.deferEdit().queue();
-                m.onButton(event, split);
-            }
-            default ->
-                    throw new IllegalStateException("Unexpected button handler: " + registration.handler.getClass().getName());
+                if (action == LiveFramework.Pagination.PREVIOUS_BUTTON) {
+                    event.deferEdit().queue(hook -> {
+                        Container c = pagination.onButtonPrevious(messageId);
+                        if (c != null) {
+                            hook.editOriginalComponents(c).useComponentsV2().queue();
+                        }
+                    });
+                    return;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+
+        if (handler instanceof LiveFramework.ButtonReturn button) {
+            event.deferEdit().queue(hook -> {
+                Container c = button.onButton(event, split);
+                if (c != null) {
+                    hook.editOriginalComponents(c).useComponentsV2().queue();
+                }
+            });
+            return;
+        }
+
+        if (handler instanceof LiveFramework.ButtonVoid button) {
+            button.onButton(event, split);
         }
     }
+
 
     static class ContainerNode {
 

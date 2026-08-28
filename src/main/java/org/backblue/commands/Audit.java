@@ -87,7 +87,7 @@ public class Audit extends ListenerAdapter implements LiveFramework.ButtonReturn
 
             settings.add(Section.of(
                     button,
-                    TextDisplay.of("**"+action.name()+"**")
+                    TextDisplay.of("**"+action.title()+"**")
             ));
         }
         return Container.of(settings);
