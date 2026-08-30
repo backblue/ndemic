@@ -49,7 +49,7 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
                     hook -> hook.retrieveOriginal().queue(
                             message -> {
                                 bot.getLiveContainer().applyContainerization(c, message, this);
-                                m.put(message.getIdLong(), new ContainerElement(1));
+                                m.put(message.getIdLong(), new ContainerElement());
                             }
                     )
             );
@@ -102,14 +102,7 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
             case "toggleMatching" -> {
                 int index = Integer.parseInt(actions[2]);
                 Autoresponding.AutoresponderEntry n = autoresponding.getAt(index);
-                Autoresponding.AutoresponderEntry updated;
-
-                if (n instanceof Autoresponding.AutoresponderMessage(String kw, String response, boolean isExact)) {
-                    updated = new Autoresponding.AutoresponderMessage(kw, response, !isExact);
-                } else {
-                    Autoresponding.AutoresponderEmoji e = (Autoresponding.AutoresponderEmoji) n;
-                    updated = new Autoresponding.AutoresponderEmoji(e.keyword(), e.emoji(), !e.exact());
-                }
+                Autoresponding.AutoresponderEntry updated = getUpdated(n);
 
                 autoresponding.updateAt(index, updated);
                 event.editComponents(buildEditContainer(index)).useComponentsV2().queue();
@@ -127,9 +120,9 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
 
                 String currentKeyword;
                 String currentResponse;
-                if (n instanceof Autoresponding.AutoresponderMessage(String kw, String response, boolean isExact)) {
-                    currentKeyword = kw;
-                    currentResponse = response;
+                if (n instanceof Autoresponding.AutoresponderMessage j) {
+                    currentKeyword = j.keyword();
+                    currentResponse = j.response();
                 } else {
                     Autoresponding.AutoresponderEmoji e = (Autoresponding.AutoresponderEmoji) n;
                     currentKeyword = e.keyword();
@@ -161,6 +154,18 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
             }
         }
 
+    }
+
+    private static Autoresponding.@NonNull AutoresponderEntry getUpdated(Autoresponding.AutoresponderEntry n) {
+        Autoresponding.AutoresponderEntry updated;
+
+        if (n instanceof Autoresponding.AutoresponderMessage(String kw, String response, boolean isExact)) {
+            updated = new Autoresponding.AutoresponderMessage(kw, response, !isExact);
+        } else {
+            Autoresponding.AutoresponderEmoji e = (Autoresponding.AutoresponderEmoji) n;
+            updated = new Autoresponding.AutoresponderEmoji(e.keyword(), e.emoji(), !e.exact());
+        }
+        return updated;
     }
 
     private void returnToPages(@NonNull ButtonInteractionEvent event) {
@@ -227,8 +232,8 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
             }
 
             Autoresponding.AutoresponderEntry updated;
-            if (existing instanceof Autoresponding.AutoresponderMessage(String kw, String resp, boolean isExact)) {
-                updated = new Autoresponding.AutoresponderMessage(newKeyword, newResponse, isExact);
+            if (existing instanceof Autoresponding.AutoresponderMessage k) {
+                updated = new Autoresponding.AutoresponderMessage(newKeyword, newResponse, k.exact());
             } else {
                 try {
                     Emoji.fromFormatted(newResponse);
@@ -354,10 +359,7 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
     }
 
     static class ContainerElement {
-        int page;
+        int page = 1;
         int editingIndex = -1;
-        public ContainerElement(int page) {
-            this.page = page;
-        }
     }
 }
