@@ -1,5 +1,7 @@
 package org.backblue.moderation;
 
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
@@ -8,6 +10,8 @@ import org.backblue.utilities.MessagePriority;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,6 +68,88 @@ public class Autoresponding extends MessagePriority {
         entries.addAll(this.messages);
         return entries;
     }
+    public boolean contains(String keyword) {
+        for (AutoresponderEntry entry : this.getLibrary()) {
+            if (entry instanceof AutoresponderMessage m) {
+                if (m.keyword.equals(keyword)) return true;
+            } else if (entry instanceof AutoresponderEmoji m) {
+                if (m.keyword.equals(keyword)) return true;
+            }
+        }
+        return false;
+    }
+    public void insert(AutoresponderEntry entry) {
+        if (entry instanceof AutoresponderMessage k) messages.add(k);
+        else if (entry instanceof AutoresponderEmoji k) emojis.add(k);
+    }
+
+    public AutoresponderEntry getAt(int index) {
+        int emojiCount = emojis.size();
+        if (index < emojiCount) {
+            return emojis.get(index);
+        }
+        return messages.get(index - emojiCount);
+    }
+
+    public void updateAt(int index, AutoresponderEntry updated) {
+        int emojiCount = emojis.size();
+        if (index < emojiCount) {
+            if (!(updated instanceof AutoresponderEmoji)) {
+                throw new IllegalArgumentException("Cannot replace an emoji entry with a non-emoji entry at index " + index);
+            }
+            emojis.set(index, (AutoresponderEmoji) updated);
+        } else {
+            int messageIndex = index - emojiCount;
+            if (!(updated instanceof AutoresponderMessage)) {
+                throw new IllegalArgumentException("Cannot replace a message entry with a non-message entry at index " + index);
+            }
+            messages.set(messageIndex, (AutoresponderMessage) updated);
+        }
+    }
+
+    public void deleteAt(int index) {
+        int emojiCount = emojis.size();
+        if (index < emojiCount) {
+            emojis.remove(index);
+        } else {
+            messages.remove(index - emojiCount);
+        }
+    }
+
+    public boolean writeToJSON() {
+        JSONObject json = new JSONObject();
+        JSONArray messagesJson = new JSONArray();
+        JSONArray emojisJson = new JSONArray();
+
+        synchronized (messages) {
+            for (AutoresponderMessage message : messages) {
+                JSONObject messageJson = new JSONObject();
+                messageJson.put("keyword", message.keyword());
+                messageJson.put("response", message.response());
+                messageJson.put("exact", message.exact());
+                messagesJson.put(messageJson);
+            }
+        }
+        synchronized (emojis) {
+            for (AutoresponderEmoji emoji : emojis) {
+                JSONObject emojiJson = new JSONObject();
+                emojiJson.put("keyword", emoji.keyword());
+                emojiJson.put("emoji", emoji.emoji());
+                emojiJson.put("exact", emoji.exact());
+                emojisJson.put(emojiJson);
+            }
+        }
+
+        json.put("messageResponse", messagesJson);
+        json.put("reactionResponse", emojisJson);
+        json.put("_version", 1);
+        try (FileWriter fw = new FileWriter("data/deployment-triggers.json")) {
+            fw.write(json.toString(4));
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
 
     /**
      * In order, determined by priority, to see what events should be fired first.
@@ -77,7 +163,10 @@ public class Autoresponding extends MessagePriority {
 
         for (AutoresponderMessage m : messages) {
             if (event.getMessage().getContentRaw().equalsIgnoreCase(m.keyword)) {
-                bot.getIO().send(event.getChannel().getId(), m.response);
+                Container c = Container.of(
+                        TextDisplay.of(m.response)
+                );
+                bot.getIO().send(event.getChannel().getId(), c);
                 return false;
             }
         }

@@ -91,6 +91,11 @@ public final class MessageIO extends ListenerAdapter {
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
     }
 
+    public void send(String textChannelID, Container c) {
+        GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(textChannelID);
+        if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessageComponents(c).useComponentsV2(true).queue();
+    }
+
     public void send(DefinedChannel dest, String text, Container container, LiveFramework handler) {
         GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(definedChannels.get(dest));
         if (text != null && !text.isEmpty() && targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
@@ -201,10 +206,12 @@ public final class MessageIO extends ListenerAdapter {
             for (Message message : messages) {
                 if (message.getId().equals(event.getMessageId())) {
                     msg = message;
+                    if (msg.getContentRaw().equals(event.getMessage().getContentRaw())) {
+                        return;
+                    }
                     break;
                 }
             }
-
             EmbedBuilder embed = auditing.base(event.getAuthor());
             embed.addField("Old", msg != null ? msg.getContentRaw() : "*[Irretrievable message]*", false);
             embed.addField("New", event.getMessage().getContentRaw(), false);
