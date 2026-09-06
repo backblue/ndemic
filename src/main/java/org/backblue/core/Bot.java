@@ -47,6 +47,7 @@ public final class Bot {
     private final GenAI ai;
     private final Interactive interactive;
     private final LiveContainer liveContainer;
+    private final Database db;
 
     private final EnumSet<FeatureFlag> features;
     private final String deploymentGuildID;
@@ -109,6 +110,7 @@ public final class Bot {
             builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("status")));
         }
         Autoresponding autoresponding = new Autoresponding(Integer.MAX_VALUE, this, config.deploymentAutoresponderFile);
+        this.db = new Database(config.properties.getProperty("SQL_URL", ""), config.properties.getProperty("SQL_USER", ""), config.properties.getProperty("SQL_PASS", ""));
         this.liveContainer = new LiveContainer(this);
         this.io = new MessageIO(settings, this, keys);
         this.io.addListener(autoresponding);
@@ -176,6 +178,9 @@ public final class Bot {
     }
     public Interactive getInteractive() {
         return this.interactive;
+    }
+    public Optional<Database> getDatabase() {
+        return Optional.of(this.db);
     }
     public ScheduledExecutorService getScheduler() {
         return this.scheduler;
