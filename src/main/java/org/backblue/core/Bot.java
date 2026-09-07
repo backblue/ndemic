@@ -235,7 +235,7 @@ public final class Bot {
             return null;
         }
     }
-    public String formattedTime(long seconds, boolean abbreviated, int maxUnits) {
+    public @NonNull String formattedTime(long seconds, boolean abbreviated, int maxUnits) {
         if (maxUnits <= 0) {
             return "";
         }

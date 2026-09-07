@@ -89,6 +89,11 @@ public final class Interactive extends ListenerAdapter {
                         Member member = bot.getDeploymentGuild().getMemberById(memberID);
                         if (member != null) selectMenu.addOption(member.getUser().getName(), memberID, member.getEffectiveName());
                     }
+                    if (selectMenu.getOptions().isEmpty()) {
+                        MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# There were no more eligible targets for selection." + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
+                        event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
+                        return;
+                    }
                     Modal modal = Modal.create("modal:gatekeeper", "Remove Spambots")
                             .addComponents(
                                     TextDisplay.of("Spambots are not notified when they're removed."),
