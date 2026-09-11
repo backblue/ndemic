@@ -162,7 +162,13 @@ public class Autoresponding extends MessagePriority {
         if (bot.isFeatureEnabled(FeatureFlag.Autoresponder) && event.getAuthor().isBot()) return false;
 
         for (AutoresponderMessage m : messages) {
-            if (event.getMessage().getContentRaw().equalsIgnoreCase(m.keyword)) {
+            if (m.exact && event.getMessage().getContentRaw().equalsIgnoreCase(m.keyword)) {
+                Container c = Container.of(
+                        TextDisplay.of(m.response)
+                );
+                bot.getIO().send(event.getChannel().getId(), c);
+                return false;
+            } else if (!m.exact && event.getMessage().getContentRaw().contains(m.keyword)) {
                 Container c = Container.of(
                         TextDisplay.of(m.response)
                 );

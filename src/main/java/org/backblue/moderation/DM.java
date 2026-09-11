@@ -19,6 +19,7 @@ public final class DM extends ListenerAdapter {
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (event.isFromType(ChannelType.PRIVATE) && !event.getMessage().getContentRaw().isEmpty()) {
+            if (event.getAuthor().getId().equals(event.getJDA().getSelfUser().getId())) return;
 
             if (bot.getIO().getChannel(DefinedChannel.DebugDirectMessages) instanceof GuildMessageChannel c) {
                 bot.getIO().send(DefinedChannel.DebugDirectMessages, "From " + event.getAuthor().getName() + " / `" + event.getAuthor().getId() + "`:");
