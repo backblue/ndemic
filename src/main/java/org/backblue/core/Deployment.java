@@ -25,18 +25,17 @@ public final class Deployment extends ListenerAdapter {
 
     public Deployment(JSONObject settings, @NotNull List<Object> listeners) {
         this.settings = settings;
-        commands = conversion(listeners);
-    }
-
-    private List<CommandData> conversion(List<Object> listeners) {
-        if (listeners.isEmpty()) return List.of();
-        List<CommandData> commands = new ArrayList<>();
-        for (Object obj : listeners) {
-            if (obj instanceof Deployable listener) {
-                commands.addAll(listener.cmds());
+        if (listeners.isEmpty()) {
+            commands = List.of();
+        } else {
+            List<CommandData> commands = new ArrayList<>();
+            for (Object obj : listeners) {
+                if (obj instanceof Deployable listener) {
+                    commands.addAll(listener.cmds());
+                }
             }
+            this.commands = commands;
         }
-        return commands;
     }
 
 }

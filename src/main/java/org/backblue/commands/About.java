@@ -10,6 +10,7 @@ import org.backblue.enums.Deployable;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class About extends ListenerAdapter implements Deployable {
@@ -27,7 +28,8 @@ public class About extends ListenerAdapter implements Deployable {
         if (event.getName().equals("about")) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Color.CYAN)
-                    .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch);
+                    .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch)
+                    .addField("Uptime", "`" + bot.formattedTime(bot.createdSince - OffsetDateTime.now().toEpochSecond(), true) + "`", false);
             if (!watermark.isEmpty()) {
                 embed.setFooter(this.watermark);
             }
