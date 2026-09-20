@@ -29,7 +29,7 @@ public class About extends ListenerAdapter implements Deployable {
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Color.CYAN)
                     .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch)
-                    .addField("Uptime", "`" + bot.formattedTime(bot.createdSince - OffsetDateTime.now().toEpochSecond(), true) + "`", false);
+                    .addField("Uptime", "`" + bot.formattedTime(OffsetDateTime.now().toEpochSecond() - bot.createdSince, true) + "`", false);
             if (!watermark.isEmpty()) {
                 embed.setFooter(this.watermark);
             }
