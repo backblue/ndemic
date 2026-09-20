@@ -11,9 +11,12 @@ import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateBoostTime
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
 import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.Deployable;
 import org.backblue.enums.FeatureFlag;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -24,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class Badge extends ListenerAdapter {
+public class Badge extends ListenerAdapter implements Deployable {
 
     private final Bot bot;
     private final boolean defaultUnlock;
@@ -148,6 +151,11 @@ public class Badge extends ListenerAdapter {
             bot.getDeploymentGuild().addRoleToMember(member, newRole).queue();
         }
         return "Badge changed";
+    }
+
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(Commands.slash("badge", "Select a role icon that appears next to your username"));
     }
 
     private record IconProperties(String modalTitle, String modalID, String emojiCode, String emojiRole, Set<String> rolesRequirement, Set<String> flags) {}

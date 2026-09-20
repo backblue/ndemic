@@ -1,5 +1,6 @@
 package org.backblue.commands;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.components.container.ContainerChildComponent;
@@ -8,8 +9,12 @@ import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.backblue.core.Bot;
 import org.backblue.enums.AuditAction;
+import org.backblue.enums.Deployable;
 import org.backblue.enums.LiveFramework;
 import org.backblue.moderation.Auditing;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +31,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class Audit extends ListenerAdapter implements LiveFramework.ButtonReturn {
+public class Audit extends ListenerAdapter implements
+        LiveFramework.ButtonReturn,
+        Deployable {
 
     static Logger Log = LoggerFactory.getLogger(Audit.class);
 
@@ -91,5 +98,11 @@ public class Audit extends ListenerAdapter implements LiveFramework.ButtonReturn
             ));
         }
         return Container.of(settings);
+    }
+
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(Commands.slash("audit", "Enable/disable audit logging...")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
     }
 }

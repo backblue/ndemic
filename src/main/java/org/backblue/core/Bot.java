@@ -37,7 +37,7 @@ public final class Bot {
 
     public final int major = 1;
     public final int minor = 2;
-    public final int patch = 1;
+    public final int patch = 2;
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
@@ -117,9 +117,10 @@ public final class Bot {
         interactive = new Interactive(this, ezp);
         Auditing auditing = new Auditing(this, config.deploymentAuditFile);
         ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
-        builder.addEventListeners(new DM(this),
+        List<Object> listeners = List.of(
+                new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
-                this.io, new Deployment(settings.optJSONObject("channels", null)),
+                this.io,
                 ezp,
                 liveContainer,
                 profileScan,
@@ -132,7 +133,9 @@ public final class Bot {
                 new RaidProtect(this),
                 new Audit(this, auditing),
                 new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
+                new Privacy(this),
                 new About(this, settingSelf.optString("watermark", "")));
+        builder.addEventListeners(listeners, new Deployment(settings.optJSONObject("channels", null), listeners));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
                 keys.getProperty("BSKY_PASSWORD", null),

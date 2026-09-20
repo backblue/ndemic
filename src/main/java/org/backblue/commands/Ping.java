@@ -2,9 +2,14 @@ package org.backblue.commands;
 
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import org.backblue.enums.Deployable;
 import org.jetbrains.annotations.NotNull;
 
-public class Ping extends ListenerAdapter {
+import java.util.List;
+
+public class Ping extends ListenerAdapter implements Deployable {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
@@ -14,4 +19,8 @@ public class Ping extends ListenerAdapter {
         }
     }
 
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(Commands.slash("ping", "Ping, pong!"));
+    }
 }

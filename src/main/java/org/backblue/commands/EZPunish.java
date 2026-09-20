@@ -16,9 +16,13 @@ import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
 import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.Deployable;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,7 +33,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class EZPunish extends ListenerAdapter {
+public class EZPunish extends ListenerAdapter implements Deployable {
 
     Bot bot;
     private HashMap<Integer, JSONObject> rulebook = new HashMap<>();
@@ -272,6 +276,13 @@ public class EZPunish extends ListenerAdapter {
             id = (int) (Math.random() * Short.MAX_VALUE);
         }
         return id;
+    }
+
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(
+                Commands.slash("ezpunish", "Remove an user with the 3 steps: kick/ban, notify and log").setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)),
+                Commands.message("EZPunish...").setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
     }
 
     private record PunishCacheBundle(String userId, String textEvidence, List<Message.Attachment> attachmentEvidence) {}

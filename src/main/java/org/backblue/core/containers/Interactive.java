@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *  Centralized container/components systems.<br>
  *  All container components, buttons functionality are defined in this class.
  */
+@Deprecated
 public final class Interactive extends ListenerAdapter {
 
     private static final int Footer_Note = 101;
@@ -90,7 +91,7 @@ public final class Interactive extends ListenerAdapter {
                         if (member != null) selectMenu.addOption(member.getUser().getName(), memberID, member.getEffectiveName());
                     }
                     if (selectMenu.getOptions().isEmpty()) {
-                        MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# There were no more eligible targets for selection." + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
+                        MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# There were no more eligible targets for selection.")));
                         event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
                         return;
                     }

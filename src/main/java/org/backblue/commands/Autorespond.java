@@ -1,5 +1,6 @@
 package org.backblue.commands;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.container.Container;
@@ -17,8 +18,12 @@ import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
+import org.backblue.enums.Deployable;
 import org.backblue.enums.LiveFramework;
 import org.backblue.moderation.Autoresponding;
 import org.jspecify.annotations.NonNull;
@@ -29,7 +34,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Autorespond extends ListenerAdapter implements LiveFramework.ButtonVoid, LiveFramework.Pagination {
+public class Autorespond extends ListenerAdapter implements
+        LiveFramework.ButtonVoid,
+        LiveFramework.Pagination,
+        Deployable {
 
     final static int ELEMENTS_PER_PAGE = 8;
     final Bot bot;
@@ -356,6 +364,12 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
         ));
 
         return Container.of(settings);
+    }
+
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(Commands.slash("autorespond", "Modify trigger rules for autoresponding...")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
     }
 
     static class ContainerElement {
