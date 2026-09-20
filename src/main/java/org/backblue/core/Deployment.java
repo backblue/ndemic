@@ -1,6 +1,7 @@
 package org.backblue.core;
 
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
+import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.build.*;
 import org.backblue.enums.Deployable;
@@ -23,7 +24,7 @@ public final class Deployment extends ListenerAdapter {
         }
     }
 
-    public Deployment(JSONObject settings, @NotNull List<Object> listeners) {
+    public Deployment(JSONObject settings, @NotNull List<EventListener> listeners) {
         this.settings = settings;
         if (listeners.isEmpty()) {
             commands = List.of();

@@ -2,6 +2,7 @@ package org.backblue.core;
 
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -118,7 +119,7 @@ public final class Bot {
         interactive = new Interactive(this, ezp);
         Auditing auditing = new Auditing(this, config.deploymentAuditFile);
         ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
-        List<Object> listeners = List.of(
+        List<EventListener> listeners = List.of(
                 new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
                 this.io,
@@ -135,8 +136,10 @@ public final class Bot {
                 new Audit(this, auditing),
                 new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
                 new Privacy(this),
-                new About(this, settingSelf.optString("watermark", "")));
-        builder.addEventListeners(listeners, new Deployment(settings.optJSONObject("channels", null), listeners));
+                new About(this, settingSelf.optString("watermark", ""))
+        );
+        builder.addEventListeners(Arrays.stream(listeners.toArray()).toList());
+        builder.addEventListeners(new Deployment(settings.optJSONObject("channels", null), listeners));
 
         new BlueSky(keys.getProperty("BSKY_USER", null),
                 keys.getProperty("BSKY_PASSWORD", null),
