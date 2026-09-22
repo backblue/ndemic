@@ -29,6 +29,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -78,13 +79,27 @@ public final class Interactive extends ListenerAdapter {
                     event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
                 }
                 case Type.Gatekeeper data -> {
+                    List<String> list = data.memberIDs();
                     String action = event.getButton().getCustomId().split(";")[1];
                     if (action.equals("nothing")) {
                         MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Interaction locked <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
                         event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
                         return;
                     }
-                    List<String> list = data.memberIDs();
+                    if (action.equals("kickall")) {
+                        MessageComponentTree disableAll = event.getMessage().getComponentTree().replace(ComponentReplacer.byUniqueId(Footer_Note, TextDisplay.of("-# Kick-all'd at <t:" + Instant.now().toEpochMilli()/1000 + ":R> by `" + Objects.requireNonNull(event.getMember()).getEffectiveName() + "`.")));
+                        event.editComponents(disableAll.asDisabled()).useComponentsV2(true).queue();
+                        CompletableFuture.runAsync(() -> {
+                            if (event.getGuild() == null) return;
+                            list.forEach(memberID -> {
+                                Member m = Objects.requireNonNull(event.getGuild()).getMemberById(memberID);
+                                if (m != null) {
+                                    m.kick().queue();
+                                }
+                            });
+                        });
+                        return;
+                    }
                     StringSelectMenu.Builder selectMenu = StringSelectMenu.create("gatekeeper:target").setRequired(true).setRequiredRange(1, 8);
                     for (String memberID : list) {
                         Member member = bot.getDeploymentGuild().getMemberById(memberID);
@@ -185,7 +200,8 @@ public final class Interactive extends ListenerAdapter {
                         TextDisplay.of(String.format("## Details:\n> %s", list))
                 ),
                 ActionRow.of(
-                        Button.primary(id+";action", "Take action..."),
+                        Button.primary(id+";action", "Remove..."),
+                        Button.secondary(id+";kickall", "Remove all"),
                         Button.secondary(id+";nothing", "Do nothing")
                 ).withUniqueId(Interactive.Action_Buttons),
                 Separator.createDivider(Separator.Spacing.SMALL),

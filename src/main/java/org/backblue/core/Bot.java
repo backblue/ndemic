@@ -38,7 +38,7 @@ public final class Bot {
 
     public final int major = 1;
     public final int minor = 2;
-    public final int patch = 2;
+    public final int patch = 1;
     public final long createdSince = OffsetDateTime.now().toEpochSecond();
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);

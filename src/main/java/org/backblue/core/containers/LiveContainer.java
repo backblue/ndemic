@@ -94,7 +94,7 @@ public final class LiveContainer extends ListenerAdapter {
     }
 
 
-    static class ContainerNode {
+    private static class ContainerNode {
 
         final Container container;
         final LiveFramework handler;

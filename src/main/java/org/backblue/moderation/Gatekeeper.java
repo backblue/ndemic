@@ -135,7 +135,7 @@ public final class Gatekeeper extends ListenerAdapter {
             captured = jsonResponse.optJSONArray("flagged");
             Log.info(jsonResponse.toString(4));
             List<String> list = captured.toList().stream().map(Object::toString).toList();
-            if (!list.isEmpty()) bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createGatekeeper(list, this.lastCheck.toEpochSecond()), null);
+            if (!list.isEmpty()) bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention(), bot.getInteractive().createGatekeeper(list, this.lastCheck.toEpochSecond()), null);
         } catch (JSONException | NullPointerException e) {
             Log.error("Failure to parse AI response: {}", e.getMessage());
             return;
