@@ -1,11 +1,10 @@
-package org.backblue.core.containers;
+package org.backblue.core;
 
 import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import org.backblue.core.Bot;
-import org.backblue.enums.LiveFramework;
+import org.backblue.extension.LiveFramework;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,12 +78,14 @@ public final class LiveContainer extends ListenerAdapter {
         }
 
         if (handler instanceof LiveFramework.ButtonReturn button) {
-            event.deferEdit().queue(hook -> {
-                Container c = button.onButton(event, split);
-                if (c != null) {
-                    hook.editOriginalComponents(c).useComponentsV2().queue();
-                }
-            });
+            Container c = button.onButton(event, split);
+            // Handler acknowledged the interaction itself (e.g. replied with a modal)
+            if (event.isAcknowledged()) return;
+            if (c != null) {
+                event.editComponents(c).useComponentsV2().queue();
+            } else {
+                event.deferEdit().queue();
+            }
             return;
         }
 

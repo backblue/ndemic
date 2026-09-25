@@ -11,9 +11,7 @@ import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
-import org.backblue.core.containers.Interactive;
-import org.backblue.core.containers.LiveContainer;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.Feature;
 import org.backblue.moderation.*;
 import org.backblue.utilities.*;
 import org.backblue.utilities.BlueSky;
@@ -47,10 +45,10 @@ public final class Bot {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private final MessageIO io;
     private final GenAI ai;
-    private final Interactive interactive;
+    private final EZPunish ezPunish;
     private final LiveContainer liveContainer;
 
-    private final EnumSet<FeatureFlag> features;
+    private final EnumSet<Feature> features;
     private final String deploymentGuildID;
     private final String mostModeratorsPing;
     private final String allModeratorsPing;
@@ -85,8 +83,8 @@ public final class Bot {
         this.allModeratorsPing = settingSelf.optString("allPingAlerts", null);
         this.debugPingRoleID = settingSelf.optString("debugPingAlerts", null);
 
-        features = EnumSet.noneOf(FeatureFlag.class);
-        for (FeatureFlag flag : FeatureFlag.values()) {
+        features = EnumSet.noneOf(Feature.class);
+        for (Feature flag : Feature.values()) {
             try {
                 if (featuresList.getBoolean(flag.configKey())) this.features.add(flag);
             } catch (JSONException e) {
@@ -115,18 +113,16 @@ public final class Bot {
         this.io = new MessageIO(settings, this, keys);
         this.io.addListener(autoresponding);
         this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
-        EZPunish ezp = new EZPunish(this, rulebook);
-        interactive = new Interactive(this, ezp);
+        this.ezPunish = new EZPunish(this, rulebook);
         Auditing auditing = new Auditing(this, config.deploymentAuditFile);
         ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
         List<EventListener> listeners = List.of(
                 new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
                 this.io,
-                ezp,
+                this.ezPunish,
                 liveContainer,
                 profileScan,
-                this.interactive,
                 auditing,
                 new Autorespond(this, autoresponding),
                 new DisableDM(this),
@@ -135,6 +131,7 @@ public final class Bot {
                 new RaidProtect(this),
                 new Audit(this, auditing),
                 new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
+                new KickAll(this, settings.optJSONObject("gatekeeper")),
                 new Privacy(this),
                 new About(this, settingSelf.optString("watermark", ""))
         );
@@ -148,17 +145,17 @@ public final class Bot {
         this.JDA = builder.build();
     }
 
-    public boolean isFeatureEnabled(FeatureFlag feature) {
+    public boolean isFeatureEnabled(Feature feature) {
         return features.contains(feature);
     }
-    public void enableFeature(FeatureFlag feature) {
+    public void enableFeature(Feature feature) {
         features.add(feature);
     }
-    public void disableFeature(FeatureFlag feature) {
+    public void disableFeature(Feature feature) {
         features.remove(feature);
     }
-    public FeatureFlag getFeature(String ordinal) {
-        for (FeatureFlag feature : FeatureFlag.values()) {
+    public Feature getFeature(String ordinal) {
+        for (Feature feature : Feature.values()) {
             if (feature.ordinal() == Integer.parseInt(ordinal)) return feature;
         }
         throw new RuntimeException("Unable to find feature with ordinal '" + ordinal + "'");
@@ -181,8 +178,8 @@ public final class Bot {
     public Role getDebugPing() {
         return this.getJDA().getRoleById(this.debugPingRoleID);
     }
-    public Interactive getInteractive() {
-        return this.interactive;
+    public EZPunish getEZPunish() {
+        return this.ezPunish;
     }
     public ScheduledExecutorService getScheduler() {
         return this.scheduler;
@@ -206,7 +203,7 @@ public final class Bot {
                 failure -> {}
         );
     }
-    public EnumSet<FeatureFlag> getFeatures() {
+    public EnumSet<Feature> getFeatures() {
         return features;
     }
     public GenAI getAI() {

@@ -3,7 +3,7 @@ package org.backblue.moderation;
 import net.dv8tion.jda.api.entities.guild.SecurityIncidentActions;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.Feature;
 
 import java.time.OffsetDateTime;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +18,7 @@ public final class DisableDM extends ListenerAdapter {
     }
 
     private void check() {
-        if (bot.isFeatureEnabled(FeatureFlag.DisableDMs)) {
+        if (bot.isFeatureEnabled(Feature.DisableDMs)) {
             enable();
         } else {
             disable();
@@ -38,7 +38,7 @@ public final class DisableDM extends ListenerAdapter {
 
     private void enable() {
         try {
-            if (bot.isFeatureEnabled(FeatureFlag.DisableDMs) && bot.getDeploymentGuild() != null && !isActive()) {
+            if (bot.isFeatureEnabled(Feature.DisableDMs) && bot.getDeploymentGuild() != null && !isActive()) {
                 SecurityIncidentActions incidentActions = SecurityIncidentActions.enabled(this.deploymentGuildInvitesDisabledUntil(), OffsetDateTime.now().plusSeconds(86399));
                 bot.getDeploymentGuild().modifySecurityIncidents(incidentActions).queue();
             }

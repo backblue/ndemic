@@ -21,8 +21,8 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
-import org.backblue.enums.Deployable;
+import org.backblue.enums.SetChannel;
+import org.backblue.extension.Deployable;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -88,14 +88,14 @@ public class EZPunish extends ListenerAdapter implements Deployable {
             reason = "Moderator Action";
         }
         if (evidenceImages == null || evidenceImages.isEmpty()) {
-            bot.getIO().send(DefinedChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName()+ "`\n" + evidenceText);
+            bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName()+ "`\n" + evidenceText);
         } else {
             if (evidenceText == null) {
                 evidenceText = "";
             }
             String finalEvidenceText = evidenceText;
 
-            bot.getIO().send(DefinedChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
+            bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
                     null, bot.toUploads(evidenceImages));
         }
     }
@@ -142,12 +142,12 @@ public class EZPunish extends ListenerAdapter implements Deployable {
         for (int i = 0; i < apple.length(); i++) {
             JSONObject rule = apple.getJSONObject(i);
             if (!rule.has("id") || !rule.has("title") || !rule.has("desc")) {
-                bot.getIO().send(DefinedChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " is missing fields 'id', 'title', 'desc'. Disabling Rulebook and ezpunish");
+                bot.getIO().send(SetChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " is missing fields 'id', 'title', 'desc'. Disabling Rulebook and ezpunish");
                 this.rulebook = null;
                 break;
             }
             if (this.rulebook.containsKey(rule.getInt("id"))) {
-                bot.getIO().send(DefinedChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " has a duplicate ID of " + rule.getInt("id") + ". Ignoring duplicate.");
+                bot.getIO().send(SetChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " has a duplicate ID of " + rule.getInt("id") + ". Ignoring duplicate.");
             } else {
                 this.rulebook.put(rule.getInt("id"), rule);
             }

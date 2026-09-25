@@ -1,6 +1,6 @@
 package org.backblue.enums;
 
-public enum FeatureFlag {
+public enum Feature {
     EnforceOneGuideAccess("enforceGuideAccess", false),
     BlueSky("blueSky", true),
     Honeypot("honeypot", false),
@@ -22,7 +22,7 @@ public enum FeatureFlag {
     private final String config;
     private final boolean restrict;
 
-    FeatureFlag(String config, boolean restrict) {
+    Feature(String config, boolean restrict) {
         this.config = config;
         this.restrict = restrict;
     }

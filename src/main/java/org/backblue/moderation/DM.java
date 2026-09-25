@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.SetChannel;
 import org.jetbrains.annotations.NotNull;
 
 public final class DM extends ListenerAdapter {
@@ -21,8 +21,8 @@ public final class DM extends ListenerAdapter {
         if (event.isFromType(ChannelType.PRIVATE) && !event.getMessage().getContentRaw().isEmpty()) {
             if (event.getAuthor().getId().equals(event.getJDA().getSelfUser().getId())) return;
 
-            if (bot.getIO().getChannel(DefinedChannel.DebugDirectMessages) instanceof GuildMessageChannel c) {
-                bot.getIO().send(DefinedChannel.DebugDirectMessages, "From " + event.getAuthor().getName() + " / `" + event.getAuthor().getId() + "`:");
+            if (bot.getIO().getChannel(SetChannel.DebugDirectMessages) instanceof GuildMessageChannel c) {
+                bot.getIO().send(SetChannel.DebugDirectMessages, "From " + event.getAuthor().getName() + " / `" + event.getAuthor().getId() + "`:");
                 event.getMessage().forwardTo(c).queue();
             }
 

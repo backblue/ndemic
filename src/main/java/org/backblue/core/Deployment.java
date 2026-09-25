@@ -4,7 +4,7 @@ import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.build.*;
-import org.backblue.enums.Deployable;
+import org.backblue.extension.Deployable;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;

@@ -1,18 +1,32 @@
 package org.backblue.cloud;
 
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.mediagallery.MediaGallery;
+import net.dv8tion.jda.api.components.mediagallery.MediaGalleryItem;
+import net.dv8tion.jda.api.components.replacer.ComponentReplacer;
+import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.separator.Separator;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
+import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.utils.FileUpload;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.SetChannel;
+import org.backblue.enums.Feature;
+import org.backblue.extension.LiveFramework;
 import org.backblue.utilities.MessagePriority;
 
 import org.json.JSONObject;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,9 +48,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public final class CryptoDetection extends MessagePriority {
+public final class CryptoDetection extends MessagePriority implements LiveFramework.ButtonReturn {
 
     private static final Logger Log = LoggerFactory.getLogger(CryptoDetection.class);
+    private static final int FOOTER_NOTE = 101;
 
     final double threshold;
     final Map<String, Double> keywords;
@@ -48,7 +64,7 @@ public final class CryptoDetection extends MessagePriority {
 
     public CryptoDetection(int priority, Bot bot, JSONObject json, String endpoint, String secret) {
         super(priority, bot);
-        if (!bot.isFeatureEnabled(FeatureFlag.DetectCrypto) || json == null) {
+        if (!bot.isFeatureEnabled(Feature.DetectCrypto) || json == null) {
             threshold = 0;
             tesseract = null;
             keywords = null;
@@ -57,7 +73,7 @@ public final class CryptoDetection extends MessagePriority {
             azure = null;
             inviteCheck = false;
             if (json == null) Log.warn("No config provided for crypto detection, disabling");
-            bot.disableFeature(FeatureFlag.DetectCrypto);
+            bot.disableFeature(Feature.DetectCrypto);
         } else {
             keywords = new ConcurrentHashMap<>();
             pendingReports = new ConcurrentHashMap<>();
@@ -91,7 +107,7 @@ public final class CryptoDetection extends MessagePriority {
 
             if (tesseract == null && azure == null) {
                 Log.error("No OCR provider selected, disabling");
-                bot.disableFeature(FeatureFlag.DetectCrypto);
+                bot.disableFeature(Feature.DetectCrypto);
                 return;
             }
 
@@ -107,7 +123,7 @@ public final class CryptoDetection extends MessagePriority {
      */
     @Override
     public boolean cancelled(MessageReceivedEvent event) {
-        if (!bot.isFeatureEnabled(FeatureFlag.DetectCrypto)) {
+        if (!bot.isFeatureEnabled(Feature.DetectCrypto)) {
             return false;
         }
         if (event.getMember() != null && event.getMember().hasPermission(Permission.ADMINISTRATOR)) return false;
@@ -166,7 +182,7 @@ public final class CryptoDetection extends MessagePriority {
                 .flatMap(bundle -> bundle.attachments().stream())
                 .toList();
 
-        bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createSpam(member, files), null);
+        bot.getIO().send(SetChannel.DeploymentBotCommands, "", createContainer(member, files), this);
         for (Bundle bundle : report.bundles) {
             for (File file : bundle.attachments()) {
                 if (!file.delete()) Log.warn("Unable to delete file: {}", file.getAbsolutePath());
@@ -174,6 +190,42 @@ public final class CryptoDetection extends MessagePriority {
         }
 
         flaggedUsers.remove(userId);
+    }
+
+    private Container createContainer(Member member, List<File> attachments) {
+        return Container.of(
+                TextDisplay.of("# :warning: Messages Blocked"),
+                Section.of(
+                        Thumbnail.fromUrl(member.getEffectiveAvatarUrl()),
+                        TextDisplay.of(member.getUser().getAsMention() + "'s messages have been flagged for spam."),
+                        TextDisplay.of("## Details:\n> Sent **" + attachments.size() + "** images containing scams/invites.")
+                ),
+                MediaGallery.of(
+                        attachments.stream()
+                                .map(file -> MediaGalleryItem.fromFile(FileUpload.fromData(file)))
+                                .toList()
+                ),
+                ActionRow.of(
+                        Button.danger(identifier() + ";kick;" + member.getId(), "Softban"),
+                        Button.danger(identifier() + ";ban;" + member.getId(), "Ban"),
+                        Button.secondary(identifier() + ";nothing", "Do nothing")
+                ),
+                Separator.createDivider(Separator.Spacing.SMALL),
+                TextDisplay.of("-# These messages have already been deleted.").withUniqueId(FOOTER_NOTE)
+        );
+    }
+
+    @Override
+    public Container onButton(@NonNull ButtonInteractionEvent event, String... actions) {
+        if (event.getMember() == null) return null;
+        String action = actions[1];
+        if ((action.equals("kick") || action.equals("ban")) && actions.length > 2) {
+            Member member = bot.getDeploymentGuild().getMemberById(actions[2]);
+            if (member != null) bot.getEZPunish().ezPunish(member, event.getMember(), List.of("ezpunish:spam"), action.equals("ban"), member.getEffectiveAvatarUrl(), null);
+        }
+        return event.getMessage().getComponents().getFirst().asContainer()
+                .replace(ComponentReplacer.byUniqueId(FOOTER_NOTE, TextDisplay.of("-# Action taken <t:" + Instant.now().getEpochSecond() + ":R> by `" + event.getMember().getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")))
+                .asDisabled();
     }
 
     private double processImage(File file) throws TesseractException, IOException, InterruptedException {

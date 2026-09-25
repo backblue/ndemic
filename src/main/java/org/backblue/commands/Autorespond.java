@@ -23,8 +23,8 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
-import org.backblue.enums.Deployable;
-import org.backblue.enums.LiveFramework;
+import org.backblue.extension.Deployable;
+import org.backblue.extension.LiveFramework;
 import org.backblue.moderation.Autoresponding;
 import org.jspecify.annotations.NonNull;
 

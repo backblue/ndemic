@@ -9,8 +9,8 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import org.backblue.core.Bot;
-import org.backblue.enums.Deployable;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.extension.Deployable;
+import org.backblue.enums.Feature;
 import org.backblue.cloud.ProfileScan;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,7 +31,7 @@ public class Scan extends ListenerAdapter implements Deployable {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (event.getName().equals("scan")) {
-            if (bot.isFeatureEnabled(FeatureFlag.ScanProfiles)) {
+            if (bot.isFeatureEnabled(Feature.ScanProfiles)) {
                 if ("profile".equals(event.getSubcommandName()) && event.getOption("user") != null) {
                     Member member = Objects.requireNonNull(event.getOption("user")).getAsMember();
                     if (member != null) event.reply("Scan initiated for " + member.getAsMention() + ". Please wait").setEphemeral(true).queue();

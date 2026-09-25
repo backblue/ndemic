@@ -6,8 +6,8 @@ import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.SetChannel;
+import org.backblue.enums.Feature;
 import org.backblue.utilities.MessagePriority;
 
 import java.util.concurrent.TimeUnit;
@@ -20,11 +20,11 @@ public final class Honeypot extends MessagePriority {
 
     @Override
     public boolean cancelled(MessageReceivedEvent event) {
-        if (bot.isFeatureEnabled(FeatureFlag.Honeypot)) {
+        if (bot.isFeatureEnabled(Feature.Honeypot)) {
             if (!event.isFromGuild() && !bot.getDeploymentGuild().getId().equals(event.getGuild().getId())) {
                 return false;
             }
-            if (!event.getMessage().getChannel().getId().equals(bot.getIO().getChannel(DefinedChannel.DeploymentHoney).getId()) ) {
+            if (!event.getMessage().getChannel().getId().equals(bot.getIO().getChannel(SetChannel.DeploymentHoney).getId()) ) {
                 return false;
             }
             if (event.getMember() == null) {
@@ -36,14 +36,14 @@ public final class Honeypot extends MessagePriority {
 
             bot.timeout(event.getMember(), "Posted in honeypot", 12, TimeUnit.HOURS);
             String validPing = event.getAuthor().getAsMention();
-            GuildChannel c = bot.getIO().getChannel(DefinedChannel.DeploymentBotCommands);
+            GuildChannel c = bot.getIO().getChannel(SetChannel.DeploymentBotCommands);
             if (!(c instanceof GuildMessageChannel messageChannel)) {
                 EmbedBuilder embedBuilder = new EmbedBuilder()
                         .setTitle("Someone posted in the honeypot channel...")
                         .setDescription(event.getMessage().getContentStripped())
                         .setFooter(event.getMessage().getAttachments().size() + " attachment(s), applied 12 hour timeout");
                 if (event.getMember() != null) embedBuilder.setThumbnail(event.getAuthor().getEffectiveAvatarUrl());
-                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getName() + " - " + validPing,
+                bot.getIO().send(SetChannel.DeploymentBotCommands, bot.getMostModerators().getName() + " - " + validPing,
                         embedBuilder.build(),
                         bot.toUploads(event.getMessage().getAttachments()));
                 event.getMessage().delete().queue();
@@ -59,7 +59,7 @@ public final class Honeypot extends MessagePriority {
                             bot.getIO().clean(event.getAuthor().getId());
                         }
                 );
-                bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention() + " - " + validPing + " posted in honeypot");
+                bot.getIO().send(SetChannel.DeploymentBotCommands, bot.getMostModerators().getAsMention() + " - " + validPing + " posted in honeypot");
             }
             return true;
         }

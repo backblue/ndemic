@@ -13,9 +13,8 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.backblue.core.Bot;
-import org.backblue.enums.AuditAction;
-import org.backblue.enums.Deployable;
-import org.backblue.enums.LiveFramework;
+import org.backblue.extension.Deployable;
+import org.backblue.extension.LiveFramework;
 import org.backblue.moderation.Auditing;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
@@ -59,7 +58,7 @@ public class Audit extends ListenerAdapter implements
 
     @Override
     public Container onButton(@NonNull ButtonInteractionEvent event, String... actions) {
-        auditing.toggle(Enum.valueOf(AuditAction.class, actions[1]));
+        auditing.toggle(Enum.valueOf(org.backblue.enums.Audit.class, actions[1]));
         CompletableFuture.runAsync(this::writeToFile);
         return buildContainer();
     }
@@ -67,7 +66,7 @@ public class Audit extends ListenerAdapter implements
     private void writeToFile() {
         synchronized (this) {
             JSONObject json = new JSONObject();
-            EnumSet.allOf(AuditAction.class).forEach(action -> {
+            EnumSet.allOf(org.backblue.enums.Audit.class).forEach(action -> {
                 json.put(action.configKey(), auditing.has(action));
             });
             json.put("_version", 1);
@@ -84,7 +83,7 @@ public class Audit extends ListenerAdapter implements
     private Container buildContainer() {
         List<ContainerChildComponent> settings = new ArrayList<>();
         settings.add(TextDisplay.of("## :clipboard: Audit Logging\n-# Toggle to listen to specific events."));
-        for (AuditAction action : AuditAction.values()) {
+        for (org.backblue.enums.Audit action : org.backblue.enums.Audit.values()) {
             net.dv8tion.jda.api.components.buttons.Button button;
             if (auditing.has(action)) {
                 button = Button.success(identifier()+";"+action.toString()+";on", "Enabled");

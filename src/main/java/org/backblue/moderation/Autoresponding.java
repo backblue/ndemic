@@ -5,7 +5,7 @@ import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.Feature;
 import org.backblue.utilities.MessagePriority;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,7 +24,7 @@ public class Autoresponding extends MessagePriority {
     public Autoresponding(int priority, Bot bot, JSONObject config) {
         super(priority, bot);
         if (config == null) {
-            bot.disableFeature(FeatureFlag.Autoresponder);
+            bot.disableFeature(Feature.Autoresponder);
             return;
         }
 
@@ -159,7 +159,7 @@ public class Autoresponding extends MessagePriority {
      */
     @Override
     public boolean cancelled(MessageReceivedEvent event) {
-        if (bot.isFeatureEnabled(FeatureFlag.Autoresponder) && event.getAuthor().isBot()) return false;
+        if (bot.isFeatureEnabled(Feature.Autoresponder) && event.getAuthor().isBot()) return false;
 
         for (AutoresponderMessage m : messages) {
             if (m.exact && event.getMessage().getContentRaw().equalsIgnoreCase(m.keyword)) {

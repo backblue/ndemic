@@ -1,7 +1,7 @@
 package org.backblue.utilities;
 
 import org.backblue.core.Bot;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.Feature;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ public final class BlueSky {
             this.user = null;
             this.pass = null;
             Log.warn("No BlueSky credentials or users configured");
-            bot.disableFeature(FeatureFlag.BlueSky);
+            bot.disableFeature(Feature.BlueSky);
             return;
         }
         this.user = user;
@@ -55,7 +55,7 @@ public final class BlueSky {
     }
 
     private void checkAccount(String did) {
-        if (bot.isFeatureEnabled(FeatureFlag.BlueSky)) {
+        if (bot.isFeatureEnabled(Feature.BlueSky)) {
             return;
         }
         try {

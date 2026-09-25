@@ -1,7 +1,7 @@
 package org.backblue.utilities;
 
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.SetChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +34,11 @@ public final class MemoryDebug {
         Log.info("Heap ({}% used, ↑{}MB): {}MB used, {}MB allocated, {}MB total", String.format("%.2f", usedPercent*100), highestMemoryMB, usedMemoryMB, allocatedMemoryMB, maxMemoryMB);
         if (usedPercent >= 0.91 && lastUsedMemoryMB != usedMemoryMB && lastUsedMemoryMB != Integer.MAX_VALUE) {
             System.gc();
-            bot.getIO().send(DefinedChannel.DebugEnforcement, String.format("%s Potential excessive memory usage detected: %dMB used, up from %dMB", bot.getDebugPing().getAsMention(), usedMemoryMB, lastUsedMemoryMB));
+            bot.getIO().send(SetChannel.DebugEnforcement, String.format("%s Potential excessive memory usage detected: %dMB used, up from %dMB", bot.getDebugPing().getAsMention(), usedMemoryMB, lastUsedMemoryMB));
             Log.warn("Excessive memory usage: {}MB used, up from {}MB", usedMemoryMB, lastUsedMemoryMB);
         }
         if (usedPercent >= 0.96 && lastUsedMemoryMB != usedMemoryMB && lastUsedMemoryMB != Integer.MAX_VALUE) {
-            bot.getIO().send(DefinedChannel.DebugEnforcement, String.format("%s Memory usage critical: %.2f%% used (%dMB), consider investigating or increasing heap size", bot.getDebugPing().getAsMention(), usedPercent*100, usedMemoryMB));
+            bot.getIO().send(SetChannel.DebugEnforcement, String.format("%s Memory usage critical: %.2f%% used (%dMB), consider investigating or increasing heap size", bot.getDebugPing().getAsMention(), usedPercent*100, usedMemoryMB));
             Log.error("Memory usage critical: {}% used ({}MB)!", String.format("%.2f", usedPercent*100), usedMemoryMB);
         }
         lastUsedMemoryMB = usedMemoryMB;

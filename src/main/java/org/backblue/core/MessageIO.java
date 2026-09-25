@@ -14,9 +14,9 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.cloud.CryptoDetection;
-import org.backblue.enums.AuditAction;
-import org.backblue.enums.LiveFramework;
-import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.Audit;
+import org.backblue.extension.LiveFramework;
+import org.backblue.enums.SetChannel;
 import org.backblue.moderation.*;
 import org.backblue.utilities.*;
 import org.json.JSONException;
@@ -39,7 +39,7 @@ public final class MessageIO extends ListenerAdapter {
     private @Nullable Auditing auditing;
 
     private final Bot bot;
-    private final Map<DefinedChannel, String> definedChannels;
+    private final Map<SetChannel, String> definedChannels;
     private final PriorityQueue<MessagePriority> messageListenersPriority = new PriorityQueue<>();
 
     private final Map<String, Deque<Message>> recentMessages = new ConcurrentHashMap<>();
@@ -48,17 +48,17 @@ public final class MessageIO extends ListenerAdapter {
     private final int prevMessagesLoggingLimit;
     private final long inactiveTimeoutHours;
 
-    public void send(DefinedChannel dest, String text) {
+    public void send(SetChannel dest, String text) {
         GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(definedChannels.get(dest));
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
     }
 
-    public void send(DefinedChannel dest, String text, MessageEmbed embed) {
+    public void send(SetChannel dest, String text, MessageEmbed embed) {
         GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(definedChannels.get(dest));
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).setEmbeds(embed).queue();
     }
 
-    public void send(DefinedChannel dest, String text, MessageEmbed embed, List<FileUpload> fileUploads) {
+    public void send(SetChannel dest, String text, MessageEmbed embed, List<FileUpload> fileUploads) {
         GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(definedChannels.get(dest));
         if (embed == null && targetChannel instanceof MessageChannelUnion messageChannel) {
             messageChannel.sendMessage(text).addFiles(fileUploads).queue();
@@ -67,7 +67,7 @@ public final class MessageIO extends ListenerAdapter {
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).setEmbeds(embed).queue();
     }
 
-    public void send(DefinedChannel dest, String text, List<FileUpload> fileUploads) {
+    public void send(SetChannel dest, String text, List<FileUpload> fileUploads) {
         GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(definedChannels.get(dest));
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).addFiles(fileUploads).queue();
     }
@@ -96,17 +96,17 @@ public final class MessageIO extends ListenerAdapter {
         if (targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessageComponents(c).useComponentsV2(true).queue();
     }
 
-    public void send(DefinedChannel dest, String text, Container container, LiveFramework handler) {
+    public void send(SetChannel dest, String text, Container container, LiveFramework handler) {
         GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(definedChannels.get(dest));
         if (text != null && !text.isEmpty() && targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
         if (targetChannel instanceof MessageChannelUnion messageChannel) {
-            if (handler != null) messageChannel.sendMessageComponents(container).useComponentsV2(true).queue();
+            if (handler == null) messageChannel.sendMessageComponents(container).useComponentsV2(true).queue();
             else messageChannel.sendMessageComponents(container).useComponentsV2(true).queue(
                     msg -> bot.getLiveContainer().applyContainerization(container, msg, handler));
         }
     }
 
-    public GuildChannel getChannel(DefinedChannel dest) {
+    public GuildChannel getChannel(SetChannel dest) {
         return this.bot.getJDA().getTextChannelById(definedChannels.get(dest));
     }
     public void clean(String id) {
@@ -131,7 +131,7 @@ public final class MessageIO extends ListenerAdapter {
 
     public MessageIO(JSONObject settings, Bot bot, Properties props) {
         this.bot = bot;
-        this.definedChannels = new EnumMap<>(DefinedChannel.class);
+        this.definedChannels = new EnumMap<>(SetChannel.class);
         JSONObject settingsChannel = settings.optJSONObject("channels", null);
 
         if (settingsChannel == null) {
@@ -140,7 +140,7 @@ public final class MessageIO extends ListenerAdapter {
             inactiveTimeoutHours = -1;
             return;
         }
-        for (DefinedChannel channel : DefinedChannel.values()) {
+        for (SetChannel channel : SetChannel.values()) {
             try {
                 definedChannels.put(channel, settingsChannel.getString(channel.configKey()));
             } catch (JSONException e) {
@@ -200,7 +200,7 @@ public final class MessageIO extends ListenerAdapter {
                 && event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
                 && this.auditing != null
                 && !event.getAuthor().isBot()
-                && auditing.has(AuditAction.MessageEdit)) {
+                && auditing.has(Audit.MessageEdit)) {
             Message msg = null;
             Deque<Message> messages =  this.recentMessages.computeIfAbsent(event.getAuthor().getId(), id -> new ConcurrentLinkedDeque<>());
             for (Message message : messages) {
@@ -228,7 +228,7 @@ public final class MessageIO extends ListenerAdapter {
         if (event.isFromGuild()
                 && event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
                 && this.auditing != null
-                && auditing.has(AuditAction.MessageDelete)) {
+                && auditing.has(Audit.MessageDelete)) {
 
             Message msg = this.recentMessageIds.get(event.getMessageIdLong());
             if (msg != null && !msg.getAuthor().isBot() && msg.getMember() != null) {
