@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
 import org.backblue.enums.Audit;
 import org.backblue.enums.Feature;
+import org.backblue.utilities.TimeFormat;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
@@ -159,7 +160,7 @@ public class Auditing extends ListenerAdapter {
             embedBuilder.setThumbnail(event.getUser().getAvatarUrl());
             embedBuilder.setAuthor("Member Joined", event.getUser().getAvatarUrl(), event.getUser().getAvatarUrl());
             embedBuilder.setDescription(event.getUser().getAsMention() + " `" + event.getUser().getName() + "`");
-            embedBuilder.addField("Account Age", bot.formattedTime(Duration.between(event.getUser().getTimeCreated(), OffsetDateTime.now()).toSeconds(), false, 3), false);
+            embedBuilder.addField("Account Age", TimeFormat.formattedTime(Duration.between(event.getUser().getTimeCreated(), OffsetDateTime.now()).toSeconds(), false, 3), false);
             this.sendAudit(embedBuilder.build());
         }
     }

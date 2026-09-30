@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
 import org.backblue.enums.SetChannel;
 import org.backblue.extension.Deployable;
+import org.backblue.utilities.Attachments;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -83,8 +84,15 @@ public class EZPunish extends ListenerAdapter implements Deployable {
 
     private void logToWarnings(List<String> violations, Member target, boolean ban, String evidenceText, List<Message.Attachment> evidenceImages, Member executor) {
         String status = ban ? "Banned" : "Kicked";
-        String reason = this.modalToRuleBook.get(violations.getFirst()).getString("title");
-        if (reason == null || reason.isEmpty()) {
+        LinkedHashSet<String> reasonTitles = new LinkedHashSet<>();
+        for (String violation : violations) {
+            JSONObject violationRule = this.modalToRuleBook.get(violation);
+            if (violationRule != null) {
+                reasonTitles.add(violationRule.getString("title"));
+            }
+        }
+        String reason = String.join(", ", reasonTitles);
+        if (reason.isEmpty()) {
             reason = "Moderator Action";
         }
         if (evidenceImages == null || evidenceImages.isEmpty()) {
@@ -96,7 +104,7 @@ public class EZPunish extends ListenerAdapter implements Deployable {
             String finalEvidenceText = evidenceText;
 
             bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
-                    null, bot.toUploads(evidenceImages));
+                    null, Attachments.toUploads(evidenceImages));
         }
     }
 

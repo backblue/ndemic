@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 public final class MessageIO extends ListenerAdapter {
 
     private static final Logger Log = LoggerFactory.getLogger(MessageIO.class);
+    private static final long MAX_EDIT_AUDIT_AGE_MILLIS = TimeUnit.DAYS.toMillis(7);
     private @Nullable Auditing auditing;
 
     private final Bot bot;
@@ -200,7 +201,8 @@ public final class MessageIO extends ListenerAdapter {
                 && event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
                 && this.auditing != null
                 && !event.getAuthor().isBot()
-                && auditing.has(Audit.MessageEdit)) {
+                && auditing.has(Audit.MessageEdit)
+                && System.currentTimeMillis() - event.getMessage().getTimeCreated().toInstant().toEpochMilli() <= MAX_EDIT_AUDIT_AGE_MILLIS) {
             Message msg = null;
             Deque<Message> messages =  this.recentMessages.computeIfAbsent(event.getAuthor().getId(), id -> new ConcurrentLinkedDeque<>());
             for (Message message : messages) {

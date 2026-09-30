@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Autoresponding extends MessagePriority {
+public final class Autoresponding extends MessagePriority {
 
     final List<AutoresponderMessage> messages = Collections.synchronizedList(new ArrayList<>());
     final List<AutoresponderEmoji> emojis = Collections.synchronizedList(new ArrayList<>());
