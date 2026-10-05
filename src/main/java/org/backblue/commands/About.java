@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.backblue.core.Bot;
 import org.backblue.extension.Deployable;
-import org.backblue.utilities.TimeFormat;
+import org.backblue.utilities.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -30,7 +30,7 @@ public class About extends ListenerAdapter implements Deployable {
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Color.CYAN)
                     .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch)
-                    .addField("Uptime", "`" + TimeFormat.formattedTime(OffsetDateTime.now().toEpochSecond() - bot.createdSince, true) + "`", false);
+                    .addField("Uptime", "`" + Util.formattedTime(OffsetDateTime.now().toEpochSecond() - bot.createdSince, true) + "`", false);
             if (!watermark.isEmpty()) {
                 embed.setFooter(this.watermark);
             }

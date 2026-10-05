@@ -23,7 +23,7 @@ import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
 import org.backblue.enums.SetChannel;
 import org.backblue.extension.Deployable;
-import org.backblue.utilities.Attachments;
+import org.backblue.utilities.Util;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -104,7 +104,7 @@ public class EZPunish extends ListenerAdapter implements Deployable {
             String finalEvidenceText = evidenceText;
 
             bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
-                    null, Attachments.toUploads(evidenceImages));
+                    null, Util.toUploads(evidenceImages));
         }
     }
 

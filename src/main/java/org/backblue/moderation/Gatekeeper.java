@@ -26,8 +26,7 @@ import org.backblue.core.Bot;
 import org.backblue.enums.SetChannel;
 import org.backblue.enums.Feature;
 import org.backblue.extension.LiveFramework;
-import org.backblue.utilities.Resources;
-import org.backblue.utilities.TimeFormat;
+import org.backblue.utilities.Util;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -90,7 +89,7 @@ public final class Gatekeeper extends ListenerAdapter implements LiveFramework.B
             Log.warn("Using custom Gatekeeper AI. Improper configuration will cause issues!");
         } catch (Exception e) {
             try {
-                tempAiPrompt = Resources.readString("genai/gatekeeper.txt");
+                tempAiPrompt = Util.readResource("genai/gatekeeper.txt");
             } catch (IOException ex) {
                 tempAiPrompt = null;
             }
@@ -327,7 +326,7 @@ public final class Gatekeeper extends ListenerAdapter implements LiveFramework.B
             }
             return;
         }
-        m.kick().reason(String.format("Did not complete discord onboarding in %s", TimeFormat.formattedTime(time * 60L, false))).queue();
+        m.kick().reason(String.format("Did not complete discord onboarding in %s", Util.formattedTime(time * 60L, false))).queue();
         this.kickRejoinTimes.putIfAbsent(id, 0);
         this.kickRejoinTimes.put(id, this.kickRejoinTimes.get(id) + 1);
     }
@@ -348,7 +347,7 @@ public final class Gatekeeper extends ListenerAdapter implements LiveFramework.B
         long timeDifference = Math.abs(ChronoUnit.SECONDS.between(m.getUser().getTimeCreated(), OffsetDateTime.now()));
         long sus = susRoleOverride.getOrDefault(roleToBecomeSus, this.stopBeingSus);
         if (timeDifference < sus * 24 * 60 * 60) {
-            m.kick().reason("Joined too quickly after account creation -- " + TimeFormat.formattedTime(timeDifference, false)).queue();
+            m.kick().reason("Joined too quickly after account creation -- " + Util.formattedTime(timeDifference, false)).queue();
             this.kickRejoinTimes.putIfAbsent(id, 0);
             this.kickRejoinTimes.put(id, this.kickRejoinTimes.get(id) + 1);
         }

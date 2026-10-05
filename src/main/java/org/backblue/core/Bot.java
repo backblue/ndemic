@@ -10,7 +10,8 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
-import org.backblue.enums.Config;
+import org.backblue.config.Config;
+import org.backblue.config.Configurator;
 import org.backblue.enums.Feature;
 import org.backblue.moderation.*;
 import org.backblue.utilities.*;
@@ -30,8 +31,8 @@ import java.util.concurrent.TimeUnit;
 public final class Bot {
 
     public final int major = 1;
-    public final int minor = 2;
-    public final int patch = 1;
+    public final int minor = 3;
+    public final int patch = 0;
     public final long createdSince = OffsetDateTime.now().toEpochSecond();
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
@@ -62,15 +63,15 @@ public final class Bot {
 
         try {
             config = new Configurator(this);
-            keys = config.properties;
-            settings = config.settingsFile;
-            rulebook = config.rulebookFile;
-            badges = config.badgesFile;
-            featuresList = config.featuresFile;
+            keys = config.properties();
+            settings = config.require(Config.Settings_JSON);
+            rulebook = config.require(Config.Rulebook_JSON);
+            badges = config.require(Config.Badges_JSON);
+            featuresList = config.require(Config.Features_JSON);
             settingSelf = settings.getJSONObject("self");
             settings.getJSONObject("channels").getString("_deploy");
         } catch (IllegalStateException | Config.Error e) {
-            Log.error("Required configuration could not be loaded", e);
+            System.out.println("Required configuration could not be loaded " + e);
             System.exit(1);
         }
 
@@ -104,13 +105,13 @@ public final class Bot {
         if (settings.getJSONObject("self").optString("presence", null) != null) {
             builder.setActivity(Activity.customStatus(settings.getJSONObject("self").getString("status")));
         }
-        Autoresponding autoresponding = new Autoresponding(Integer.MAX_VALUE, this, config.deploymentAutoresponderFile);
+        Autoresponding autoresponding = new Autoresponding(Integer.MAX_VALUE, this, config.get(Config.Deployment_Triggers_JSON));
         this.liveContainer = new LiveContainer(this);
         this.io = new MessageIO(settings, this, keys);
         this.io.addListener(autoresponding);
         this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         this.ezPunish = new EZPunish(this, rulebook);
-        Auditing auditing = new Auditing(this, config.deploymentAuditFile);
+        Auditing auditing = new Auditing(this, config.get(Config.Deployment_Audit_JSON));
         ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
         List<EventListener> listeners = List.of(
                 new DM(this),

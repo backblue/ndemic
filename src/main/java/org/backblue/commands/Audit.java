@@ -13,26 +13,23 @@ import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.backblue.core.Bot;
+import org.backblue.config.Config;
 import org.backblue.extension.Deployable;
 import org.backblue.extension.LiveFramework;
+import org.backblue.extension.SelfEditable;
 import org.backblue.moderation.Auditing;
 import org.jetbrains.annotations.NotNull;
-import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class Audit extends ListenerAdapter implements
         LiveFramework.ButtonReturn,
-        Deployable {
+        Deployable,
+        SelfEditable {
 
     static Logger Log = LoggerFactory.getLogger(Audit.class);
 
@@ -42,6 +39,11 @@ public class Audit extends ListenerAdapter implements
     public Audit(@NonNull Bot bot, @NonNull Auditing auditing) {
         this.bot = bot;
         this.auditing = auditing;
+    }
+
+    @Override
+    public Scope scope() {
+        return Scope.whole(Config.Deployment_Audit_JSON);
     }
 
     @Override
@@ -58,26 +60,14 @@ public class Audit extends ListenerAdapter implements
 
     @Override
     public Container onButton(@NonNull ButtonInteractionEvent event, String... actions) {
-        auditing.toggle(Enum.valueOf(org.backblue.enums.Audit.class, actions[1]));
-        CompletableFuture.runAsync(this::writeToFile);
-        return buildContainer();
-    }
-
-    private void writeToFile() {
-        synchronized (this) {
-            JSONObject json = new JSONObject();
-            EnumSet.allOf(org.backblue.enums.Audit.class).forEach(action -> {
-                json.put(action.configKey(), auditing.has(action));
-            });
-            json.put("_version", 1);
-            json.put("webhookLink", auditing.webhookURL());
-            File file = new File("data/deployment-audit.json");
-            try (FileWriter fw = new FileWriter(file)) {
-                fw.write(json.toString(4));
-            } catch (IOException e) {
-                Log.warn("Unable to update file {}. Changes made this seesion will be lost on restart.", file);
-            }
+        org.backblue.enums.Audit action = Enum.valueOf(org.backblue.enums.Audit.class, actions[1]);
+        boolean enable = !auditing.has(action);
+        if (editable() && set("/" + action.configKey(), enable, event.getUser().getId())) {
+            auditing.toggle(action);
+        } else {
+            Log.warn("Unable to save audit setting {}; left unchanged.", action);
         }
+        return buildContainer();
     }
 
     private Container buildContainer() {

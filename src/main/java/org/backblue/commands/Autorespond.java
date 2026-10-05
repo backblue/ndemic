@@ -27,17 +27,20 @@ import org.backblue.extension.Deployable;
 import org.backblue.extension.LiveFramework;
 import org.backblue.moderation.Autoresponding;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Autorespond extends ListenerAdapter implements
         LiveFramework.ButtonVoid,
         LiveFramework.Pagination,
         Deployable {
+
+    static Logger Log = LoggerFactory.getLogger(Autorespond.class);
 
     final static int ELEMENTS_PER_PAGE = 8;
     final Bot bot;
@@ -112,14 +115,16 @@ public class Autorespond extends ListenerAdapter implements
                 Autoresponding.AutoresponderEntry n = autoresponding.getAt(index);
                 Autoresponding.AutoresponderEntry updated = getUpdated(n);
 
-                autoresponding.updateAt(index, updated);
+                if (!autoresponding.updateAt(index, updated, event.getUser().getId())) {
+                    Log.warn("Unable to save autoresponder rule {}; left unchanged.", index);
+                }
                 event.editComponents(buildEditContainer(index)).useComponentsV2().queue();
-                CompletableFuture.runAsync(this.autoresponding::writeToJSON);
             }
             case "delete" -> {
                 int index = Integer.parseInt(actions[2]);
-                autoresponding.deleteAt(index);
-                CompletableFuture.runAsync(this.autoresponding::writeToJSON);
+                if (!autoresponding.deleteAt(index, event.getUser().getId())) {
+                    Log.warn("Unable to delete autoresponder rule {}; left unchanged.", index);
+                }
                 returnToPages(event);
             }
             case "changeKeyword", "changeResponse" -> {
@@ -211,8 +216,7 @@ public class Autorespond extends ListenerAdapter implements
                 entry = new Autoresponding.AutoresponderEmoji(keyword, response, matching.equals("autorespond;matching:exact"));
             }
 
-            this.autoresponding.insert(entry);
-            boolean saved = this.autoresponding.writeToJSON();
+            boolean saved = this.autoresponding.insert(entry, event.getUser().getId());
 
             event.deferEdit().queue();
             Message source = event.getMessage();
@@ -222,7 +226,7 @@ public class Autorespond extends ListenerAdapter implements
                 event.getHook().editOriginalComponents(buildContainer(page)).useComponentsV2().queue();
             }
             if (!saved) {
-                event.getHook().sendMessage("Rule **" + keyword + "** created but failed to save to disk.").setEphemeral(true).queue();
+                event.getHook().sendMessage("Could not save rule **" + keyword + "**. Nothing was changed.").setEphemeral(true).queue();
             }
         } else if (event.getModalId().startsWith("modal;autorespondEdit;")) {
             int index = Integer.parseInt(event.getModalId().split(";")[2]);
@@ -253,13 +257,12 @@ public class Autorespond extends ListenerAdapter implements
                 updated = new Autoresponding.AutoresponderEmoji(newKeyword, newResponse, isExact);
             }
 
-            autoresponding.updateAt(index, updated);
-            boolean saved = autoresponding.writeToJSON();
+            boolean saved = autoresponding.updateAt(index, updated, event.getUser().getId());
 
             event.deferEdit().queue();
             event.getHook().editOriginalComponents(buildEditContainer(index)).useComponentsV2().queue();
             if (!saved) {
-                event.getHook().sendMessage("Rule **" + newKeyword + "** updated but failed to save to disk.").setEphemeral(true).queue();
+                event.getHook().sendMessage("Could not save rule **" + newKeyword + "**. Nothing was changed.").setEphemeral(true).queue();
             }
         }
     }

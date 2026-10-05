@@ -1,6 +1,6 @@
-package org.backblue.enums;
+package org.backblue.config;
 
-import org.backblue.utilities.Resources;
+import org.backblue.utilities.Util;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -8,11 +8,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
+import java.util.Optional;
 
 public enum Config {
 
@@ -21,8 +18,7 @@ public enum Config {
     Badges_JSON("badges.json", true),
     Deployment_Audit_JSON("deployment-audit.json", false),
     Deployment_Triggers_JSON("deployment-triggers.json", false),
-    Features_JSON("features.json", true),
-    Bot_Properties("bot.properties", true);
+    Features_JSON("features.json", true);
 
     private static final Logger Log = LoggerFactory.getLogger(Config.class);
 
@@ -40,37 +36,53 @@ public enum Config {
     public boolean required() {
         return required;
     }
+    // Storage key, e.g. "features" for features.json.
+    public String key() {
+        return fileName.endsWith(".json") ? fileName.substring(0, fileName.length() - 5) : fileName;
+    }
 
-    // Reads from data/<fileName>, if exists, and dynamically updates it; if not, copies the default into the directory.
-    // Will only return nil/throwable IFF the file does not exist and cannot be dynamically read
-    public static @Nullable JSONObject loadResource(Config file) {
-        String path = "data/" + file.fileName();
+    // Reads the document from the store and merges in keys added to the packaged defaults since it was saved.
+    // If the store has nothing yet, it is seeded from importFrom (when given and present), otherwise from the defaults.
+    // Returns null only for optional documents that cannot be read.
+    public static @Nullable JSONObject loadResource(Config file, ConfigStore store, @Nullable ConfigStore importFrom) {
+        String location = store.describe(file);
         boolean required = file.required();
 
+        JSONObject defaultResource = readDefault(file);
         JSONObject resource;
         boolean updated = false;
-        JSONObject defaultResource = readDefault(file);
+        boolean fromDefaults = false;
+        String changedBy = "system";
 
         try {
-            resource = new JSONObject(Files.readString(Path.of(path)));
-        } catch (NoSuchFileException e) {
-            try {
-                resource = readDefault(file);
+            Optional<JSONObject> stored = store.read(file);
+            if (stored.isPresent()) {
+                resource = stored.get();
+            } else {
                 updated = true;
-            } catch (Exception ex) {
-                if (required) throw new RuntimeException("Required source cannot be loaded " + path, ex);
-                Log.error("Very bad execution attempting to load default resource {}", path, ex);
-                return null;
+                Optional<JSONObject> imported = Optional.empty();
+                if (importFrom != null) {
+                    try {
+                        imported = importFrom.read(file);
+                    } catch (ConfigStore.ReadException e) {
+                        Log.warn("Not importing {}: {}", importFrom.describe(file), e.getMessage());
+                    }
+                }
+                if (imported.isPresent()) {
+                    resource = imported.get();
+                    changedBy = "import";
+                    Log.info("Importing {} into {}", importFrom.describe(file), location);
+                } else {
+                    resource = new JSONObject(defaultResource.toString());
+                    fromDefaults = true;
+                }
             }
-        } catch (SecurityException e) {
-            Log.error("Permission denied to read resource. Delete {} to have it regenerated", path);
-            return required ? defaultResource : null;
-        } catch (Exception e) {
-            Log.error("Cannot read local file. Delete {} to have it regenerated", path);
+        } catch (ConfigStore.ReadException e) {
+            Log.error(e.getMessage(), e.getCause());
             return required ? defaultResource : null;
         }
 
-        if (!updated) {
+        if (!fromDefaults) {
             for (String key : defaultResource.keySet()) {
                 if (key.equals("_version")) continue;
                 if (!resource.has(key)) {
@@ -79,7 +91,7 @@ public enum Config {
                 } else {
                     boolean isSameType = isSameDataType(resource.get(key), defaultResource.get(key));
                     if (!isSameType) {
-                        Log.error("Cannot parse correctness. Delete {} to have it regenerated", path);
+                        Log.error("Cannot parse correctness. Delete {} to have it regenerated", location);
                         return required ? defaultResource : null;
                     }
                 }
@@ -89,7 +101,7 @@ public enum Config {
         int currVersion = resource.optInt("_version", Integer.MIN_VALUE);
         if (currVersion != Integer.MIN_VALUE) {
             if (defaultResource.optInt("_version", Integer.MIN_VALUE) > currVersion) {
-                Log.warn("Unable to write to {}. Read configuration is newer than current packaged", path);
+                Log.warn("Unable to write to {}. Read configuration is newer than current packaged", location);
                 return resource;
             } if (defaultResource.optInt("_version", Integer.MIN_VALUE) < currVersion) {
                 resource.put("_version", defaultResource.getInt("_version"));
@@ -98,27 +110,27 @@ public enum Config {
         }
 
         if (updated) {
-            try (FileWriter fw = new FileWriter(path)) {
-                fw.write(resource.toString(4));
-                Log.info("A resource was updated: {}", path);
-            } catch (IOException e) {
-                Log.warn("Unable to write to {}. New features/improvements may not be enabled. Check if file is accessible & write-able.", path);
+            try {
+                store.save(ConfigStore.Change.replace(file, resource, changedBy));
+                Log.info("A resource was updated: {}", location);
+            } catch (Exception e) {
+                Log.warn("Unable to write to {}. New features/improvements may not be enabled. Check if it is accessible & write-able.", location, e);
             }
         }
 
         return resource;
     }
 
-    private static JSONObject readDefault(Config file) throws JSONException, Config.Error {
+    public static JSONObject readDefault(Config file) throws JSONException, Config.Error {
         String path = "defaults/" + file.fileName();
         try {
-            return new JSONObject(Resources.readString(path));
+            return new JSONObject(Util.readResource(path));
         } catch (IOException e) {
             throw new Config.Error("Cannot load internal files " + path);
         }
     }
 
-    private static boolean isSameDataType(Object a, Object b) {
+    public static boolean isSameDataType(Object a, Object b) {
         if (a == JSONObject.NULL || b == JSONObject.NULL) return a == b;
         if (a instanceof JSONArray && b instanceof JSONArray) return true;
         if (a instanceof JSONObject && b instanceof JSONObject) return true;

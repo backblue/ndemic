@@ -8,6 +8,7 @@ target/
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/dataSources.xml
 *.iws
 *.iml
 *.ipr
@@ -39,6 +40,7 @@ build/
 
 ### Bot-specific items ###
 /bot.properties
+/data/bot.properties
 /data/privacypolicy.txt
 /data/*.json
 /data/log.txt
