@@ -5,29 +5,31 @@ import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.config.Config;
+import org.backblue.enums.Feature;
+import org.backblue.extension.SelfEditable;
 import org.backblue.utilities.MessagePriority;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class Autoresponding extends MessagePriority {
+public final class Autoresponding extends MessagePriority implements SelfEditable {
 
-    final List<AutoresponderMessage> messages = Collections.synchronizedList(new ArrayList<>());
-    final List<AutoresponderEmoji> emojis = Collections.synchronizedList(new ArrayList<>());
+    // Immutable snapshots, replaced as a whole after each successful save, so readers never see a partial edit.
+    private volatile List<AutoresponderMessage> messages = List.of();
+    private volatile List<AutoresponderEmoji> emojis = List.of();
 
     public Autoresponding(int priority, Bot bot, JSONObject config) {
         super(priority, bot);
         if (config == null) {
-            bot.disableFeature(FeatureFlag.Autoresponder);
+            bot.disableFeature(Feature.Autoresponder);
             return;
         }
 
+        List<AutoresponderMessage> loadedMessages = new ArrayList<>();
+        List<AutoresponderEmoji> loadedEmojis = new ArrayList<>();
         JSONArray messages = config.optJSONArray("messageResponse", null);
         JSONArray emojis = config.optJSONArray("reactionResponse", null);
         if (messages != null) {
@@ -37,7 +39,7 @@ public class Autoresponding extends MessagePriority {
                     String emoji = json.optString("response", null);
                     boolean exact = json.optBoolean("exact", false);
                     if (text != null && emoji != null) {
-                        this.messages.add(new AutoresponderMessage(text, emoji, exact));
+                        loadedMessages.add(new AutoresponderMessage(text, emoji, exact));
                     }
                 }
             });
@@ -49,12 +51,19 @@ public class Autoresponding extends MessagePriority {
                     String emoji = json.optString("emoji", null);
                     boolean exact = json.optBoolean("exact", false);
                     if (keyword != null && emoji != null) {
-                        this.emojis.add(new AutoresponderEmoji(keyword, emoji, exact));
+                        loadedEmojis.add(new AutoresponderEmoji(keyword, emoji, exact));
                     }
                 }
             });
         }
+        this.messages = List.copyOf(loadedMessages);
+        this.emojis = List.copyOf(loadedEmojis);
 
+    }
+
+    @Override
+    public Scope scope() {
+        return Scope.whole(Config.Deployment_Triggers_JSON);
     }
 
     public List<AutoresponderMessage> getMessages() {
@@ -78,77 +87,81 @@ public class Autoresponding extends MessagePriority {
         }
         return false;
     }
-    public void insert(AutoresponderEntry entry) {
-        if (entry instanceof AutoresponderMessage k) messages.add(k);
-        else if (entry instanceof AutoresponderEmoji k) emojis.add(k);
+    // Each edit saves first and only then replaces the in-memory lists. @return false if nothing was saved or changed.
+    public synchronized boolean insert(AutoresponderEntry entry, String changedBy) {
+        List<AutoresponderMessage> newMessages = new ArrayList<>(messages);
+        List<AutoresponderEmoji> newEmojis = new ArrayList<>(emojis);
+        if (entry instanceof AutoresponderMessage k) newMessages.add(k);
+        else if (entry instanceof AutoresponderEmoji k) newEmojis.add(k);
+        return commit(newMessages, newEmojis, changedBy);
     }
 
     public AutoresponderEntry getAt(int index) {
-        int emojiCount = emojis.size();
-        if (index < emojiCount) {
-            return emojis.get(index);
+        List<AutoresponderEmoji> currentEmojis = emojis;
+        if (index < currentEmojis.size()) {
+            return currentEmojis.get(index);
         }
-        return messages.get(index - emojiCount);
+        return messages.get(index - currentEmojis.size());
     }
 
-    public void updateAt(int index, AutoresponderEntry updated) {
-        int emojiCount = emojis.size();
+    public synchronized boolean updateAt(int index, AutoresponderEntry updated, String changedBy) {
+        List<AutoresponderMessage> newMessages = new ArrayList<>(messages);
+        List<AutoresponderEmoji> newEmojis = new ArrayList<>(emojis);
+        int emojiCount = newEmojis.size();
         if (index < emojiCount) {
-            if (!(updated instanceof AutoresponderEmoji)) {
+            if (!(updated instanceof AutoresponderEmoji emoji)) {
                 throw new IllegalArgumentException("Cannot replace an emoji entry with a non-emoji entry at index " + index);
             }
-            emojis.set(index, (AutoresponderEmoji) updated);
+            newEmojis.set(index, emoji);
         } else {
-            int messageIndex = index - emojiCount;
-            if (!(updated instanceof AutoresponderMessage)) {
+            if (!(updated instanceof AutoresponderMessage message)) {
                 throw new IllegalArgumentException("Cannot replace a message entry with a non-message entry at index " + index);
             }
-            messages.set(messageIndex, (AutoresponderMessage) updated);
+            newMessages.set(index - emojiCount, message);
         }
+        return commit(newMessages, newEmojis, changedBy);
     }
 
-    public void deleteAt(int index) {
-        int emojiCount = emojis.size();
+    public synchronized boolean deleteAt(int index, String changedBy) {
+        List<AutoresponderMessage> newMessages = new ArrayList<>(messages);
+        List<AutoresponderEmoji> newEmojis = new ArrayList<>(emojis);
+        int emojiCount = newEmojis.size();
         if (index < emojiCount) {
-            emojis.remove(index);
+            newEmojis.remove(index);
         } else {
-            messages.remove(index - emojiCount);
+            newMessages.remove(index - emojiCount);
         }
+        return commit(newMessages, newEmojis, changedBy);
     }
 
-    public boolean writeToJSON() {
+    // Saved as a whole document rather than edited per index: entries skipped while loading would shift indexes.
+    private boolean commit(List<AutoresponderMessage> newMessages, List<AutoresponderEmoji> newEmojis, String changedBy) {
+        if (!editable()) return false;
+
         JSONObject json = new JSONObject();
         JSONArray messagesJson = new JSONArray();
         JSONArray emojisJson = new JSONArray();
-
-        synchronized (messages) {
-            for (AutoresponderMessage message : messages) {
-                JSONObject messageJson = new JSONObject();
-                messageJson.put("keyword", message.keyword());
-                messageJson.put("response", message.response());
-                messageJson.put("exact", message.exact());
-                messagesJson.put(messageJson);
-            }
+        for (AutoresponderMessage message : newMessages) {
+            JSONObject messageJson = new JSONObject();
+            messageJson.put("keyword", message.keyword());
+            messageJson.put("response", message.response());
+            messageJson.put("exact", message.exact());
+            messagesJson.put(messageJson);
         }
-        synchronized (emojis) {
-            for (AutoresponderEmoji emoji : emojis) {
-                JSONObject emojiJson = new JSONObject();
-                emojiJson.put("keyword", emoji.keyword());
-                emojiJson.put("emoji", emoji.emoji());
-                emojiJson.put("exact", emoji.exact());
-                emojisJson.put(emojiJson);
-            }
+        for (AutoresponderEmoji emoji : newEmojis) {
+            JSONObject emojiJson = new JSONObject();
+            emojiJson.put("keyword", emoji.keyword());
+            emojiJson.put("emoji", emoji.emoji());
+            emojiJson.put("exact", emoji.exact());
+            emojisJson.put(emojiJson);
         }
-
         json.put("messageResponse", messagesJson);
         json.put("reactionResponse", emojisJson);
-        json.put("_version", 1);
-        try (FileWriter fw = new FileWriter("data/deployment-triggers.json")) {
-            fw.write(json.toString(4));
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
+        if (!replace(json, changedBy)) return false;
+
+        this.messages = List.copyOf(newMessages);
+        this.emojis = List.copyOf(newEmojis);
+        return true;
     }
 
     /**
@@ -159,10 +172,16 @@ public class Autoresponding extends MessagePriority {
      */
     @Override
     public boolean cancelled(MessageReceivedEvent event) {
-        if (bot.isFeatureEnabled(FeatureFlag.Autoresponder) && event.getAuthor().isBot()) return false;
+        if (bot.isFeatureEnabled(Feature.Autoresponder) && event.getAuthor().isBot()) return false;
 
         for (AutoresponderMessage m : messages) {
-            if (event.getMessage().getContentRaw().equalsIgnoreCase(m.keyword)) {
+            if (m.exact && event.getMessage().getContentRaw().equalsIgnoreCase(m.keyword)) {
+                Container c = Container.of(
+                        TextDisplay.of(m.response)
+                );
+                bot.getIO().send(event.getChannel().getId(), c);
+                return false;
+            } else if (!m.exact && event.getMessage().getContentRaw().contains(m.keyword)) {
                 Container c = Container.of(
                         TextDisplay.of(m.response)
                 );

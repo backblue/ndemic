@@ -16,9 +16,14 @@ import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.MessageContextInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
+import org.backblue.enums.SetChannel;
+import org.backblue.extension.Deployable;
+import org.backblue.utilities.Util;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,7 +34,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class EZPunish extends ListenerAdapter {
+public class EZPunish extends ListenerAdapter implements Deployable {
 
     Bot bot;
     private HashMap<Integer, JSONObject> rulebook = new HashMap<>();
@@ -79,20 +84,27 @@ public class EZPunish extends ListenerAdapter {
 
     private void logToWarnings(List<String> violations, Member target, boolean ban, String evidenceText, List<Message.Attachment> evidenceImages, Member executor) {
         String status = ban ? "Banned" : "Kicked";
-        String reason = this.modalToRuleBook.get(violations.getFirst()).getString("title");
-        if (reason == null || reason.isEmpty()) {
+        LinkedHashSet<String> reasonTitles = new LinkedHashSet<>();
+        for (String violation : violations) {
+            JSONObject violationRule = this.modalToRuleBook.get(violation);
+            if (violationRule != null) {
+                reasonTitles.add(violationRule.getString("title"));
+            }
+        }
+        String reason = String.join(", ", reasonTitles);
+        if (reason.isEmpty()) {
             reason = "Moderator Action";
         }
         if (evidenceImages == null || evidenceImages.isEmpty()) {
-            bot.getIO().send(DefinedChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName()+ "`\n" + evidenceText);
+            bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName()+ "`\n" + evidenceText);
         } else {
             if (evidenceText == null) {
                 evidenceText = "";
             }
             String finalEvidenceText = evidenceText;
 
-            bot.getIO().send(DefinedChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
-                    null, bot.toUploads(evidenceImages));
+            bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
+                    null, Util.toUploads(evidenceImages));
         }
     }
 
@@ -138,12 +150,12 @@ public class EZPunish extends ListenerAdapter {
         for (int i = 0; i < apple.length(); i++) {
             JSONObject rule = apple.getJSONObject(i);
             if (!rule.has("id") || !rule.has("title") || !rule.has("desc")) {
-                bot.getIO().send(DefinedChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " is missing fields 'id', 'title', 'desc'. Disabling Rulebook and ezpunish");
+                bot.getIO().send(SetChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " is missing fields 'id', 'title', 'desc'. Disabling Rulebook and ezpunish");
                 this.rulebook = null;
                 break;
             }
             if (this.rulebook.containsKey(rule.getInt("id"))) {
-                bot.getIO().send(DefinedChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " has a duplicate ID of " + rule.getInt("id") + ". Ignoring duplicate.");
+                bot.getIO().send(SetChannel.DebugAutoModAlert, "Rulebook entry " + (i) + " has a duplicate ID of " + rule.getInt("id") + ". Ignoring duplicate.");
             } else {
                 this.rulebook.put(rule.getInt("id"), rule);
             }
@@ -272,6 +284,13 @@ public class EZPunish extends ListenerAdapter {
             id = (int) (Math.random() * Short.MAX_VALUE);
         }
         return id;
+    }
+
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(
+                Commands.slash("ezpunish", "Remove an user with the 3 steps: kick/ban, notify and log").setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)),
+                Commands.message("EZPunish...").setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.BAN_MEMBERS)));
     }
 
     private record PunishCacheBundle(String userId, String textEvidence, List<Message.Attachment> attachmentEvidence) {}

@@ -15,5 +15,6 @@
   "nitroBoostMessage": false,
   "requireOnboarding": false,
   "removeLowQualityAccounts": false,
-  "autoResponder": true
+  "autoresponder": true,
+  "audit": false
 }

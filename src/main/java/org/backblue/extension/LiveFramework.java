@@ -1,4 +1,4 @@
-package org.backblue.enums;
+package org.backblue.extension;
 
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.actionrow.ActionRowChildComponent;

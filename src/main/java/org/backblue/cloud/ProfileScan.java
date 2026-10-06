@@ -10,15 +10,25 @@ import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.exception.HttpResponseException;
 import com.azure.core.util.BinaryData;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.replacer.ComponentReplacer;
+import net.dv8tion.jda.api.components.section.Section;
+import net.dv8tion.jda.api.components.separator.Separator;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
+import net.dv8tion.jda.api.components.thumbnail.Thumbnail;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateAvatarEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateAvatarEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.SetChannel;
+import org.backblue.enums.Feature;
+import org.backblue.extension.LiveFramework;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -31,15 +41,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.time.Instant;
 import java.time.OffsetTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class ProfileScan extends ListenerAdapter {
+public final class ProfileScan extends ListenerAdapter implements LiveFramework.ButtonReturn {
 
     private static final Logger Log = LoggerFactory.getLogger(ProfileScan.class);
     private static final int MAX_SCAN_CACHE_SIZE = 24;
+    private static final int FOOTER_NOTE = 101;
 
     final Bot bot;
     final ContentSafetyClient safetyClient;
@@ -62,7 +74,7 @@ public final class ProfileScan extends ListenerAdapter {
             scanCooldownAfterFlagging = 0;
             hateMinToAlert = 0;
             ping = false;
-            this.bot.disableFeature(FeatureFlag.ScanProfiles);
+            this.bot.disableFeature(Feature.ScanProfiles);
             return;
         }
         this.safetyClient = new ContentSafetyClientBuilder()
@@ -82,7 +94,7 @@ public final class ProfileScan extends ListenerAdapter {
     }
 
     public void scan(Member member) {
-        if (!bot.isFeatureEnabled(FeatureFlag.ScanProfiles)
+        if (!bot.isFeatureEnabled(Feature.ScanProfiles)
                 || member == null
                 || member.hasPermission(Permission.ADMINISTRATOR)
                 || !OffsetTime.now().isAfter(lastScan.getOrDefault(member.getId(), OffsetTime.MIN).plusMinutes(scanCooldownAfterFlagging))) {
@@ -90,7 +102,7 @@ public final class ProfileScan extends ListenerAdapter {
         }
         ScanResult avatar = scan(member.getId(), member.getEffectiveAvatarUrl());
         if (avatar != null && avatar.points >= this.hateMinToAlert) {
-            bot.getIO().send(DefinedChannel.DeploymentBotCommands, this.ping ? bot.getMostModerators().getAsMention() : "", bot.getInteractive().createProfile(member, "picture", avatar.points), null);
+            bot.getIO().send(SetChannel.DeploymentBotCommands, this.ping ? bot.getMostModerators().getAsMention() : "", createContainer(member, "picture", avatar.points), this);
             lastScan.put(member.getId(), OffsetTime.now());
         }
         member.getUser().retrieveProfile().queue(profile -> {
@@ -99,11 +111,42 @@ public final class ProfileScan extends ListenerAdapter {
             if (bannerUrl != null) {
                 ScanResult banner = scan(member.getId(), bannerUrl);
                 if (banner != null && banner.points() >= hateMinToAlert) {
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, "", bot.getInteractive().createProfile(member, "banner", banner.points), null);
+                    bot.getIO().send(SetChannel.DeploymentBotCommands, "", createContainer(member, "banner", banner.points), this);
                     lastScan.put(member.getId(), OffsetTime.now());
                 }
             }
         });
+    }
+
+    private Container createContainer(Member member, String type, int points) {
+        return Container.of(
+                TextDisplay.of("# :triangular_flag_on_post: Moderator Review Recommended"),
+                Section.of(
+                        Thumbnail.fromUrl(member.getEffectiveAvatarUrl()),
+                        TextDisplay.of(member.getUser().getAsMention() + "'s profile " + type + " is flagged for further review."),
+                        TextDisplay.of("## Details: " + member.getUser().getAsMention() + "\n> Severity value is " + points)
+                ),
+                ActionRow.of(
+                        Button.danger(identifier() + ";kick;" + member.getId(), "Softban"),
+                        Button.danger(identifier() + ";ban;" + member.getId(), "Ban"),
+                        Button.secondary(identifier() + ";nothing", "Do nothing")
+                ),
+                Separator.createDivider(Separator.Spacing.SMALL),
+                TextDisplay.of("-# Punishment actions will notify the user (and logged).").withUniqueId(FOOTER_NOTE)
+        );
+    }
+
+    @Override
+    public Container onButton(@NotNull ButtonInteractionEvent event, String... actions) {
+        if (event.getMember() == null) return null;
+        String action = actions[1];
+        if ((action.equals("kick") || action.equals("ban")) && actions.length > 2) {
+            Member member = bot.getDeploymentGuild().getMemberById(actions[2]);
+            if (member != null) bot.getEZPunish().ezPunish(member, event.getMember(), List.of("ezpunish:profile"), action.equals("ban"), member.getEffectiveAvatarUrl(), null);
+        }
+        return event.getMessage().getComponents().getFirst().asContainer()
+                .replace(ComponentReplacer.byUniqueId(FOOTER_NOTE, TextDisplay.of("-# Action taken <t:" + Instant.now().getEpochSecond() + ":R> by `" + event.getMember().getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")))
+                .asDisabled();
     }
 
     @Override
@@ -126,7 +169,7 @@ public final class ProfileScan extends ListenerAdapter {
             return null;
         }
         FileUpload imageFile = FileUpload.fromData(downloadedImage, id + ".png");
-        this.bot.getIO().send(DefinedChannel.DebugImageDump, id, List.of(imageFile));
+        this.bot.getIO().send(SetChannel.DebugImageDump, id, List.of(imageFile));
 
         ByteArrayInputStream bais = new ByteArrayInputStream(downloadedImage);
         BufferedImage img;
@@ -154,10 +197,10 @@ public final class ProfileScan extends ListenerAdapter {
             response = this.safetyClient.analyzeImage(new AnalyzeImageOptions(image));
         } catch (HttpResponseException e) {
             if (e.getResponse().getStatusCode() == 403) {
-                this.bot.disableFeature(FeatureFlag.ScanProfiles);
-                bot.getIO().send(DefinedChannel.DebugAutoModAlert, "Profile scanning cannot continue. `" + e.getMessage() +" `");
+                this.bot.disableFeature(Feature.ScanProfiles);
+                bot.getIO().send(SetChannel.DebugAutoModAlert, "Profile scanning cannot continue. `" + e.getMessage() +" `");
             } else {
-                bot.getIO().send(DefinedChannel.DebugAutoModAlert, "Failed to analyze image for `(" + id + ")` due to: " + e.getMessage());
+                bot.getIO().send(SetChannel.DebugAutoModAlert, "Failed to analyze image for `(" + id + ")` due to: " + e.getMessage());
             }
             img.flush();
             return null;

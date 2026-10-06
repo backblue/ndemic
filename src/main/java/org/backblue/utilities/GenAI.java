@@ -5,7 +5,7 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.ListModelsConfig;
 import org.backblue.core.Bot;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.Feature;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public final class GenAI {
             this.models = null;
             this.client = null;
             Log.warn("Missing gemini key and config, disabling AI features");
-            bot.disableFeature(FeatureFlag.AI);
+            bot.disableFeature(Feature.AI);
             return;
         }
         this.key = key;
@@ -44,7 +44,7 @@ public final class GenAI {
             client.models.list(ListModelsConfig.builder().build());
         } catch (Exception e) {
             Log.error("Gemini key invalid! Disabling AI features: {}", e.getMessage());
-            bot.disableFeature(FeatureFlag.AI);
+            bot.disableFeature(Feature.AI);
         }
     }
 

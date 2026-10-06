@@ -1,5 +1,6 @@
 package org.backblue.commands;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
 import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.container.Container;
@@ -17,19 +18,29 @@ import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
-import org.backblue.enums.LiveFramework;
+import org.backblue.extension.Deployable;
+import org.backblue.extension.LiveFramework;
 import org.backblue.moderation.Autoresponding;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Autorespond extends ListenerAdapter implements LiveFramework.ButtonVoid, LiveFramework.Pagination {
+public class Autorespond extends ListenerAdapter implements
+        LiveFramework.ButtonVoid,
+        LiveFramework.Pagination,
+        Deployable {
+
+    static Logger Log = LoggerFactory.getLogger(Autorespond.class);
 
     final static int ELEMENTS_PER_PAGE = 8;
     final Bot bot;
@@ -104,14 +115,16 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
                 Autoresponding.AutoresponderEntry n = autoresponding.getAt(index);
                 Autoresponding.AutoresponderEntry updated = getUpdated(n);
 
-                autoresponding.updateAt(index, updated);
+                if (!autoresponding.updateAt(index, updated, event.getUser().getId())) {
+                    Log.warn("Unable to save autoresponder rule {}; left unchanged.", index);
+                }
                 event.editComponents(buildEditContainer(index)).useComponentsV2().queue();
-                CompletableFuture.runAsync(this.autoresponding::writeToJSON);
             }
             case "delete" -> {
                 int index = Integer.parseInt(actions[2]);
-                autoresponding.deleteAt(index);
-                CompletableFuture.runAsync(this.autoresponding::writeToJSON);
+                if (!autoresponding.deleteAt(index, event.getUser().getId())) {
+                    Log.warn("Unable to delete autoresponder rule {}; left unchanged.", index);
+                }
                 returnToPages(event);
             }
             case "changeKeyword", "changeResponse" -> {
@@ -203,8 +216,7 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
                 entry = new Autoresponding.AutoresponderEmoji(keyword, response, matching.equals("autorespond;matching:exact"));
             }
 
-            this.autoresponding.insert(entry);
-            boolean saved = this.autoresponding.writeToJSON();
+            boolean saved = this.autoresponding.insert(entry, event.getUser().getId());
 
             event.deferEdit().queue();
             Message source = event.getMessage();
@@ -214,7 +226,7 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
                 event.getHook().editOriginalComponents(buildContainer(page)).useComponentsV2().queue();
             }
             if (!saved) {
-                event.getHook().sendMessage("Rule **" + keyword + "** created but failed to save to disk.").setEphemeral(true).queue();
+                event.getHook().sendMessage("Could not save rule **" + keyword + "**. Nothing was changed.").setEphemeral(true).queue();
             }
         } else if (event.getModalId().startsWith("modal;autorespondEdit;")) {
             int index = Integer.parseInt(event.getModalId().split(";")[2]);
@@ -245,13 +257,12 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
                 updated = new Autoresponding.AutoresponderEmoji(newKeyword, newResponse, isExact);
             }
 
-            autoresponding.updateAt(index, updated);
-            boolean saved = autoresponding.writeToJSON();
+            boolean saved = autoresponding.updateAt(index, updated, event.getUser().getId());
 
             event.deferEdit().queue();
             event.getHook().editOriginalComponents(buildEditContainer(index)).useComponentsV2().queue();
             if (!saved) {
-                event.getHook().sendMessage("Rule **" + newKeyword + "** updated but failed to save to disk.").setEphemeral(true).queue();
+                event.getHook().sendMessage("Could not save rule **" + newKeyword + "**. Nothing was changed.").setEphemeral(true).queue();
             }
         }
     }
@@ -356,6 +367,12 @@ public class Autorespond extends ListenerAdapter implements LiveFramework.Button
         ));
 
         return Container.of(settings);
+    }
+
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(Commands.slash("autorespond", "Modify trigger rules for autoresponding...")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR)));
     }
 
     static class ContainerElement {

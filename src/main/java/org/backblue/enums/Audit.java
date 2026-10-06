@@ -1,6 +1,6 @@
 package org.backblue.enums;
 
-public enum AuditAction {
+public enum Audit {
 
     MessageDelete("messageDelete", "Message Deletion"),
     MessageEdit("messageEdit", "Message Edit"),
@@ -14,7 +14,7 @@ public enum AuditAction {
     private final String config;
     private final String title;
 
-    AuditAction(String config, String title) {
+    Audit(String config, String title) {
         this.config = config;
         this.title = title;
     }

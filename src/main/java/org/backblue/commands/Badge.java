@@ -11,10 +11,13 @@ import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateBoostTime
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.modals.Modal;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.SetChannel;
+import org.backblue.extension.Deployable;
+import org.backblue.enums.Feature;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -24,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class Badge extends ListenerAdapter {
+public class Badge extends ListenerAdapter implements Deployable {
 
     private final Bot bot;
     private final boolean defaultUnlock;
@@ -39,7 +42,7 @@ public class Badge extends ListenerAdapter {
         JSONArray array = json.optJSONArray("content");
         if (array == null) {
             Log.error("Missing badge content");
-            bot.disableFeature(FeatureFlag.RoleIcons);
+            bot.disableFeature(Feature.RoleIcons);
         } else {
             for (int i = 0; i < array.length(); i++) {
                 JSONObject item;
@@ -86,14 +89,14 @@ public class Badge extends ListenerAdapter {
                 event.reply(":x: Deployment guild only").setEphemeral(true).queue();
                 return;
             }
-            if (!bot.isFeatureEnabled(FeatureFlag.RoleIcons)) {
+            if (!bot.isFeatureEnabled(Feature.RoleIcons)) {
                 event.reply(":x: Temporarily disabled").setEphemeral(true).queue();
                 return;
             }
             Set<IconProperties> eligibleIcons = this.eligibleIcons(event.getMember());
             if (eligibleIcons.isEmpty() && !event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
                 event.reply("You have no eligible badges for selection.").setEphemeral(true).queue();
-                bot.getIO().send(DefinedChannel.DebugEnforcement, "did not allow user `" + event.getMember().getEffectiveName() + "` to access badge system due to having no unlocked badges.");
+                bot.getIO().send(SetChannel.DebugEnforcement, "did not allow user `" + event.getMember().getEffectiveName() + "` to access badge system due to having no unlocked badges.");
                 return;
             }
             Modal modal = Modal.create("modal:badge", "Role Icon Selection")
@@ -117,7 +120,7 @@ public class Badge extends ListenerAdapter {
                     }
                 }
             }
-        } else if (event.getOldTimeBoosted() == null && event.getNewTimeBoosted() != null && bot.isFeatureEnabled(FeatureFlag.NitroBoostMessage)) {
+        } else if (event.getOldTimeBoosted() == null && event.getNewTimeBoosted() != null && bot.isFeatureEnabled(Feature.NitroBoostMessage)) {
             bot.getIO().send(event.getUser(), "Thanks for boosting **" + event.getGuild().getName() + "**\nFor your thanks, server boosters can select a badge to display next to their name!\nAllow " + event.getJDA().getSelfUser().getAsMention() + " to handle the `/badge` command in <#796358850735243264>");
         }
     }
@@ -139,15 +142,20 @@ public class Badge extends ListenerAdapter {
             }
         }
         if (this.codeToBadges.get(newBadge) == null) {
-            bot.getIO().send(DefinedChannel.DebugAutoModAlert, "removed badge from user `" + member.getEffectiveName() + "` (`" + member.getId() + "`)");
+            bot.getIO().send(SetChannel.DebugAutoModAlert, "removed badge from user `" + member.getEffectiveName() + "` (`" + member.getId() + "`)");
             return "Badge removed";
         }
         Role newRole = bot.getDeploymentGuild().getRoleById(codeToBadges.get(newBadge).emojiRole);
         if (newRole != null) {
-            bot.getIO().send(DefinedChannel.DebugAutoModAlert, "added badge to user `" + member.getEffectiveName() + "` `(" + member.getId() + ")`, `" + newBadge + "`");
+            bot.getIO().send(SetChannel.DebugAutoModAlert, "added badge to user `" + member.getEffectiveName() + "` `(" + member.getId() + ")`, `" + newBadge + "`");
             bot.getDeploymentGuild().addRoleToMember(member, newRole).queue();
         }
         return "Badge changed";
+    }
+
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(Commands.slash("badge", "Select a role icon that appears next to your username"));
     }
 
     private record IconProperties(String modalTitle, String modalID, String emojiCode, String emojiRole, Set<String> rolesRequirement, Set<String> flags) {}

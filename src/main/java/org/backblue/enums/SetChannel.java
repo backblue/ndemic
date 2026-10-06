@@ -1,6 +1,6 @@
 package org.backblue.enums;
 
-public enum DefinedChannel {
+public enum SetChannel {
     DebugDirectMessages("debugDirectMessages"),
     DebugAutoModAlert("debugAutoModAlert"),
     DebugEnforcement("debugEnforcement"),
@@ -12,7 +12,7 @@ public enum DefinedChannel {
 
     private final String config;
 
-    DefinedChannel(String config) {
+    SetChannel(String config) {
         this.config = config;
     }
 

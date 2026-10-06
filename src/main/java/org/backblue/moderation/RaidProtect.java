@@ -4,8 +4,8 @@ import net.dv8tion.jda.api.entities.guild.SecurityIncidentActions;
 import net.dv8tion.jda.api.events.guild.update.GuildUpdateSecurityIncidentDetectionsEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.enums.DefinedChannel;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.SetChannel;
+import org.backblue.enums.Feature;
 import org.jspecify.annotations.NonNull;
 
 import java.time.OffsetDateTime;
@@ -27,16 +27,16 @@ public final class RaidProtect extends ListenerAdapter {
             OffsetDateTime raid = event.getNewSecurityIncidentDetections().getTimeDetectedRaid();
             if (raid != null && raid.isAfter(lastKnownRaidAlert)) {
                 lastKnownRaidAlert = raid;
-                if (bot.isFeatureEnabled(FeatureFlag.RaidPauseInvites)) {
+                if (bot.isFeatureEnabled(Feature.RaidPauseInvites)) {
                     SecurityIncidentActions actions = event.getGuild().getSecurityIncidentActions();
                     if (actions.getInvitesDisabledUntil() == null) {
                         actions = SecurityIncidentActions.enabled(OffsetDateTime.now().plusHours(1), bot.getDeploymentGuild().getSecurityIncidentActions().getDirectMessagesDisabledUntil());
                         bot.getDeploymentGuild().modifySecurityIncidents(actions).queue();
                     }
                 }
-                if (bot.isFeatureEnabled(FeatureFlag.AutoModAlerts)) {
-                    bot.getIO().send(DefinedChannel.DeploymentBotCommands, bot.getAllModerators().getAsMention() + " we're getting raided please remove spambots");
-                    bot.getIO().send(DefinedChannel.DebugAutoModAlert, "A security alert was triggered by Discord in " + event.getGuild().getName());
+                if (bot.isFeatureEnabled(Feature.AutoModAlerts)) {
+                    bot.getIO().send(SetChannel.DeploymentBotCommands, bot.getAllModerators().getAsMention() + " we're getting raided please remove spambots");
+                    bot.getIO().send(SetChannel.DebugAutoModAlert, "A security alert was triggered by Discord in " + event.getGuild().getName());
                 }
             }
 

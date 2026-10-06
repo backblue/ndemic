@@ -3,7 +3,7 @@ package org.backblue.moderation;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.backblue.core.Bot;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.Feature;
 import org.backblue.utilities.MessagePriority;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,7 +24,7 @@ public final class Forwarding extends MessagePriority {
         super(priority, bot);
         if (json == null) {
             Log.error("Missing/Unknown key-object in config. Messages will not be forwarded");
-            bot.disableFeature(FeatureFlag.MessageForwarding);
+            bot.disableFeature(Feature.MessageForwarding);
             return;
         }
         for (int i =0;i< json.length();i++) {
@@ -41,7 +41,7 @@ public final class Forwarding extends MessagePriority {
 
     @Override
     public boolean cancelled(MessageReceivedEvent event) {
-        if (bot.isFeatureEnabled(FeatureFlag.MessageForwarding) && event.isFromGuild() && !event.getAuthor().isBot()) {
+        if (bot.isFeatureEnabled(Feature.MessageForwarding) && event.isFromGuild() && !event.getAuthor().isBot()) {
             for (String keyWord : keyWordToChannelId.keySet()) {
                 if (event.getMessage().getContentRaw().toLowerCase().contains(keyWord.toLowerCase())) {
                     TextChannel c = event.getJDA().getTextChannelById(keyWordToChannelId.get(keyWord));

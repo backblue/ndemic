@@ -11,8 +11,9 @@ import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.backblue.core.Bot;
-import org.backblue.enums.AuditAction;
-import org.backblue.enums.FeatureFlag;
+import org.backblue.enums.Audit;
+import org.backblue.enums.Feature;
+import org.backblue.utilities.Util;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
@@ -42,7 +43,7 @@ public class Auditing extends ListenerAdapter {
     final JSONObject deploymentAuditFile;
     String url;
     WebhookClient<Message> webhookClient;
-    EnumSet<AuditAction> listeners;
+    EnumSet<Audit> listeners;
 
     public Auditing(Bot bot, JSONObject deploymentAuditFile) {
         this.bot = bot;
@@ -52,15 +53,15 @@ public class Auditing extends ListenerAdapter {
     private void setup() {
         String tempURL;
         WebhookClient<Message> tempWebhook;
-        listeners = EnumSet.noneOf(AuditAction.class);
+        listeners = EnumSet.noneOf(Audit.class);
         if (deploymentAuditFile == null) {
             webhookClient = null;
             url = null;
-            bot.disableFeature(FeatureFlag.Audit);
+            bot.disableFeature(Feature.Audit);
             Log.warn("Did not find an audit file to read off from");
             return;
         }
-        for (AuditAction action : AuditAction.values()) {
+        for (Audit action : Audit.values()) {
             if (deploymentAuditFile.getBoolean(action.configKey())) {
                 listeners.add(action);
             }
@@ -74,7 +75,7 @@ public class Auditing extends ListenerAdapter {
             tempURL = null;
             tempWebhook = null;
             Log.error("Invalid Webhook URL, cannot send audits");
-            bot.disableFeature(FeatureFlag.Audit);
+            bot.disableFeature(Feature.Audit);
         }
         this.url = tempURL;
         webhookClient = tempWebhook;
@@ -87,13 +88,10 @@ public class Auditing extends ListenerAdapter {
         this.setup();
     }
 
-    public String webhookURL() {
-        return url;
-    }
-    public boolean has(AuditAction action) {
+    public boolean has(Audit action) {
         return listeners.contains(action);
     }
-    public void toggle(AuditAction feature) {
+    public void toggle(Audit feature) {
         if (listeners.contains(feature)) {
             listeners.remove(feature);
             return;
@@ -104,7 +102,7 @@ public class Auditing extends ListenerAdapter {
     @Override
     public void onGuildBan(@NonNull GuildBanEvent event) {
         if (event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
-        && listeners.contains(AuditAction.MembersBan)) {
+        && listeners.contains(Audit.MembersBan)) {
             EmbedBuilder embedBuilder = this.base(event.getUser());
             embedBuilder.setAuthor("Member Banned", event.getUser().getAvatarUrl(), event.getUser().getAvatarUrl());
             embedBuilder.setDescription(event.getUser().getAsMention() + " " + event.getUser().getName());
@@ -116,7 +114,7 @@ public class Auditing extends ListenerAdapter {
     @Override
     public void onGuildUnban(@NonNull GuildUnbanEvent event) {
         if (event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
-                && listeners.contains(AuditAction.MembersUnban)) {
+                && listeners.contains(Audit.MembersUnban)) {
             EmbedBuilder embedBuilder = this.base(event.getUser());
             embedBuilder.setAuthor("Member Unbanned", event.getUser().getAvatarUrl(), event.getUser().getAvatarUrl());
             embedBuilder.setDescription(event.getUser().getAsMention() + " " + event.getUser().getName());
@@ -137,7 +135,7 @@ public class Auditing extends ListenerAdapter {
 
     private void memberChangeRoles(Guild guild, List<Role> roles, User user, boolean add) {
         if (guild.getId().equals(bot.getDeploymentGuild().getId())
-                && listeners.contains(AuditAction.MembersRoleAdd) && !roles.isEmpty()) {
+                && listeners.contains(Audit.MembersRoleAdd) && !roles.isEmpty()) {
             StringBuilder b = new StringBuilder();
             roles.forEach(role -> b.append("`").append(role.getName()).append("`").append(" ,"));
             b.deleteCharAt(b.length() - 1).deleteCharAt(b.length() - 1);
@@ -153,13 +151,13 @@ public class Auditing extends ListenerAdapter {
     @Override
     public void onGuildMemberJoin(@NonNull GuildMemberJoinEvent event) {
         if (event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
-                && listeners.contains(AuditAction.MemberJoin)) {
+                && listeners.contains(Audit.MemberJoin)) {
             EmbedBuilder embedBuilder = this.base(event.getUser());
             embedBuilder.setColor(Color.CYAN);
             embedBuilder.setThumbnail(event.getUser().getAvatarUrl());
             embedBuilder.setAuthor("Member Joined", event.getUser().getAvatarUrl(), event.getUser().getAvatarUrl());
             embedBuilder.setDescription(event.getUser().getAsMention() + " `" + event.getUser().getName() + "`");
-            embedBuilder.addField("Account Age", bot.formattedTime(Duration.between(event.getUser().getTimeCreated(), OffsetDateTime.now()).toSeconds(), false, 3), false);
+            embedBuilder.addField("Account Age", Util.formattedTime(Duration.between(event.getUser().getTimeCreated(), OffsetDateTime.now()).toSeconds(), false, 3), false);
             this.sendAudit(embedBuilder.build());
         }
     }
@@ -167,7 +165,7 @@ public class Auditing extends ListenerAdapter {
     @Override
     public void onGuildMemberRemove(@NonNull GuildMemberRemoveEvent event) {
         if (event.getGuild().getId().equals(bot.getDeploymentGuild().getId())
-                && listeners.contains(AuditAction.MembersRoleRemove)) {
+                && listeners.contains(Audit.MembersRoleRemove)) {
             EmbedBuilder embedBuilder = this.base(event.getUser());
             embedBuilder.setThumbnail(event.getUser().getAvatarUrl());
             embedBuilder.setColor(Color.RED);

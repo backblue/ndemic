@@ -3,15 +3,18 @@ package org.backblue.commands;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.backblue.core.Bot;
+import org.backblue.extension.Deployable;
+import org.backblue.utilities.Util;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.io.File;
-import java.io.UncheckedIOException;
+import java.time.OffsetDateTime;
+import java.util.List;
 
-public class About extends ListenerAdapter {
+public class About extends ListenerAdapter implements Deployable {
 
     Bot bot;
     String watermark;
@@ -26,22 +29,17 @@ public class About extends ListenerAdapter {
         if (event.getName().equals("about")) {
             EmbedBuilder embed = new EmbedBuilder()
                     .setColor(Color.CYAN)
-                    .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch);
+                    .setTitle(event.getJDA().getSelfUser().getName() + ": v" + bot.major + "." + bot.minor + "." + bot.patch)
+                    .addField("Uptime", "`" + Util.formattedTime(OffsetDateTime.now().toEpochSecond() - bot.createdSince, true) + "`", false);
             if (!watermark.isEmpty()) {
                 embed.setFooter(this.watermark);
             }
             event.replyEmbeds(embed.build()).setEphemeral(true).queue();
         }
-        if (event.getName().equals("privacy")) {
-            event.deferReply(true).queue();
-            try {
-                FileUpload upload = FileUpload.fromData(new File("data/privacypolicy.txt"));
-                event.getHook().sendFiles(upload).queue();
-            } catch (UncheckedIOException e) {
-                event.getHook().sendMessage("No privacy policy has been set for " + event.getJDA().getSelfUser().getAsMention() + ".").queue();
-            }
-
-        }
     }
 
+    @Override
+    public List<CommandData> cmds() {
+        return List.of(Commands.slash("about", "Uptime & bot information"));
+    }
 }
