@@ -335,17 +335,20 @@ public final class Gatekeeper extends ListenerAdapter implements LiveFramework.B
         if (!bot.isFeatureEnabled(Feature.Gatekeeper_RemoveLowQualityAccounts)) return;
         Member m = bot.getDeploymentGuild().getMemberById(id);
         if (m == null || m.hasPermission(Permission.ADMINISTRATOR)) return;
-        Set<Role> susRoles = new HashSet<>();
-        String roleToBecomeSus = "";
-        for (String susRole : this.susRoles) {
-            if (bot.getDeploymentGuild().getRoleById(susRole) != null) {
-                susRoles.add(bot.getDeploymentGuild().getRoleById(susRole));
-                roleToBecomeSus = susRole;
-            }
+        if (this.susRoles == null) return;
+
+        // Minimum account age (days) is taken from the member's own sus roles; the strictest one wins.
+        List<String> configured = Arrays.asList(this.susRoles);
+        long sus = 0;
+        boolean hasSusRole = false;
+        for (Role role : m.getRoles()) {
+            if (!configured.contains(role.getId())) continue;
+            long days = susRoleOverride.getOrDefault(role.getId(), this.stopBeingSus);
+            sus = hasSusRole ? Math.max(sus, days) : days;
+            hasSusRole = true;
         }
-        if (susRoles.isEmpty() || Collections.disjoint(susRoles, m.getRoles())) return;
+        if (!hasSusRole) return;
         long timeDifference = Math.abs(ChronoUnit.SECONDS.between(m.getUser().getTimeCreated(), OffsetDateTime.now()));
-        long sus = susRoleOverride.getOrDefault(roleToBecomeSus, this.stopBeingSus);
         if (timeDifference < sus * 24 * 60 * 60) {
             m.kick().reason("Joined too quickly after account creation -- " + Util.formattedTime(timeDifference, false)).queue();
             this.kickRejoinTimes.putIfAbsent(id, 0);
