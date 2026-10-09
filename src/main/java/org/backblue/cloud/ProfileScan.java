@@ -139,10 +139,24 @@ public final class ProfileScan extends ListenerAdapter implements LiveFramework.
     @Override
     public Container onButton(@NotNull ButtonInteractionEvent event, String... actions) {
         if (event.getMember() == null) return null;
+        // Replying acknowledges the interaction, so LiveContainer leaves the review open for another moderator.
+        if (!event.getMember().hasPermission(Permission.BAN_MEMBERS)) {
+            event.reply("You need the **Ban Members** permission to act on this review.").setEphemeral(true).queue();
+            return null;
+        }
         String action = actions[1];
         if ((action.equals("kick") || action.equals("ban")) && actions.length > 2) {
             Member member = bot.getDeploymentGuild().getMemberById(actions[2]);
-            if (member != null) bot.getEZPunish().ezPunish(member, event.getMember(), List.of("ezpunish:profile"), action.equals("ban"), member.getEffectiveAvatarUrl(), null);
+            if (member == null) {
+                event.reply("That member is no longer in the server.").setEphemeral(true).queue();
+                return null;
+            }
+            String result = bot.getEZPunish().ezPunish(member, event.getMember(), List.of("ezpunish:profile"), action.equals("ban"), member.getEffectiveAvatarUrl(), null);
+            // ezPunish reports refusals (e.g. a protected target) only through its message.
+            if (!result.startsWith("User has been")) {
+                event.reply(result).setEphemeral(true).queue();
+                return null;
+            }
         }
         return event.getMessage().getComponents().getFirst().asContainer()
                 .replace(ComponentReplacer.byUniqueId(FOOTER_NOTE, TextDisplay.of("-# Action taken <t:" + Instant.now().getEpochSecond() + ":R> by `" + event.getMember().getEffectiveName() + "` to **" + event.getButton().getLabel().toLowerCase() + "**.")))
@@ -151,8 +165,7 @@ public final class ProfileScan extends ListenerAdapter implements LiveFramework.
 
     @Override
     public void onUserUpdateAvatar(@NotNull UserUpdateAvatarEvent event) {
-        Member member = bot.getDeploymentGuild().getMember(event.getUser());
-        scan(member);
+        scan(bot.getDeploymentGuild().getMember(event.getUser()));
     }
     @Override
     public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event) {

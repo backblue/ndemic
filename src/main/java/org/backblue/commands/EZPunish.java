@@ -217,7 +217,7 @@ public class EZPunish extends ListenerAdapter implements Deployable {
                 event.reply(":x: The rulebook is not configured!").setEphemeral(true).queue();
                 return;
             }
-            if (event.getTarget().getMember().hasPermission(Permission.ADMINISTRATOR)) {
+            if (event.getTarget().getMember().hasPermission(Permission.BAN_MEMBERS)) {
                 event.reply(":x: Don't try using this on discord staff.").setEphemeral(true).queue();
                 return;
             }
