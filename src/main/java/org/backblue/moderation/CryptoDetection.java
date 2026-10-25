@@ -1,4 +1,4 @@
-package org.backblue.cloud;
+package org.backblue.moderation;
 
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.components.actionrow.ActionRow;
@@ -16,22 +16,21 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.utils.FileUpload;
-import net.sourceforge.tess4j.ITesseract;
-import net.sourceforge.tess4j.Tesseract;
-import net.sourceforge.tess4j.TesseractException;
 import org.backblue.core.Bot;
 import org.backblue.enums.SetChannel;
 import org.backblue.enums.Feature;
 import org.backblue.extension.LiveFramework;
+import org.backblue.ocr.AzureOCR;
+import org.backblue.ocr.TesseractOCR;
+import org.backblue.ocr.TextRecognizer;
 import org.backblue.utilities.MessagePriority;
 
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,8 +56,7 @@ public final class CryptoDetection extends MessagePriority implements LiveFramew
     final Map<String, Double> keywords;
     final Map<String, PendingReport> pendingReports;
     final Set<String> flaggedUsers;
-    final ITesseract tesseract;
-    final CloudOCR azure;
+    final TextRecognizer ocr;
     final boolean inviteCheck;
     final Pattern inviteRegex = Pattern.compile("(?i)(discord(?:app)?.gg(?:/|\\+/+)|discord(?:app)?.com(?:/|\\+/+)invite/)([A-z0-9-]{2,})");
 
@@ -66,11 +64,10 @@ public final class CryptoDetection extends MessagePriority implements LiveFramew
         super(priority, bot);
         if (!bot.isFeatureEnabled(Feature.DetectCrypto) || json == null) {
             threshold = 0;
-            tesseract = null;
+            ocr = null;
             keywords = null;
             pendingReports = null;
             flaggedUsers = null;
-            azure = null;
             inviteCheck = false;
             if (json == null) Log.warn("No config provided for crypto detection, disabling");
             bot.disableFeature(Feature.DetectCrypto);
@@ -80,39 +77,31 @@ public final class CryptoDetection extends MessagePriority implements LiveFramew
             flaggedUsers = ConcurrentHashMap.newKeySet();
             threshold = json.optDouble("threshold", 8.00);
             inviteCheck = json.optBoolean("inviteCheck", false);
-            boolean local = json.optBoolean("fallbackOnLocal", true);
             JSONObject obj = json.optJSONObject("keywords");
             for (String key : obj.keySet()) keywords.put(key, obj.getDouble(key));
 
-            if (local) {
-                tesseract = new Tesseract();
-                tesseract.setDatapath("data/tessdata");
-                tesseract.setLanguage("eng");
-                tesseract.setOcrEngineMode(1);
-                tesseract.setPageSegMode(11);
-            } else {
-                tesseract = null;
-            }
-            boolean useCloud = json.optBoolean("useCloud", true);
-            if (useCloud) {
-                if (endpoint == null || secret == null) {
-                    azure = null;
-                    Log.warn("OCR provider requires credentials, disabling");
-                    return;
-                }
-                azure = new CloudOCR(endpoint, secret);
-            } else {
-                azure = null;
-            }
-
-            if (tesseract == null && azure == null) {
+            ocr = chooseRecognizer(json.optBoolean("useCloud", true), json.optBoolean("fallbackOnLocal", true), endpoint, secret);
+            if (ocr == null) {
                 Log.error("No OCR provider selected, disabling");
                 bot.disableFeature(Feature.DetectCrypto);
                 return;
             }
+            Log.info("Crypto detection using {} for OCR", ocr.name());
 
             bot.getScheduler().scheduleAtFixedRate(this::cleanup, 20, 20, TimeUnit.MINUTES);
         }
+    }
+
+    private static @Nullable TextRecognizer chooseRecognizer(boolean useCloud, boolean local, String endpoint, String secret) {
+        if (useCloud) {
+            if (endpoint == null || secret == null) {
+                Log.warn("Azure OCR requires AZURE_VISION_ENDPOINT and AZURE_VISION_KEY; not using it");
+            } else {
+                AzureOCR azure = new AzureOCR(endpoint, secret);
+                if (azure.enabled()) return azure;
+            }
+        }
+        return local ? new TesseractOCR("data/tessdata") : null;
     }
 
     /**
@@ -228,12 +217,12 @@ public final class CryptoDetection extends MessagePriority implements LiveFramew
                 .asDisabled();
     }
 
-    private double processImage(File file) throws TesseractException, IOException, InterruptedException {
+    private double processImage(File file) throws IOException, InterruptedException {
         long start = System.currentTimeMillis();
         double result = 0.0;
         String name = file.getName().toLowerCase();
         if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp")) {
-            String text = extractTextWrapper(file);
+            String text = ocr.extractText(file);
             if (text == null) return 0.0;
             text = text.toLowerCase();
             for (String key : this.keywords.keySet()) {
@@ -249,25 +238,6 @@ public final class CryptoDetection extends MessagePriority implements LiveFramew
         long end = System.currentTimeMillis();
         Log.info("Processed image {} in {}ms with score {}", file.getName(), (end - start), result);
         return result;
-    }
-
-    public String extractTextWrapper(File file) throws TesseractException, IOException, InterruptedException {
-        if (azure != null && azure.enabled()) return azure.extractText(file);
-        if (tesseract != null) return extractText(file);
-        return "";
-    }
-
-    public String extractText(File file) throws TesseractException, IOException {
-        BufferedImage image = ImageIO.read(file);
-        if (image == null) {
-            Log.error("Unable to decode image: {}", file.getName());
-            return null;
-        }
-        try {
-            synchronized (tesseract) {return tesseract.doOCR(image).strip();}
-        } finally {
-            image.flush();
-        }
     }
 
     public void cleanup() {

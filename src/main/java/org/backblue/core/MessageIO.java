@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.FileUpload;
-import org.backblue.cloud.CryptoDetection;
+import org.backblue.moderation.CryptoDetection;
 import org.backblue.enums.Audit;
 import org.backblue.extension.LiveFramework;
 import org.backblue.enums.SetChannel;
@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public final class MessageIO extends ListenerAdapter {
 
@@ -98,12 +99,18 @@ public final class MessageIO extends ListenerAdapter {
     }
 
     public void send(SetChannel dest, String text, Container container, LiveFramework handler) {
+        send(dest, text, container, handler, null);
+    }
+
+    // onSent receives the posted container message, e.g. to edit it later.
+    public void send(SetChannel dest, String text, Container container, LiveFramework handler, @Nullable Consumer<Message> onSent) {
         GuildChannel targetChannel = this.bot.getJDA().getGuildChannelById(definedChannels.get(dest));
         if (text != null && !text.isEmpty() && targetChannel instanceof MessageChannelUnion messageChannel) messageChannel.sendMessage(text).queue();
         if (targetChannel instanceof MessageChannelUnion messageChannel) {
-            if (handler == null) messageChannel.sendMessageComponents(container).useComponentsV2(true).queue();
-            else messageChannel.sendMessageComponents(container).useComponentsV2(true).queue(
-                    msg -> bot.getLiveContainer().applyContainerization(container, msg, handler));
+            messageChannel.sendMessageComponents(container).useComponentsV2(true).queue(msg -> {
+                if (handler != null) bot.getLiveContainer().applyContainerization(container, msg, handler);
+                if (onSent != null) onSent.accept(msg);
+            });
         }
     }
 
@@ -155,7 +162,7 @@ public final class MessageIO extends ListenerAdapter {
         messageListenersPriority.add(new OneAuthorGuide(50, bot));
         messageListenersPriority.add(new Honeypot(5, bot));
         messageListenersPriority.add(new Forwarding(15, bot, settings.optJSONArray("messageForwarding")));
-        messageListenersPriority.add(new CryptoDetection(6, bot, settings.optJSONObject("detectCrypto"), (String) props.getOrDefault("VISION_ENDPOINT", null), (String) props.getOrDefault("VISION_KEY", null)));
+        messageListenersPriority.add(new CryptoDetection(6, bot, settings.optJSONObject("detectCrypto"), (String) props.getOrDefault("AZURE_VISION_ENDPOINT", null), (String) props.getOrDefault("AZURE_VISION_KEY", null)));
         bot.getScheduler().scheduleAtFixedRate(this::cleanupInactiveUsers, 1, 1, TimeUnit.HOURS);
     }
 

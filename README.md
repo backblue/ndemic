@@ -35,3 +35,37 @@ You can clone this project, then run to get a JAR:
 Rename `data/bot.txt` to `data/bot.properties`, then add keys for every value, then run.
 
 Bot will generate required example configuration files.
+### Event dispatch and background work
+
+`EventDispatcher` dispatches events without running application listeners on JDA's
+WebSocket thread. Each shard has three independent, bounded, single-worker lanes:
+
+| Lane | Queue capacity | Work |
+| --- | ---: | --- |
+| `Bot-Interactions-*` | 256 | Commands, buttons, menus, modals, autocomplete |
+| `Bot-Messages-*` | 1024 | Message events, including the ordered moderation pipeline |
+| `Bot-Events-*` | 512 | Other events, including lifecycle and membership events |
+
+Listeners for an event run in their original registration order. Events in each
+lane are processed in arrival order; there is no ordering guarantee between lanes.
+State shared between lanes must therefore be thread-safe. The feature set uses a
+concurrent set. Do not add slow I/O to interaction handlers: acknowledge promptly,
+then submit slow work to a dedicated lane. Modal-opening handlers must respond
+with the modal directly rather than defer first.
+
+`Bot.getProfileScans()` provides a separate single-worker lane with capacity 128
+for automatic profile scans, including banner analysis. There is no manual `/scan`
+command. Google Vision
+context lookups retain their separate worker. JDA REST callbacks remain on JDA's
+callback pool; deferring an interaction alone does not offload subsequent work.
+
+`TaskLane.submit` returns false on overload or shutdown, logs the rejection, and
+never executes rejected work on the caller. Rejected reply-capable interactions
+receive a busy response; other rejected events are logged and dropped.
+Accepted events drain when their shard
+shuts down. The profile lane stops accepting work at JVM shutdown; shutdown does
+not guarantee completion of external network calls.
+
+This reserves interaction capacity independently of moderation. It does not give
+interactions OS thread priority or guarantee Discord response times. Slow command
+or button handlers can still delay later interactions on their own lane.

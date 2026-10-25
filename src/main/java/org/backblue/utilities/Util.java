@@ -127,23 +127,28 @@ public final class Util {
     // Attachments
 
     public static List<FileUpload> toUploads(List<Message.Attachment> attachmentList) {
-        List<CompletableFuture<FileUpload>> futures = attachmentList.stream()
-                .map(attachment ->
-                        attachment.getProxy()
-                                .download()
-                                .thenApply(file ->
-                                        FileUpload.fromData(file, attachment.getFileName())
-                                )
-                                .exceptionally(e -> {
-                                    Log.error("Failed to download attachment: ", e);
-                                    return null;
-                                })
-                )
-                .toList();
+        return toUploadsAsync(attachmentList).join();
+    }
 
-        return futures.stream()
-                .filter(Objects::nonNull)
-                .map(CompletableFuture::join)
+    public static CompletableFuture<List<FileUpload>> toUploadsAsync(List<Message.Attachment> attachments) {
+        List<CompletableFuture<FileUpload>> downloads = attachments.stream()
+                .map(attachment -> attachment.getProxy().download()
+                        .thenApply(stream -> FileUpload.fromData(stream, attachment.getFileName())))
                 .toList();
+        return collectUploads(downloads);
+    }
+
+    static CompletableFuture<List<FileUpload>> collectUploads(List<CompletableFuture<FileUpload>> downloads) {
+        List<CompletableFuture<FileUpload>> recovered = downloads.stream()
+                .map(download -> download.exceptionally(error -> {
+                    Log.error("Failed to download evidence attachment", error);
+                    return null;
+                }))
+                .toList();
+        return CompletableFuture.allOf(recovered.toArray(CompletableFuture[]::new))
+                .thenApply(ignored -> recovered.stream()
+                        .map(download -> download.getNow(null))
+                        .filter(Objects::nonNull)
+                        .toList());
     }
 }

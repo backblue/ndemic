@@ -1,4 +1,4 @@
-package org.backblue.cloud;
+package org.backblue.ocr;
 
 import com.azure.ai.vision.imageanalysis.ImageAnalysisClient;
 import com.azure.ai.vision.imageanalysis.ImageAnalysisClientBuilder;
@@ -20,16 +20,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public final class CloudOCR {
+// Text recognition through Azure AI Vision (Read), rate limited to 9 requests per 30 seconds.
+public final class AzureOCR implements TextRecognizer {
 
-    private static final Logger log = LoggerFactory.getLogger(CloudOCR.class);
+    private static final Logger log = LoggerFactory.getLogger(AzureOCR.class);
     private ImageAnalysisClient client;
     ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
 
     private final Semaphore semaphore = new Semaphore(9, true);
 
-    public CloudOCR(String endpoint, String key) {
+    public AzureOCR(String endpoint, String key) {
 
         scheduledExecutorService.scheduleAtFixedRate(() -> {
             semaphore.drainPermits();
@@ -54,6 +55,12 @@ public final class CloudOCR {
         return this.client != null;
     }
 
+    @Override
+    public String name() {
+        return "Azure AI Vision";
+    }
+
+    @Override
     public String extractText(File file) throws IOException, InterruptedException {
         byte[] imageBytes = Files.readAllBytes(file.toPath());
         BinaryData imageData = BinaryData.fromBytes(imageBytes);

@@ -10,13 +10,15 @@ import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.backblue.commands.*;
+import org.backblue.core.concurrent.EventDispatcher;
+import org.backblue.core.concurrent.EventHenchman;
 import org.backblue.config.Config;
 import org.backblue.config.Configurator;
 import org.backblue.enums.Feature;
 import org.backblue.moderation.*;
 import org.backblue.utilities.*;
 import org.backblue.utilities.BlueSky;
-import org.backblue.cloud.ProfileScan;
+import org.backblue.moderation.ProfileScan;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -32,19 +34,20 @@ public final class Bot {
 
     public final int major = 1;
     public final int minor = 3;
-    public final int patch = 1;
+    public final int patch = 2;
     public final long createdSince = OffsetDateTime.now().toEpochSecond();
 
     private static final Logger Log = LoggerFactory.getLogger(Bot.class);
 
     private final ShardManager JDA;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    private final EventHenchman profileScans = new EventHenchman("Bot-ProfileScans", 128);
     private final MessageIO io;
     private final GenAI ai;
     private final EZPunish ezPunish;
     private final LiveContainer liveContainer;
 
-    private final EnumSet<Feature> features;
+    private final Set<Feature> features;
     private final String deploymentGuildID;
     private final String mostModeratorsPing;
     private final String allModeratorsPing;
@@ -71,7 +74,7 @@ public final class Bot {
             settingSelf = settings.getJSONObject("self");
             settings.getJSONObject("channels").getString("_deploy");
         } catch (IllegalStateException | Config.Error e) {
-            System.out.println("Required configuration could not be loaded " + e);
+            System.err.println("Required configuration could not be loaded " + e);
             System.exit(1);
         }
 
@@ -80,7 +83,7 @@ public final class Bot {
         this.allModeratorsPing = settingSelf.optString("allPingAlerts", null);
         this.debugPingRoleID = settingSelf.optString("debugPingAlerts", null);
 
-        features = EnumSet.noneOf(Feature.class);
+        features = java.util.concurrent.ConcurrentHashMap.newKeySet();
         for (Feature flag : Feature.values()) {
             try {
                 if (featuresList.getBoolean(flag.configKey())) this.features.add(flag);
@@ -92,6 +95,8 @@ public final class Bot {
         new MemoryDebug(this, Set.of(args));
 
         DefaultShardManagerBuilder builder = DefaultShardManagerBuilder.create(keys.getProperty("TOKEN"), EnumSet.allOf(GatewayIntent.class));
+        builder.setEventManagerProvider(EventDispatcher::new);
+        Runtime.getRuntime().addShutdownHook(new Thread(profileScans::close, "Bot-Workers-Shutdown"));
         builder.setMemberCachePolicy(MemberCachePolicy.ALL);
         builder.setChunkingFilter(ChunkingFilter.ALL);
         builder.enableCache(EnumSet.allOf(CacheFlag.class));
@@ -112,7 +117,7 @@ public final class Bot {
         this.ai = new GenAI(this, keys.getProperty("GEMINI_TOKEN", null), settings.optJSONObject("gemini", null));
         this.ezPunish = new EZPunish(this, rulebook);
         Auditing auditing = new Auditing(this, config.get(Config.Deployment_Audit_JSON));
-        ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), settings.optJSONObject("profileScanner"));
+        ProfileScan profileScan = new ProfileScan(this, keys.getProperty("AZURE_SAFETY_ENDPOINT", null), keys.getProperty("AZURE_SAFETY_KEY", null), keys.getProperty("GOOGLE_VISION_KEY", null), settings.optJSONObject("profileScanner"));
         List<EventListener> listeners = List.of(
                 new DM(this),
                 new Ping(), new Features(this), new AutoMod(this),
@@ -123,13 +128,13 @@ public final class Bot {
                 auditing,
                 new Autorespond(this, autoresponding),
                 new DisableDM(this),
-                new Scan(this, profileScan),
                 new Badge(this, badges),
                 new RaidProtect(this),
                 new Audit(this, auditing),
                 new Gatekeeper(this, settings.optJSONObject("gatekeeper")),
                 new KickAll(this, settings.optJSONObject("gatekeeper")),
                 new Privacy(this),
+                new Edit(this),
                 new About(this, settingSelf.optString("watermark", ""))
         );
         builder.addEventListeners(Arrays.stream(listeners.toArray()).toList());
@@ -140,6 +145,10 @@ public final class Bot {
                 settings.getJSONObject("blueSky"),
                 this);
         this.JDA = builder.build();
+    }
+
+    public EventHenchman getProfileScans() {
+        return profileScans;
     }
 
     public boolean isFeatureEnabled(Feature feature) {
@@ -184,6 +193,12 @@ public final class Bot {
     public LiveContainer getLiveContainer() {
         return this.liveContainer;
     }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        throw new CloneNotSupportedException();
+    }
+
     public void timeout(Member member, String reason, int duration, TimeUnit unit) {
         if (member == null) return;
         OffsetDateTime now = OffsetDateTime.now();
@@ -196,12 +211,16 @@ public final class Bot {
         if (timeoutEnd.isAfter(maxTimeout)) timeoutEnd = maxTimeout;
 
         member.timeoutUntil(timeoutEnd).reason(reason).queue(
-                success -> {},
-                failure -> {}
+                success -> {
+                },
+                failure -> {
+                }
         );
     }
     public EnumSet<Feature> getFeatures() {
-        return features;
+        EnumSet<Feature> snapshot = EnumSet.noneOf(Feature.class);
+        snapshot.addAll(features);
+        return snapshot;
     }
     public GenAI getAI() {
         return ai;

@@ -95,16 +95,28 @@ public class EZPunish extends ListenerAdapter implements Deployable {
         if (reason.isEmpty()) {
             reason = "Moderator Action";
         }
+        String warning = target.getAsMention() + " - " + status + " - " + reason
+                + "\nInitiated by: `" + executor.getUser().getName() + "`\n"
+                + (evidenceText == null ? "" : evidenceText);
         if (evidenceImages == null || evidenceImages.isEmpty()) {
-            bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName()+ "`\n" + evidenceText);
+            bot.getIO().send(SetChannel.DeploymentWarnings, warning);
         } else {
-            if (evidenceText == null) {
-                evidenceText = "";
-            }
-            String finalEvidenceText = evidenceText;
-
-            bot.getIO().send(SetChannel.DeploymentWarnings, target.getAsMention() + " - " + status + " - " + reason + "\nInitiated by: `" + executor.getUser().getName() + "`\n" + finalEvidenceText,
-                    null, Util.toUploads(evidenceImages));
+            // Post the text log immediately; evidence follows when the downloads finish.
+            bot.getIO().send(SetChannel.DeploymentWarnings, warning);
+            Util.toUploadsAsync(evidenceImages).thenAccept(uploads -> {
+                if (!uploads.isEmpty()) {
+                    bot.getIO().send(SetChannel.DeploymentWarnings,
+                            "Evidence for " + target.getAsMention() + " - " + status
+                                    + " (initiated by " + executor.getAsMention() + ")", uploads);
+                }
+                if (uploads.size() != evidenceImages.size()) {
+                    bot.getIO().send(SetChannel.DeploymentWarnings,
+                            "Some evidence attachments could not be downloaded for " + target.getAsMention() + ".");
+                }
+            }).exceptionally(error -> {
+                org.slf4j.LoggerFactory.getLogger(EZPunish.class).error("Could not prepare evidence", error);
+                return null;
+            });
         }
     }
 

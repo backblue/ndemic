@@ -4,11 +4,15 @@ import org.backblue.core.Bot;
 import org.backblue.enums.Feature;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -19,26 +23,21 @@ import java.util.concurrent.TimeUnit;
 public final class BlueSky {
 
     private final Bot bot;
-    private final String user;
-    private final String pass;
     private final HashMap<String, String> bSkyMap = new HashMap<>();
     private final HashMap<String, Instant> bSkyUserLastPost = new HashMap<>();
-    private String accessJwt = null;
-    private Instant tokenExpiry = Instant.EPOCH;
-    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
     private static final Logger Log = LoggerFactory.getLogger(BlueSky.class);
 
     public BlueSky(String user, String pass, JSONObject json, Bot bot) {
         this.bot = bot;
-        if (user == null || pass == null || json == null ) {
-            this.user = null;
-            this.pass = null;
-            Log.warn("No BlueSky credentials or users configured");
+        // Public author feeds do not require a session or credentials.
+        if (json == null) {
+            Log.warn("No BlueSky users configured");
             bot.disableFeature(Feature.BlueSky);
             return;
         }
-        this.user = user;
-        this.pass = pass;
         for (String key : json.keySet()) {
             if (!key.equals("onlyLink") && json.get(key) instanceof String) {
                 bSkyMap.put(key, json.getString(key));
@@ -47,7 +46,8 @@ public final class BlueSky {
                 bot.getScheduler().scheduleWithFixedDelay(() -> {
                     try {
                         checkAccount(key);
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        Log.error("Failed to check account", e);
                     }
                 }, 1, 1, TimeUnit.MINUTES);
             }
@@ -55,7 +55,7 @@ public final class BlueSky {
     }
 
     private void checkAccount(String did) {
-        if (bot.isFeatureEnabled(Feature.BlueSky)) {
+        if (!bot.isFeatureEnabled(Feature.BlueSky)) {
             return;
         }
         try {
@@ -73,61 +73,55 @@ public final class BlueSky {
             String urlInTxt = "https://bsky.app/profile/" + post.getJSONObject("author").getString("handle") + "/post/" + rKey;
             bot.getIO().send(bSkyMap.get(did), urlInTxt);
             bSkyUserLastPost.put(did, postTime);
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Log.warn("Interrupted fetching feed for user {}", did);
+        } catch (IOException e) {
             Log.warn("Can not fetch feed for user {}: {}", did, e.getMessage());
         }
     }
 
     private JSONObject getUserFeed(String did) throws IOException, InterruptedException {
-        login();
-
-        String endpoint = "https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed?actor=" + did;
-
-        HttpRequest feedRequest = HttpRequest.newBuilder()
-                .uri(URI.create(endpoint))
-                .header("Authorization", "Bearer " + accessJwt)
+        String endpoint = "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor="
+                + URLEncoder.encode(did, StandardCharsets.UTF_8)
+                + "&filter=posts_no_replies&limit=100";
+        HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
+                .timeout(Duration.ofSeconds(30))
                 .GET()
                 .build();
-
-        HttpResponse<String> feedResponse = HTTP_CLIENT.send(
-                feedRequest,
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        JSONObject data = new JSONObject(feedResponse.body());
-        JSONArray feed = data.getJSONArray("feed");
-        for (int i = 0; i < feed.length(); i++) {
-            JSONObject post = feed.getJSONObject(i).getJSONObject("post");
-            JSONObject record = post.getJSONObject("record");
-            if (!record.has("reply")) {
-                return post;
-            }
-        }
-        return null;
-    }
-
-    private synchronized void login() throws IOException, InterruptedException {
-        if (accessJwt != null && Instant.now().isBefore(tokenExpiry)) {
-            return;
-        }
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://bsky.social/xrpc/com.atproto.server.createSession"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        new JSONObject()
-                                .put("identifier", user)
-                                .put("password", pass)
-                                .toString()
-                ))
-                .build();
-
         HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-
-        JSONObject json = new JSONObject(response.body());
-        accessJwt = json.getString("accessJwt");
-
-        tokenExpiry = Instant.now().plusSeconds(60 * 60 * 2 - 60);
+        return parseFeedResponse(response.statusCode(), response.body());
     }
 
+    static JSONObject parseFeedResponse(int statusCode, String body) throws IOException {
+        if (statusCode < 200 || statusCode >= 300) {
+            // Do not log response bodies: they can contain sensitive or untrusted data.
+            throw new IOException("Bluesky author feed returned HTTP " + statusCode);
+        }
+        try {
+            JSONArray feed = new JSONObject(body).getJSONArray("feed");
+            JSONObject newest = null;
+            Instant newestTime = Instant.MIN;
+            for (int i = 0; i < feed.length(); i++) {
+                JSONObject entry = feed.getJSONObject(i);
+                JSONObject post = entry.getJSONObject("post");
+                JSONObject record = post.getJSONObject("record");
+                // Reposts belong to another author and must not mask this author's posts.
+                JSONObject reason = entry.optJSONObject("reason");
+                boolean repost = reason != null && "app.bsky.feed.defs#reasonRepost"
+                        .equals(reason.optString("$type"));
+                if (record.has("reply") || repost) {
+                    continue;
+                }
+                Instant createdAt = Instant.parse(record.getString("createdAt"));
+                if (createdAt.isAfter(newestTime)) {
+                    newest = post;
+                    newestTime = createdAt;
+                }
+            }
+            return newest;
+        } catch (JSONException | java.time.format.DateTimeParseException e) {
+            throw new IOException("Invalid Bluesky author feed response", e);
+        }
+    }
 }

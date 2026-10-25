@@ -47,21 +47,30 @@ public class Features extends ListenerAdapter implements Deployable, SelfEditabl
             }
             Feature feature = bot.getFeature(Objects.requireNonNull(event.getOption("flag")).getAsString());
             boolean enable = event.getSubcommandName().equals("enable");
-            boolean saved = set("/" + feature.configKey(), enable, event.getUser().getId());
+            event.deferReply(true).queue(hook -> Thread.startVirtualThread(() -> {
+                synchronized (Features.this) {
+                    try {
+                        boolean saved = set("/" + feature.configKey(), enable, event.getUser().getId());
 
-            if (enable && feature.restricted()) {
-                event.reply(saved
-                        ? ":white_check_mark: Feature **" + feature + "** will be **enabled** after the next restart."
-                        : ":x: Could not save. This feature can only be re-enabled with a restart.").setEphemeral(true).queue();
-                return;
-            }
-            if (enable) bot.enableFeature(feature);
-            else bot.disableFeature(feature);
+                        if (enable && feature.restricted()) {
+                            hook.editOriginal(saved
+                                    ? ":white_check_mark: Feature **" + feature + "** will be **enabled** after the next restart."
+                                    : ":x: Could not save. This feature can only be re-enabled with a restart.").queue();
+                            return;
+                        }
+                        if (enable) bot.enableFeature(feature);
+                        else bot.disableFeature(feature);
 
-            String state = enable ? "**enabled**." : "**disabled**.";
-            bot.getIO().send(SetChannel.DebugEnforcement, event.getUser().getName() + " changed setting " + feature + " to " + state);
-            event.reply(":white_check_mark: Feature **" + feature + "** is " + state
-                    + (saved ? "" : " (Could not save; reverts on restart.)")).setEphemeral(true).queue();
+                        String state = enable ? "**enabled**." : "**disabled**.";
+                        bot.getIO().send(SetChannel.DebugEnforcement, event.getUser().getName() + " changed setting " + feature + " to " + state);
+                        hook.editOriginal(":white_check_mark: Feature **" + feature + "** is " + state
+                                + (saved ? "" : " (Could not save; reverts on restart.)")).queue();
+                    } catch (Exception e) {
+                        org.slf4j.LoggerFactory.getLogger(Features.class).error("Feature change failed", e);
+                        hook.editOriginal("Could not change the feature. Please try again later.").queue();
+                    }
+                }
+            }));
         }
     }
 
